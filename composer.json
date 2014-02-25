@@ -1,0 +1,34 @@
+{
+    "name": "CKAN/ckan-manager",
+    "description": "CKAN php manager",
+    "minimum-stability": "dev",
+    "license": "GPL-3.0+",
+    "authors": [
+        {
+            "name": "Alex Perfilov",
+            "email": "alexandr.perfilov@reisystems.com"
+        }
+    ],
+    "autoload": {
+        "psr-0": {
+            "CKAN\\Manager\\": "src/"
+        },
+        "classmap": [
+
+        ]
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "git@github.com:alex-perfilov-reisys/ckan-php-client.git"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.17",
+        "ext-json": "*",
+        "CKAN/php-client": "dev-master"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "3.7.x"
+    }
+}
