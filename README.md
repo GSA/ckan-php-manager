@@ -27,6 +27,8 @@ Refresh your dependencies:
 
 ## Usage
 
+### Export all packages by Agency name, including all Sub Agencies
+
 * Update `cli/export_packages_by_org.php`, editing the title of exported organization ORGANIZATION_TO_EXPORT
 * Run importer using php
 
@@ -37,6 +39,4 @@ Refresh your dependencies:
 Script is taking all terms, including sub-agencies from http://idm.data.gov/fed_agency.json and makes CKAN requests,
 looking for packages by these organization list.
 
-Results can be found in /results dir after script finished its work.
-
-
+Results can be found in /results dir after script finished its work, including `_{term}.log` with package counts for each agency.
