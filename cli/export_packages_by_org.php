@@ -13,9 +13,14 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
+$mainTerm = $OrgList->getTermFor(ORGANIZATION_TO_EXPORT);
+
+
+$results_dir = RESULTS_DIR . date('/Ymd-His_') . $mainTerm;
+mkdir($results_dir);
 
 /**
  * Search for packages by terms found
  */
 $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
-$Importer->import_packages_by_org_terms($termsArray);
+$Importer->export_packages_by_org_terms($termsArray, $results_dir);

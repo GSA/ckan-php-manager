@@ -27,11 +27,12 @@ Refresh your dependencies:
 
 ## Usage
 
-* Update `cli/import_packages_by_org.php`, editing the title of imported organization ORGANIZATION_TO_EXPORT
+* Update `cli/export_packages_by_org.php`, editing the title of exported organization ORGANIZATION_TO_EXPORT
 * Run importer using php
 
-
-    $ php cli/import_packages_by_org.php
+```
+    $ php cli/export_packages_by_org.php
+```
 
 Script is taking all terms, including sub-agencies from http://idm.data.gov/fed_agency.json and makes CKAN requests,
 looking for packages by these organization list.

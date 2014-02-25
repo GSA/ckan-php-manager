@@ -5,10 +5,8 @@ namespace CKAN\Manager;
 use CKAN\Core\CkanClient;
 
 /**
- * Created by PhpStorm.
- * User: Alex Perfilov
- * Date: 2/24/14
- * Time: 2:18 PM
+ * @author Alex Perfilov
+ * @date   2/24/14
  */
 class CkanManager
 {
@@ -32,10 +30,11 @@ class CkanManager
     }
 
     /**
-     * Import all packages by organization term
+     * Exprot all packages by organization term
      * @param $terms
+     * @param $results_dir
      */
-    public function import_packages_by_org_terms($terms)
+    public function export_packages_by_org_terms($terms, $results_dir)
     {
         foreach ($terms as $term) {
             echo PHP_EOL . $term . PHP_EOL;
@@ -44,8 +43,7 @@ class CkanManager
             while (true) {
                 $start      = $page++ * $this->perPage;
                 $ckanResult = $this->Ckan->package_search('organization:' . $term, $this->perPage, $start);
-//        decode as array
-                $ckanResult = json_decode($ckanResult, true);
+                $ckanResult = json_decode($ckanResult, true); //  decode json as array
                 $ckanResult = $ckanResult['result'];
                 $results    = array_merge($results, $ckanResult['results']);
                 echo "start from $start / " . $ckanResult['count'] . ' total ' . PHP_EOL;
@@ -54,7 +52,7 @@ class CkanManager
                 }
             }
             $json = (json_encode($results, JSON_PRETTY_PRINT));
-            file_put_contents(ROOT_DIR . '/results/' . $term . '.json', $json);
+            file_put_contents($results_dir . '/' . $term . '.json', $json);
         }
     }
 }
