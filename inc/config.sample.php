@@ -11,5 +11,8 @@ define('AGENCIES_LIST_URL', 'http://idm.data.gov/fed_agency.json');
  */
 define('CKAN_API_URL', 'https://catalog.data.gov/api/3/');
 
-
-$apiKey = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'; // CKAN API KEY, if needed / or null
+/**
+ * CKAN API KEY
+ * use null if not needed
+ */
+define('CKAN_API_KEY', 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx'); // CKAN API KEY, if needed / or null

@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Department of Energy');
+define('ORGANIZATION_TO_EXPORT', 'Department of the Treasury');
 
 echo "Exporting " . ORGANIZATION_TO_EXPORT . PHP_EOL;
 
@@ -14,11 +14,11 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
-$parentTerm = $OrgList->getTermFor(ORGANIZATION_TO_EXPORT);
-define('PARENT_TERM', $parentTerm);
 
-
-$results_dir = RESULTS_DIR . date('/Ymd-His_') . PARENT_TERM;
+/**
+ * Create results dir for logs and json results
+ */
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_' . PARENT_TERM;
 mkdir($results_dir);
 
 /**
