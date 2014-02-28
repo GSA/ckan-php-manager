@@ -22,13 +22,10 @@ $results_dir = RESULTS_DIR . date('/Ymd-His') . '_TAG_' . PARENT_TERM;
 mkdir($results_dir);
 
 /**
- * Search for packages by terms found
- */
-
-/**
+ * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+//$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging

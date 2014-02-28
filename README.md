@@ -39,4 +39,53 @@ Refresh your dependencies:
 Script is taking all terms, including sub-agencies from http://idm.data.gov/fed_agency.json and makes CKAN requests,
 looking for packages by these organization list.
 
-Results can be found in /results dir after script finished its work, including `_{term}.log` with package counts for each agency.
+Results can be found in /results/{timestamp} dir after script finished its work, including `_{term}.log` with package counts for each agency.
+
+### DMS legacy tag
+
+To add tag `metadata_from_legacy_dms` to all datasets of some group:
+
+* Update ORGANIZATION_TO_TAG in the `cli/metadata_from_legacy_dms.php`
+* Double check CKAN_URL and CKAN_API_KEY for editing datasets
+* Run script
+
+```
+    $ php cli/metadata_from_legacy_dms.php
+```
+
+### Assign groups and category tags to datasets
+
+* Put csv files to /data dir, with `<any-title>.csv`
+    The format of these files must be:
+    `dataset, group, categories`
+
+    First line is caption, leave the first line in each file:
+    `dataset,group,categories`
+
+    Then put one dataset per line.
+
+    1. Dataset can be:
+      * Dataset url, ex. http://dev-ckan-fe-data.reisys.com/dataset/state-traffic-safety-information-pedalcyclist-fatalities-connecticut-2007-2009
+      * Dataset name, ex. download-crossing-inventory-data-highway-rail-crossing
+      * Dataset id
+
+    2. Group
+    just one group per line. If you need to add multiple groups, you must create another row in csv with same dataset and another group,
+    because all the categories are tagged by current row group
+
+    3. Categories
+    one of multiple categories per current row group, separated by semicolon `;`
+
+    Example csv file:
+
+    ```
+    dataset, group, categories
+    http://dev-ckan-fe-data.reisys.com/dataset/state-traffic-safety-information-pedalcyclist-fatalities-connecticut-2007-2009,Agriculture,"Natural Resources and Environment"
+    download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
+    ```
+* Double check CKAN_URL and CKAN_API_KEY for editing datasets
+* Run script
+
+```
+    $ php cli/assign_groups_to_datasets.php
+```

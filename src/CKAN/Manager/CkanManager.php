@@ -37,7 +37,7 @@ class CkanManager
      */
     public function export_packages_by_org_terms($terms, $results_dir)
     {
-        $log_output  = ORGANIZATION_TO_EXPORT . PHP_EOL . PHP_EOL;
+        $log_output = ORGANIZATION_TO_EXPORT . PHP_EOL . PHP_EOL;
         foreach ($terms as $term => $agency) {
             echo PHP_EOL . $term . PHP_EOL;
             $page    = 0;
@@ -143,5 +143,79 @@ class CkanManager
         }
 
         return $dms_datasets;
+    }
+
+    /**
+     * @param $datasetNames
+     * @param $group
+     * @param string $categories
+     * @param $results_dir
+     * @throws \Exception
+     */
+    public function assign_groups_and_categories_to_datasets($datasetNames, $group, $categories = null, $results_dir)
+    {
+        $log_output = '';
+
+        if (!($group = $this->findGroup($group))) {
+            throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
+        }
+
+        foreach ($datasetNames as $datasetName) {
+            $log_output .= $status = str_pad($datasetName, 90, ' . ');
+            echo $status;
+
+            $dataset = $this->Ckan->package_show($datasetName);
+
+            $dataset = json_decode($dataset, true);
+            if (!$dataset['success']) {
+                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT);
+                echo $status;
+                continue;
+            }
+
+            $dataset             = $dataset['result'];
+            $dataset['groups'][] = [
+                'name' => $group['name'],
+            ];
+            if ($categories) {
+                $dataset['extras'][] = [
+                    'key'   => '__category_tag_' . $group['id'],
+                    'value' => $categories,
+                ];
+            }
+            $this->Ckan->package_update($dataset);
+            $log_output .= $status = str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
+            echo $status;
+        }
+
+        file_put_contents($results_dir . '/groups.log', $log_output, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * Return a list of the names of the site’s groups.
+     * @param string $groupName
+     * @throws \Exception
+     * @return mixed
+     */
+    private function findGroup($groupName)
+    {
+        static $group_list;
+        if (!$group_list) {
+            $list = $this->Ckan->group_list(true);
+            $list = json_decode($list, true);
+            if (!$list['success']) {
+                throw new \Exception('Could not retrieve group list');
+            }
+            $group_list = $list['result'];
+        }
+
+        $group = false;
+        foreach ($group_list as $group) {
+            if (stristr(json_encode($group), $groupName)) {
+                break;
+            }
+        }
+
+        return $group;
     }
 }

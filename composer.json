@@ -27,7 +27,8 @@
     "require": {
         "php": ">=5.4.17",
         "ext-json": "*",
-        "CKAN/php-client": "dev-master"
+        "CKAN/php-client": "dev-master",
+        "jwage/easy-csv": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "3.7.x"
