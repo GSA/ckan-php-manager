@@ -14,7 +14,7 @@ define('ROOT_DIR', dirname(__DIR__));
 define('RESULTS_DIR', ROOT_DIR . '/results');
 
 if (!is_dir(ROOT_DIR . '/vendor')) {
-    die('Update dependencies via composer');
+    throw new Exception('Install dependencies via composer');
 }
 
 require ROOT_DIR . '/vendor/autoload.php';

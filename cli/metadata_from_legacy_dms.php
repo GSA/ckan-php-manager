@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Small Business Administration');
+define('ORGANIZATION_TO_TAG', 'Department of State');
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
@@ -24,5 +24,15 @@ mkdir($results_dir);
 /**
  * Search for packages by terms found
  */
-$Importer = new \CKAN\Manager\CkanManager(defined('CKAN_DEV_API_URL') ? CKAN_DEV_API_URL : CKAN_API_URL, CKAN_API_KEY);
+
+/**
+ * Production
+ */
+$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+
+/**
+ * Staging
+ */
+//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+
 $Importer->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms', $results_dir);

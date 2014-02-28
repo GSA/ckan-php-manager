@@ -6,7 +6,8 @@
     "authors": [
         {
             "name": "Alex Perfilov",
-            "email": "alexandr.perfilov@reisystems.com"
+            "email": "alexandr.perfilov@reisystems.com",
+            "role": "Senior Engineer"
         }
     ],
     "autoload": {

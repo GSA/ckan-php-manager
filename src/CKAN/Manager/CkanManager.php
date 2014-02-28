@@ -85,6 +85,7 @@ class CkanManager
             $dataset['tags'][] = [
                 'name' => $tag_name,
             ];
+            $dataset['private'] = true;
 
             try {
                 $this->Ckan->package_update($dataset);
