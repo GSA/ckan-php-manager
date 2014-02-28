@@ -12,7 +12,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -22,7 +22,7 @@ mkdir($results_dir);
 /**
  * Dev
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  * Sample csv
@@ -44,6 +44,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
         if (!$row) {
             break;
         }
+        $categories = null;
         if ($row['categories']) {
             $categories = '["' . join('","', explode(';', $row['categories'])) . '"]';
         }

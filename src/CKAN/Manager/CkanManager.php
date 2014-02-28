@@ -3,6 +3,7 @@
 namespace CKAN\Manager;
 
 use CKAN\Core\CkanClient;
+use CKAN\Exceptions\NotFoundHttpException;
 
 /**
  * @author Alex Perfilov
@@ -82,7 +83,7 @@ class CkanManager
         foreach ($datasets as $key => $dataset) {
             $log_output .= $status = "[ $key / $count ] " . $dataset['name'] . PHP_EOL;
             echo $status;
-            $dataset['tags'][] = [
+            $dataset['tags'][]  = [
                 'name' => $tag_name,
             ];
             $dataset['private'] = true;
@@ -161,14 +162,21 @@ class CkanManager
         }
 
         foreach ($datasetNames as $datasetName) {
-            $log_output .= $status = str_pad($datasetName, 90, ' . ');
+            $log_output .= $status = str_pad($datasetName, 100, ' . ');
             echo $status;
 
-            $dataset = $this->Ckan->package_show($datasetName);
+            try {
+                $dataset = $this->Ckan->package_show($datasetName);
+            } catch (NotFoundHttpException $ex) {
+                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
+                echo $status;
+                continue;
+            }
+
 
             $dataset = json_decode($dataset, true);
             if (!$dataset['success']) {
-                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT);
+                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
                 echo $status;
                 continue;
             }
