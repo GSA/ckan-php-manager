@@ -27,7 +27,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 /**
  * Sample csv
  * dataset,group,categories
- * http://dev-ckan-fe-data.reisys.com/dataset/state-traffic-safety-information-pedalcyclist-fatalities-connecticut-2007-2009,Agriculture,"Natural Resources and Environment"
+ * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
  * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
 
  */

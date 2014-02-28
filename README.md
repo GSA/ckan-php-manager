@@ -65,7 +65,7 @@ To add tag `metadata_from_legacy_dms` to all datasets of some group:
     Then put one dataset per line.
 
     1. Dataset can be:
-      * Dataset url, ex. http://dev-ckan-fe-data.reisys.com/dataset/state-traffic-safety-information-pedalcyclist-fatalities-connecticut-2007-2009
+      * Dataset url, ex. https://catalog.data.gov/dataset/food-access-research-atlas
       * Dataset name, ex. download-crossing-inventory-data-highway-rail-crossing
       * Dataset id
 
@@ -80,7 +80,7 @@ To add tag `metadata_from_legacy_dms` to all datasets of some group:
 
     ```
     dataset, group, categories
-    http://dev-ckan-fe-data.reisys.com/dataset/state-traffic-safety-information-pedalcyclist-fatalities-connecticut-2007-2009,Agriculture,"Natural Resources and Environment"
+    https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
     download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
     ```
 * Double check CKAN_URL and CKAN_API_KEY for editing datasets
