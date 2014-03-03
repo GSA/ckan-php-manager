@@ -72,7 +72,7 @@ class CkanManager
     public function tag_legacy_dms($termsArray, $tag_name, $results_dir)
     {
 //        get all datasets to update
-        $datasets = $this->get_dms_public_datasets($termsArray, $tag_name);
+        $datasets = $this->get_dms_public_datasets($termsArray);
 
         $count = sizeof($datasets);
 
@@ -101,10 +101,9 @@ class CkanManager
     /**
      * Use organization terms array to filter, use null to tag all datasets
      * @param array $terms
-     * @param $tag_name
      * @return array
      */
-    private function get_dms_public_datasets($terms = null, $tag_name)
+    private function get_dms_public_datasets($terms = null)
     {
         $dms_datasets = [];
         $page         = 0;
@@ -127,9 +126,6 @@ class CkanManager
             $ckanResult = $ckanResult['result'];
             foreach ($ckanResult['results'] as $dataset) {
                 if (!isset($dataset['extras']) || !is_array($dataset['extras']) || !sizeof($dataset['extras'])) {
-                    continue;
-                }
-                if (strpos(json_encode($dataset), '"' . $tag_name . '"')) {
                     continue;
                 }
                 if (strpos(json_encode($dataset['extras']), '"dms"')) {
