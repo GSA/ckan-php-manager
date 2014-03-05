@@ -24,5 +24,15 @@ mkdir($results_dir);
 /**
  * Search for packages by terms found
  */
+
+/**
+ * Production
+ */
 $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+
+/**
+ * Staging
+ */
+//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+
 $Importer->export_packages_by_org_terms($termsArray, $results_dir);
