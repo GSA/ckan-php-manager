@@ -67,6 +67,65 @@ class CkanManager
     }
 
     /**
+     * Ability to tag datasets by extra field
+     *
+     * @param string $extra_field
+     * @param string $tag_name
+     * @param string $results_dir
+     */
+    public function tag_by_extra_field($extra_field, $tag_name, $results_dir)
+    {
+        $page       = 0;
+        $log_output = '';
+
+        while (true) {
+            $start      = $page++ * $this->packageSearchPerPage;
+            $ckanResult = $this->Ckan->package_search('identifier:*', $this->packageSearchPerPage, $start);
+            $ckanResult = json_decode($ckanResult, true); //  decode json as array
+            $ckanResult = $ckanResult['result'];
+
+            if (!($count = $ckanResult['count'])) {
+                break;
+            }
+
+            $datasets = $ckanResult['results'];
+
+            foreach ($datasets as $dataset) {
+                if (!isset($dataset['extras']) || !is_array($dataset['extras']) || !sizeof($dataset['extras'])) {
+                    continue;
+                }
+                $identifier_found = false;
+                foreach ($dataset['extras'] as $extra) {
+                    if ($tag_name == $extra['key']) {
+                        continue 2;
+                    }
+                    if ($extra_field == $extra['key']) {
+                        $identifier_found = true;
+                    }
+                }
+
+                if ($identifier_found) {
+                    $dataset['extras'][] = [
+                        'key'   => $tag_name,
+                        'value' => true,
+                    ];
+                }
+
+                $log_output .= $dataset['name'] . PHP_EOL;
+                echo $log_output;
+
+                $this->Ckan->package_update($dataset);
+            }
+
+            echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            if ($count - $this->packageSearchPerPage < $start) {
+                break;
+            }
+        }
+        file_put_contents($results_dir . '/_' . $tag_name . '.log', $log_output);
+    }
+
+    /**
      * Ability to Add legacy tag to all dms datasets for an organization and make all those datasets private
      */
     public function tag_legacy_dms($termsArray, $tag_name, $results_dir)

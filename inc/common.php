@@ -14,6 +14,8 @@ define('ROOT_DIR', dirname(__DIR__));
 define('DATA_DIR', ROOT_DIR . '/data');
 define('RESULTS_DIR', ROOT_DIR . '/results');
 
+define('TIMER_START', time());
+
 if (!is_dir(ROOT_DIR . '/vendor')) {
     throw new Exception('Install dependencies via composer');
 }
@@ -21,3 +23,10 @@ if (!is_dir(ROOT_DIR . '/vendor')) {
 require ROOT_DIR . '/vendor/autoload.php';
 
 require 'config.php';
+
+function timer()
+{
+    $finish = time();
+    echo PHP_EOL . 'Time spent ' .
+        floor((($finish - TIMER_START) / 60)) . ' minutes ' . (($finish - TIMER_START) % 60) . ' seconds ' . PHP_EOL;
+}

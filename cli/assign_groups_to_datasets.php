@@ -52,3 +52,5 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
         $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['group'], $categories, $results_dir);
     }
 }
+
+timer();

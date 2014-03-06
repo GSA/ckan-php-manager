@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Department of State');
+define('ORGANIZATION_TO_TAG', 'Institute of Museum and Library Services');
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
@@ -25,7 +25,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -33,3 +33,5 @@ mkdir($results_dir);
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $Importer->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms', $results_dir);
+
+timer();
