@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Federal Housing Finance Agency');
+define('ORGANIZATION_TO_EXPORT', 'Department of Housing and Urban Development');
 
 echo "Exporting " . ORGANIZATION_TO_EXPORT . PHP_EOL;
 
@@ -37,4 +37,5 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 
 $Importer->export_packages_by_org_terms($termsArray, $results_dir);
 
+// show running time on finish
 timer();

@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Institute of Museum and Library Services');
+define('ORGANIZATION_TO_TAG', 'Department of Housing and Urban Development');
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
@@ -18,7 +18,7 @@ $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_TAG);
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_TAG_' . PARENT_TERM;
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_LEGACY_' . PARENT_TERM;
 mkdir($results_dir);
 
 /**
@@ -34,4 +34,5 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 $Importer->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms', $results_dir);
 
+// show running time on finish
 timer();

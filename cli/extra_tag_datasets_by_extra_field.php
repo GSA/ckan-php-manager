@@ -30,4 +30,5 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 $Importer->tag_by_extra_field('identifier', 'source_datajson_identifier', $results_dir);
 
+// show running time on finish
 timer();

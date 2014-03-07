@@ -38,19 +38,27 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
 
     file_put_contents($results_dir . '/groups.log', $status, FILE_APPEND | LOCK_EX);
 
-    $csv = new EasyCSV\Reader($csv_file);
+    $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
             break;
         }
-        $categories = null;
-        if ($row['categories']) {
-            $categories = '["' . join('","', explode(';', $row['categories'])) . '"]';
+//        skip headers
+        if ('dataset' == $row['0']) {
+            continue;
         }
-        $dataset = basename($row['dataset']);
-        $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['group'], $categories, $results_dir);
+
+//        format group tags
+        $categories = null;
+        if ($row['2']) {
+            $categories = '["' . join('","', explode(';', $row['2'])) . '"]';
+        }
+
+        $dataset = basename($row['0']);
+        $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['1'], $categories, $results_dir);
     }
 }
 
+// show running time on finish
 timer();
