@@ -43,14 +43,14 @@ Results can be found in /results/{timestamp} dir after script finished its work,
 
 ### DMS legacy tag
 
-To add tag `metadata_from_legacy_dms` to all datasets of some group:
+To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 
-* Update ORGANIZATION_TO_TAG in the `cli/metadata_from_legacy_dms.php`
+* Update ORGANIZATION_TO_TAG in the `cli/add_legacy_dms_and_make_private.php`
 * Double check CKAN_URL and CKAN_API_KEY for editing datasets
 * Run script
 
 ```
-    $ php cli/metadata_from_legacy_dms.php
+    $ php cli/add_legacy_dms_and_make_private.php
 ```
 
 ### Assign groups and category tags to datasets
@@ -88,4 +88,12 @@ To add tag `metadata_from_legacy_dms` to all datasets of some group:
 
 ```
     $ php cli/assign_groups_to_datasets.php
+```
+
+### Remove groups and category tags from datasets (revert previous script changes)
+
+* Prepare same csv file as for previous script, and put them to /data dir, with `<any-title>.csv`
+
+```
+    $ php cli/remove_groups_from_datasets.php
 ```

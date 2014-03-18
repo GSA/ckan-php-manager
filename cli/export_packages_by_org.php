@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Department of Housing and Urban Development');
+define('ORGANIZATION_TO_EXPORT', 'Office of Personnel Management');
 
 echo "Exporting " . ORGANIZATION_TO_EXPORT . PHP_EOL;
 

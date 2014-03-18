@@ -5,7 +5,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
 mkdir($results_dir);
 
 /**
@@ -45,18 +45,12 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if ('dataset' == $row['0']) {
+        if (in_array(strtolower($row['0']), ['dataset','uid','uuid','name','url'])) {
             continue;
         }
 
-//        format group tags
-        $categories = null;
-        if ($row['2']) {
-            $categories = '["' . join('","', explode(';', $row['2'])) . '"]';
-        }
-
         $dataset = basename($row['0']);
-        $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['1'], $categories, $results_dir);
+        $Importer->remove_tags_and_groups_to_datasets([$dataset], 'Climate', $results_dir);
     }
 }
 

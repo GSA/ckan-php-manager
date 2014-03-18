@@ -20,7 +20,7 @@ class CkanManager
      * Ckan results per page
      * @var int
      */
-    private $packageSearchPerPage = 100;
+    private $packageSearchPerPage = 200;
 
     /**
      * @param string $apiUrl
@@ -68,15 +68,22 @@ class CkanManager
 
     /**
      * Ability to tag datasets by extra field
-     *
      * @param string $extra_field
      * @param string $tag_name
      * @param string $results_dir
      */
     public function tag_by_extra_field($extra_field, $tag_name, $results_dir)
     {
-        $page       = 0;
-        $log_output = '';
+        $page         = 0;
+        $processed    = 0;
+        $log_output   = '';
+        $tag_template = [
+            'key'   => $tag_name,
+            'value' => true,
+        ];
+
+        $marked_true  = 0;
+        $marked_other = 0;
 
         while (true) {
             $start      = $page++ * $this->packageSearchPerPage;
@@ -91,12 +98,20 @@ class CkanManager
             $datasets = $ckanResult['results'];
 
             foreach ($datasets as $dataset) {
+                $processed++;
                 if (!isset($dataset['extras']) || !is_array($dataset['extras']) || !sizeof($dataset['extras'])) {
                     continue;
                 }
                 $identifier_found = false;
                 foreach ($dataset['extras'] as $extra) {
+                    if ($tag_template == $extra) {
+                        $marked_true++;
+//                        exact match key,value
+                        continue 2;
+                    }
                     if ($tag_name == $extra['key']) {
+                        $marked_other++;
+//                        only same key
                         continue 2;
                     }
                     if ($extra_field == $extra['key']) {
@@ -105,19 +120,17 @@ class CkanManager
                 }
 
                 if ($identifier_found) {
-                    $dataset['extras'][] = [
-                        'key'   => $tag_name,
-                        'value' => true,
-                    ];
+                    $dataset['extras'][] = $tag_template;
                 }
 
                 $log_output .= $dataset['name'] . PHP_EOL;
-                echo $log_output;
+//                echo $log_output;
 
                 $this->Ckan->package_update($dataset);
+                $marked_true++;
             }
 
-            echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            echo "processed $processed ( $tag_name true = $marked_true, other = $marked_other) / " . $count . ' total ' . PHP_EOL;
             if ($count - $this->packageSearchPerPage < $start) {
                 break;
             }
@@ -280,5 +293,82 @@ class CkanManager
         }
 
         return $group;
+    }
+
+    /**
+     * Remove groups & all group tags from dataset
+     * @param $datasetNames
+     * @param $group_to_remove
+     * @param $results_dir
+     * @throws \Exception
+     */
+    public function remove_tags_and_groups_to_datasets($datasetNames, $group_to_remove, $results_dir)
+    {
+        $log_output = '';
+
+        if (!($group_to_remove = $this->findGroup($group_to_remove))) {
+            throw new \Exception('Group ' . $group_to_remove . ' not found!' . PHP_EOL);
+        }
+
+        foreach ($datasetNames as $datasetName) {
+            $log_output .= $status = str_pad($datasetName, 100, ' . ');
+            echo $status;
+
+            try {
+                $dataset = $this->Ckan->package_show($datasetName);
+            } catch (NotFoundHttpException $ex) {
+                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
+                echo $status;
+                continue;
+            }
+
+            $dataset = json_decode($dataset, true);
+            if (!$dataset['success']) {
+                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
+                echo $status;
+                continue;
+            }
+
+            $dataset = $dataset['result'];
+
+
+//            removing group
+            $groups = [];
+            foreach ($dataset['groups'] as $group) {
+                if ($group['name'] !== $group_to_remove['name']) {
+                    $groups[] = $group;
+                }
+            }
+
+            if (sizeof($dataset['groups']) > sizeof($groups)) {
+                $log_output .= $status = str_pad('-GROUP', 8, ' . ', STR_PAD_LEFT);
+                echo $status;
+            }
+
+            $dataset['groups'] = $groups;
+
+//            removing extra tags of group
+            $category_tag = '__category_tag_' . $group_to_remove['id'];
+
+            $extras = [];
+            foreach ($dataset['extras'] as $extra) {
+                if ($extra['key'] !== $category_tag) {
+                    $extras[] = $extra;
+                } else {
+                    $extra['value'] = null;
+                    $extras[] = $extra;
+                    $log_output .= $status = str_pad('-TAGS', 7, ' . ', STR_PAD_LEFT);
+                    echo $status;
+                }
+            }
+
+            $dataset['extras'] = $extras;
+
+            $this->Ckan->package_update($dataset);
+            $log_output .= $status = str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
+            echo $status;
+        }
+
+        file_put_contents($results_dir . '/groups.log', $log_output, FILE_APPEND | LOCK_EX);
     }
 }
