@@ -3,7 +3,7 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Office of Personnel Management');
+define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
 
 echo "Exporting " . ORGANIZATION_TO_EXPORT . PHP_EOL;
 
@@ -14,6 +14,13 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
+
+/**
+ * sometimes there is no parent term (ex. Department of Labor)
+ */
+if (!defined('PARENT_TERM')) {
+    define('PARENT_TERM', '_');
+}
 
 /**
  * Create results dir for logs and json results

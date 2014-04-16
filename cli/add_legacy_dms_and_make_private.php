@@ -3,7 +3,12 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Department of Housing and Urban Development');
+define('ORGANIZATION_TO_TAG', 'Department of Education');
+
+/**
+ * Make it TRUE, if you want datasets to be marked as PRIVATE
+ */
+define('MARK_PRIVATE', false);
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
