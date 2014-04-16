@@ -3,12 +3,12 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Department of Education');
+define('ORGANIZATION_TO_TAG', 'Department of Labor');
 
 /**
  * Make it TRUE, if you want datasets to be marked as PRIVATE
  */
-define('MARK_PRIVATE', false);
+define('MARK_PRIVATE', true);
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
@@ -19,6 +19,13 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_TAG);
+
+/**
+ * sometimes there is no parent term (ex. Department of Labor)
+ */
+if (!defined('PARENT_TERM')) {
+    define('PARENT_TERM', '_');
+}
 
 /**
  * Create results dir for logs
