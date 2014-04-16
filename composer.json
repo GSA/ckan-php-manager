@@ -21,7 +21,7 @@
     "repositories": [
         {
             "type": "git",
-            "url": "git@github.com:alex-perfilov-reisys/ckan-php-client.git"
+            "url": "git@github.com:GSA/ckan-php-client.git"
         }
     ],
     "require": {
