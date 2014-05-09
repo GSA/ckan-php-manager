@@ -50,9 +50,9 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
         }
 
 //        format group tags
-        $categories = null;
+        $categories = [];
         if ($row['2']) {
-            $categories = '["' . join('","', explode(';', $row['2'])) . '"]';
+            $categories = explode(';', $row['2']);
         }
 
         $dataset = basename($row['0']);

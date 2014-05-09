@@ -67,6 +67,72 @@ class CkanManager
     }
 
     /**
+     * Export all dataset visit tracking by organization term
+     * @param $terms
+     * @param $results_dir
+     */
+    public function export_tracking_by_org_terms($terms, $results_dir)
+    {
+        $log_output = ORGANIZATION_TO_EXPORT . PHP_EOL . PHP_EOL;
+        foreach ($terms as $term => $agency) {
+
+            $fp = fopen($results_dir . '/' . $term . '.csv', 'w');
+
+            $csv_header = [
+                'Organization',
+                'Dataset Title',
+                'Recent Visits',
+                'Total Visits',
+            ];
+
+            fputcsv($fp, $csv_header);
+
+            echo PHP_EOL . $term . PHP_EOL;
+            $page  = 0;
+            $count = 0;
+            while (true) {
+                $start      = $page++ * $this->packageSearchPerPage;
+                $ckanResult = $this->Ckan->package_search('organization:' . $term, $this->packageSearchPerPage, $start);
+                $ckanResult = json_decode($ckanResult, true); //  decode json as array
+                $ckanResult = $ckanResult['result'];
+
+                if (sizeof($ckanResult['results'])) {
+                    foreach ($ckanResult['results'] as $dataset) {
+                        fputcsv(
+                            $fp,
+                            [
+                                isset($dataset['organization']) && isset($dataset['organization']['title']) ?
+                                    $dataset['organization']['title'] : '---',
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                isset($dataset['tracking_summary']) && isset($dataset['tracking_summary']['recent']) ?
+                                    $dataset['tracking_summary']['recent'] : 0,
+                                isset($dataset['tracking_summary']) && isset($dataset['tracking_summary']['total']) ?
+                                    $dataset['tracking_summary']['total'] : 0,
+                            ]
+                        );
+                    }
+                }
+
+                $count = $ckanResult['count'];
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                if ($ckanResult['count'] - $this->packageSearchPerPage < $start) {
+                    break;
+                }
+            }
+
+            fclose($fp);
+
+            $offset = ($term == PARENT_TERM) ? '' : '  ';
+            $log_output .= str_pad($offset . "[$term]", 20) . str_pad(
+                    $offset . $agency,
+                    50,
+                    ' .'
+                ) . "[$count]" . PHP_EOL;
+        }
+        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $log_output);
+    }
+
+    /**
      * Ability to tag datasets by extra field
      * @param string $extra_field
      * @param string $tag_name
@@ -256,10 +322,25 @@ class CkanManager
             $dataset['groups'][] = [
                 'name' => $group['name'],
             ];
+
+            $extras            = $dataset['extras'];
+            $dataset['extras'] = array();
+
+            foreach ($extras as $extra) {
+                if ('__category_tag_' . $group['id'] == $extra['key']) {
+                    $oldCategories = trim($extra['value'], '"[]');
+                    $oldCategories = explode('","', $oldCategories);
+                    $categories    = array_merge($categories, $oldCategories);
+                    continue;
+                }
+                $dataset['extras'][] = $extra;
+            }
+
             if ($categories) {
+                $formattedCategories = '["' . join('","', $categories) . '"]';
                 $dataset['extras'][] = [
                     'key'   => '__category_tag_' . $group['id'],
-                    'value' => $categories,
+                    'value' => $formattedCategories,
                 ];
             }
             $this->Ckan->package_update($dataset);
