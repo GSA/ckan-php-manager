@@ -48,7 +48,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), array('dataset','url'))) {
+        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url'])) {
             continue;
         }
 

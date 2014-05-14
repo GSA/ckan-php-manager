@@ -58,7 +58,11 @@ class CkanManager
             }
 
             $offset = ($term == PARENT_TERM) ? '' : '  ';
-            $log_output .= str_pad($offset . "[$term]", 20) . str_pad($offset . $agency, 50, ' .') . "[$count]" . PHP_EOL;
+            $log_output .= str_pad($offset . "[$term]", 20) . str_pad(
+                    $offset . $agency,
+                    50,
+                    ' .'
+                ) . "[$count]" . PHP_EOL;
 
             $json = (json_encode($results, JSON_PRETTY_PRINT));
             file_put_contents($results_dir . '/' . $term . '.json', $json);
@@ -221,7 +225,7 @@ class CkanManager
         foreach ($datasets as $key => $dataset) {
             $log_output .= $status = "[ $key / $count ] " . $dataset['name'] . PHP_EOL;
             echo $status;
-            $dataset['tags'][]  = [
+            $dataset['tags'][] = [
                 'name' => $tag_name,
             ];
 
@@ -252,9 +256,12 @@ class CkanManager
         if ($terms) {
             $organizationFilter = array_keys($terms);
             // & = ugly hack to prevent 'Unused local variable' error by PHP IDE, it works perfect without &
-            array_walk($organizationFilter, function (&$term) {
-                $term = ' organization:"' . $term . '" ';
-            });
+            array_walk(
+                $organizationFilter,
+                function (&$term) {
+                    $term = ' organization:"' . $term . '" ';
+                }
+            );
             $organizationFilter = ' AND (' . join(' OR ', $organizationFilter) . ')';
         } else {
             $organizationFilter = '';
@@ -324,7 +331,7 @@ class CkanManager
             ];
 
             $extras            = $dataset['extras'];
-            $dataset['extras'] = array();
+            $dataset['extras'] = [];
 
             foreach ($extras as $extra) {
                 if ('__category_tag_' . $group['id'] == $extra['key']) {
