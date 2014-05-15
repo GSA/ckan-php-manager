@@ -23,6 +23,11 @@ class CkanManager
     private $packageSearchPerPage = 200;
 
     /**
+     * @var string
+     */    
+    public $log_output;
+
+    /**
      * @param string $apiUrl
      * @param null $apiKey
      */
@@ -241,6 +246,103 @@ class CkanManager
         }
 
         file_put_contents($results_dir . '/' . $log_file, $log_output);
+    }
+
+
+
+    /**
+     * Moves legacy datasets to parent organization
+     */
+    public function reorganize_datasets($organization, $termsArray, $backup_dir, $results_dir) {
+
+        // Make sure we get the id for the parent organization (department)
+        foreach ($termsArray as $org_slug => $org_name) {
+            if ($org_name == $organization) {
+                $department = $org_slug;                
+            }
+        }
+        reset($termsArray);
+
+        // Set up logging
+        $this->log_output = '';
+        $time = time();
+        $log_file   = $department . '_' . "$time.log";
+
+        if(!empty($department)) {
+
+            // Get organization id for department
+            $results = $this->Ckan->organization_show($department);
+            $results = json_decode($results);
+
+            $department_id = $results->result->id;
+        }
+
+        if(!empty($department_id)) {
+
+            $output = "Reorganizing $organization (id: $department_id / name: $department)" . PHP_EOL;
+            $this->say($output);
+
+
+            foreach ($termsArray as $org_slug => $org_name) {
+
+                // Skip department level org
+                if ($org_slug == $department) {
+                    continue;
+                }
+
+                // set backup file path
+                $file_path = $backup_dir . '/' . $org_slug . '.json';
+
+                if(file_exists($file_path)) {
+                    
+                    $output = PHP_EOL . "Reorganizing $org_name ($org_slug)" . PHP_EOL;
+                    $this->say($output);
+
+                    // load backup file
+                    $json = file_get_contents($file_path);
+                    $json = json_decode($json); 
+
+                    foreach($json as $record) {
+                       $current_record =  $record->id;
+
+                       // load current version of record
+                       $ckanResult = $this->Ckan->package_show($current_record);
+                       $dataset = json_decode($ckanResult, true);
+
+                        $dataset = $dataset['result'];
+
+                        // note the legacy organization as an extra field
+                        $dataset['extras'][]  = [
+                            'key' => 'dms_publisher_organization',
+                            'value' => $office
+                        ];    
+
+                        $dataset['owner_org'] = $new_org;       
+
+
+                        $this->Ckan->package_update($dataset);
+
+                       $output = 'Moved ' . $current_record ;
+                       $this->say($output);
+                    }
+                } else {
+                    $output = "Couldn't find backup file: " .  $file_path;
+                    $this->say($output);
+                }
+            }
+        }
+
+        file_put_contents($results_dir . '/' . $log_file, $this->log_output);
+
+    }
+
+
+    /**
+     * Shorthand for sending output to stdout and appending to log buffer at the same time. 
+     */
+    public function say($output) {
+        echo $output . PHP_EOL;
+        $this->log_output .= $output . PHP_EOL;
     }
 
     /**

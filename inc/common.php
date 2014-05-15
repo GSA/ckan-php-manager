@@ -12,6 +12,7 @@ date_default_timezone_set('EST');
 
 define('ROOT_DIR', dirname(__DIR__));
 define('DATA_DIR', ROOT_DIR . '/data');
+define('BACKUP_DIR', ROOT_DIR . '/backup');
 define('RESULTS_DIR', ROOT_DIR . '/results');
 
 define('TIMER_START', time());
