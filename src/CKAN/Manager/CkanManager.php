@@ -256,11 +256,21 @@ class CkanManager
 
         foreach ($termsArray as $org_slug => $org_name) {
 
-            $results = $this->Ckan->organization_show($org_slug);
-            $results = json_decode($results);
+            try {
+                $results = $this->Ckan->organization_show($org_slug);
+            } catch (NotFoundHttpException $ex) {
+                echo "Couldn't find $org_slug";
+                continue;
+            }
 
-            $json = (json_encode($results, JSON_PRETTY_PRINT));
-            file_put_contents($results_dir . '/' . $org_slug . '.json', $json);
+            if($results) {
+                $results = json_decode($results);
+
+                $json = (json_encode($results, JSON_PRETTY_PRINT));
+                file_put_contents($results_dir . '/' . $org_slug . '.json', $json);                
+            }
+
+
 
         }
 
