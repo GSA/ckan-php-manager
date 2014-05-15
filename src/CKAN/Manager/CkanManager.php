@@ -249,6 +249,22 @@ class CkanManager
     }
 
 
+    /**
+     * Exports all orgs associated with the department
+     */
+    public function export_orgs($organization, $termsArray, $results_dir) {
+
+        foreach ($termsArray as $org_slug => $org_name) {
+
+            $results = $this->Ckan->organization_show($org_slug);
+            $results = json_decode($results);
+
+            $json = (json_encode($results, JSON_PRETTY_PRINT));
+            file_put_contents($results_dir . '/' . $org_slug . '.json', $json);
+
+        }
+
+    }
 
     /**
      * Moves legacy datasets to parent organization
@@ -314,10 +330,10 @@ class CkanManager
                         // note the legacy organization as an extra field
                         $dataset['extras'][]  = [
                             'key' => 'dms_publisher_organization',
-                            'value' => $office
+                            'value' => $org_slug
                         ];    
 
-                        $dataset['owner_org'] = $new_org;       
+                        $dataset['owner_org'] = $department_id;       
 
 
                         $this->Ckan->package_update($dataset);
