@@ -5,8 +5,6 @@
  */
 define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
 
-echo "Exporting " . ORGANIZATION_TO_EXPORT . PHP_EOL;
-
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**

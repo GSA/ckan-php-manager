@@ -12,6 +12,11 @@ use CKAN\Exceptions\NotFoundHttpException;
 class CkanManager
 {
     /**
+     * @var string
+     */
+    public $log_output = '';
+
+    /**
      * @var \CKAN\Core\CkanClient
      */
     private $Ckan;
@@ -23,13 +28,8 @@ class CkanManager
     private $packageSearchPerPage = 200;
 
     /**
-     * @var string
-     */    
-    public $log_output;
-
-    /**
      * @param string $apiUrl
-     * @param null $apiKey
+     * @param null   $apiKey
      */
     public function __construct($apiUrl, $apiKey = null)
     {
@@ -38,14 +38,14 @@ class CkanManager
 
     /**
      * Export all packages by organization term
+     *
      * @param $terms
      * @param $results_dir
      */
     public function export_packages_by_org_terms($terms, $results_dir)
     {
-        $log_output = ORGANIZATION_TO_EXPORT . PHP_EOL . PHP_EOL;
+        $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         foreach ($terms as $term => $agency) {
-            echo PHP_EOL . $term . PHP_EOL;
             $page    = 0;
             $count   = 0;
             $results = [];
@@ -56,33 +56,49 @@ class CkanManager
                 $ckanResult = $ckanResult['result'];
                 $results    = array_merge($results, $ckanResult['results']);
                 $count      = $ckanResult['count'];
-                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                if ($start) {
+                    echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                }
+
                 if ($ckanResult['count'] - $this->packageSearchPerPage < $start) {
                     break;
                 }
             }
 
             $offset = ($term == PARENT_TERM) ? '' : '  ';
-            $log_output .= str_pad($offset . "[$term]", 20) . str_pad(
+            $this->say(
+                str_pad($offset . "[$term]", 20) . str_pad(
                     $offset . $agency,
                     50,
                     ' .'
-                ) . "[$count]" . PHP_EOL;
+                ) . "[$count]"
+            );
 
             $json = (json_encode($results, JSON_PRETTY_PRINT));
             file_put_contents($results_dir . '/' . $term . '.json', $json);
         }
-        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $log_output);
+        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $this->log_output);
+    }
+
+    /**
+     * Shorthand for sending output to stdout and appending to log buffer at the same time.
+     */
+    private function say($output, $eol = PHP_EOL)
+    {
+        echo $output . $eol;
+        $this->log_output .= $output . $eol;
     }
 
     /**
      * Export all dataset visit tracking by organization term
+     *
      * @param $terms
      * @param $results_dir
      */
     public function export_tracking_by_org_terms($terms, $results_dir)
     {
-        $log_output = ORGANIZATION_TO_EXPORT . PHP_EOL . PHP_EOL;
+        $this->log_output = '';
+        $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         foreach ($terms as $term => $agency) {
 
             $fp = fopen($results_dir . '/' . $term . '.csv', 'w');
@@ -96,7 +112,6 @@ class CkanManager
 
             fputcsv($fp, $csv_header);
 
-            echo PHP_EOL . $term . PHP_EOL;
             $page  = 0;
             $count = 0;
             while (true) {
@@ -123,7 +138,9 @@ class CkanManager
                 }
 
                 $count = $ckanResult['count'];
-                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                if ($start) {
+                    echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                }
                 if ($ckanResult['count'] - $this->packageSearchPerPage < $start) {
                     break;
                 }
@@ -132,27 +149,30 @@ class CkanManager
             fclose($fp);
 
             $offset = ($term == PARENT_TERM) ? '' : '  ';
-            $log_output .= str_pad($offset . "[$term]", 20) . str_pad(
+            $this->say(
+                str_pad($offset . "[$term]", 20) . str_pad(
                     $offset . $agency,
                     50,
                     ' .'
-                ) . "[$count]" . PHP_EOL;
+                ) . "[$count]"
+            );
         }
-        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $log_output);
+        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $this->log_output);
     }
 
     /**
      * Ability to tag datasets by extra field
+     *
      * @param string $extra_field
      * @param string $tag_name
      * @param string $results_dir
      */
     public function tag_by_extra_field($extra_field, $tag_name, $results_dir)
     {
-        $page         = 0;
-        $processed    = 0;
-        $log_output   = '';
-        $tag_template = [
+        $this->log_output = '';
+        $page             = 0;
+        $processed        = 0;
+        $tag_template     = [
             'key'   => $tag_name,
             'value' => true,
         ];
@@ -198,8 +218,7 @@ class CkanManager
                     $dataset['extras'][] = $tag_template;
                 }
 
-                $log_output .= $dataset['name'] . PHP_EOL;
-//                echo $log_output;
+                $this->say($dataset['name']);
 
                 $this->Ckan->package_update($dataset);
                 $marked_true++;
@@ -210,7 +229,7 @@ class CkanManager
                 break;
             }
         }
-        file_put_contents($results_dir . '/_' . $tag_name . '.log', $log_output);
+        file_put_contents($results_dir . '/_' . $tag_name . '.log', $this->log_output);
     }
 
     /**
@@ -218,18 +237,18 @@ class CkanManager
      */
     public function tag_legacy_dms($termsArray, $tag_name, $results_dir)
     {
+        $this->log_output = '';
+
 //        get all datasets to update
         $datasets = $this->get_dms_public_datasets($termsArray);
 
         $count = sizeof($datasets);
 
-        $log_file   = "$count.log";
-        $log_output = '';
+        $log_file = "$count.log";
 
 //        update dataset tags list
         foreach ($datasets as $key => $dataset) {
-            $log_output .= $status = "[ $key / $count ] " . $dataset['name'] . PHP_EOL;
-            echo $status;
+            $this->say("[ $key / $count ] " . $dataset['name']);
             $dataset['tags'][] = [
                 'name' => $tag_name,
             ];
@@ -245,135 +264,14 @@ class CkanManager
             }
         }
 
-        file_put_contents($results_dir . '/' . $log_file, $log_output);
-    }
-
-
-    /**
-     * Exports all orgs associated with the department
-     */
-    public function export_orgs($organization, $termsArray, $results_dir) {
-
-        foreach ($termsArray as $org_slug => $org_name) {
-
-            try {
-                $results = $this->Ckan->organization_show($org_slug);
-            } catch (NotFoundHttpException $ex) {
-                echo "Couldn't find $org_slug";
-                continue;
-            }
-
-            if($results) {
-                $results = json_decode($results);
-
-                $json = (json_encode($results, JSON_PRETTY_PRINT));
-                file_put_contents($results_dir . '/' . $org_slug . '.json', $json);                
-            }
-
-
-
-        }
-
-    }
-
-    /**
-     * Moves legacy datasets to parent organization
-     */
-    public function reorganize_datasets($organization, $termsArray, $backup_dir, $results_dir) {
-
-        // Make sure we get the id for the parent organization (department)
-        foreach ($termsArray as $org_slug => $org_name) {
-            if ($org_name == $organization) {
-                $department = $org_slug;                
-            }
-        }
-        reset($termsArray);
-
-        // Set up logging
-        $this->log_output = '';
-        $time = time();
-        $log_file   = $department . '_' . "$time.log";
-
-        if(!empty($department)) {
-
-            // Get organization id for department
-            $results = $this->Ckan->organization_show($department);
-            $results = json_decode($results);
-
-            $department_id = $results->result->id;
-        }
-
-        if(!empty($department_id)) {
-
-            $output = "Reorganizing $organization (id: $department_id / name: $department)" . PHP_EOL;
-            $this->say($output);
-
-
-            foreach ($termsArray as $org_slug => $org_name) {
-
-                // Skip department level org
-                if ($org_slug == $department) {
-                    continue;
-                }
-
-                // set backup file path
-                $file_path = $backup_dir . '/' . $org_slug . '.json';
-
-                if(file_exists($file_path)) {
-                    
-                    $output = PHP_EOL . "Reorganizing $org_name ($org_slug)" . PHP_EOL;
-                    $this->say($output);
-
-                    // load backup file
-                    $json = file_get_contents($file_path);
-                    $json = json_decode($json); 
-
-                    foreach($json as $record) {
-                       $current_record =  $record->id;
-
-                       // load current version of record
-                       $ckanResult = $this->Ckan->package_show($current_record);
-                       $dataset = json_decode($ckanResult, true);
-
-                        $dataset = $dataset['result'];
-
-                        // note the legacy organization as an extra field
-                        $dataset['extras'][]  = [
-                            'key' => 'dms_publisher_organization',
-                            'value' => $org_slug
-                        ];    
-
-                        $dataset['owner_org'] = $department_id;       
-
-
-                        $this->Ckan->package_update($dataset);
-
-                       $output = 'Moved ' . $current_record ;
-                       $this->say($output);
-                    }
-                } else {
-                    $output = "Couldn't find backup file: " .  $file_path;
-                    $this->say($output);
-                }
-            }
-        }
-
         file_put_contents($results_dir . '/' . $log_file, $this->log_output);
-
-    }
-
-
-    /**
-     * Shorthand for sending output to stdout and appending to log buffer at the same time. 
-     */
-    public function say($output) {
-        echo $output . PHP_EOL;
-        $this->log_output .= $output . PHP_EOL;
     }
 
     /**
      * Use organization terms array to filter, use null to tag all datasets
+     *
      * @param array $terms
+     *
      * @return array
      */
     private function get_dms_public_datasets($terms = null)
@@ -409,7 +307,9 @@ class CkanManager
                 }
             }
             $count = $ckanResult['count'];
-            echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            if ($start) {
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            }
             if ($ckanResult['count'] - $this->packageSearchPerPage < $start) {
                 break;
             }
@@ -419,37 +319,145 @@ class CkanManager
     }
 
     /**
-     * @param $datasetNames
-     * @param $group
+     * Exports all organizations associated with the department
+     */
+    public function export_organizations($termsArray, $results_dir)
+    {
+
+        foreach ($termsArray as $org_slug => $org_name) {
+
+            try {
+                $results = $this->Ckan->organization_show($org_slug);
+            } catch (NotFoundHttpException $ex) {
+                echo "Couldn't find $org_slug";
+                continue;
+            }
+
+            if ($results) {
+                $results = json_decode($results);
+
+                $json = (json_encode($results, JSON_PRETTY_PRINT));
+                file_put_contents($results_dir . '/' . $org_slug . '.json', $json);
+            }
+
+        }
+
+    }
+
+    /**
+     * Moves legacy datasets to parent organization
+     */
+    public function reorganize_datasets($organization, $termsArray, $backup_dir, $results_dir)
+    {
+
+        // Make sure we get the id for the parent organization (department)
+        foreach ($termsArray as $org_slug => $org_name) {
+            if ($org_name == $organization) {
+                $department = $org_slug;
+            }
+        }
+        reset($termsArray);
+
+        // Set up logging
+        $this->log_output = '';
+        $time = time();
+        $log_file = (isset($department) ? $department : '_') . '_' . "$time.log";
+
+        if (!empty($department)) {
+
+            // Get organization id for department
+            $results = $this->Ckan->organization_show($department);
+            $results = json_decode($results);
+
+            $department_id = $results->result->id;
+        }
+
+        if (!empty($department_id)) {
+
+            $output       = "Reorganizing $organization (id: $department_id / name: " . (isset($department) ? $department : '-') . ")" . PHP_EOL;
+            $this->say($output);
+
+            foreach ($termsArray as $org_slug => $org_name) {
+
+                // Skip department level org
+                if (isset($department) && $org_slug == $department) {
+                    continue;
+                }
+
+                // set backup file path
+                $file_path = $backup_dir . '/' . $org_slug . '.json';
+
+                if (file_exists($file_path)) {
+
+                    $output = PHP_EOL . "Reorganizing $org_name ($org_slug)" . PHP_EOL;
+                    $this->say($output);
+
+                    // load backup file
+                    $json = file_get_contents($file_path);
+                    $json = json_decode($json);
+
+                    foreach ($json as $record) {
+                        $current_record = $record->id;
+
+                        // load current version of record
+                        $ckanResult = $this->Ckan->package_show($current_record);
+                        $dataset    = json_decode($ckanResult, true);
+
+                        $dataset = $dataset['result'];
+
+                        // note the legacy organization as an extra field
+                        $dataset['extras'][] = [
+                            'key' => 'dms_publisher_organization',
+                            'value' => $org_slug
+                        ];
+
+                        $dataset['owner_org'] = $department_id;
+
+                        $this->Ckan->package_update($dataset);
+
+                        $output = 'Moved ' . $current_record;
+                        $this->say($output);
+                    }
+                } else {
+                    $output = "Couldn't find backup file: " . $file_path;
+                    $this->say($output);
+                }
+            }
+        }
+
+        file_put_contents($results_dir . '/' . $log_file, $this->log_output);
+
+    }
+
+    /**
+     * @param        $datasetNames
+     * @param        $group
      * @param string $categories
-     * @param $results_dir
+     * @param        $results_dir
+     *
      * @throws \Exception
      */
     public function assign_groups_and_categories_to_datasets($datasetNames, $group, $categories = null, $results_dir)
     {
-        $log_output = '';
+        $this->log_output = '';
 
         if (!($group = $this->findGroup($group))) {
             throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
         }
 
         foreach ($datasetNames as $datasetName) {
-            $log_output .= $status = str_pad($datasetName, 100, ' . ');
-            echo $status;
+            $this->say(str_pad($datasetName, 100, ' . '), '');
 
             try {
                 $dataset = $this->Ckan->package_show($datasetName);
             } catch (NotFoundHttpException $ex) {
-                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-                echo $status;
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
                 continue;
             }
 
-
             $dataset = json_decode($dataset, true);
             if (!$dataset['success']) {
-                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-                echo $status;
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
                 continue;
             }
 
@@ -479,16 +487,17 @@ class CkanManager
                 ];
             }
             $this->Ckan->package_update($dataset);
-            $log_output .= $status = str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-            echo $status;
+            $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
-        file_put_contents($results_dir . '/groups.log', $log_output, FILE_APPEND | LOCK_EX);
+        file_put_contents($results_dir . '/groups.log', $this->log_output, FILE_APPEND | LOCK_EX);
     }
 
     /**
      * Return a list of the names of the site’s groups.
+     *
      * @param string $groupName
+     *
      * @throws \Exception
      * @return mixed
      */
@@ -516,40 +525,38 @@ class CkanManager
 
     /**
      * Remove groups & all group tags from dataset
+     *
      * @param $datasetNames
      * @param $group_to_remove
      * @param $results_dir
+     *
      * @throws \Exception
      */
     public function remove_tags_and_groups_to_datasets($datasetNames, $group_to_remove, $results_dir)
     {
-        $log_output = '';
+        $this->log_output     = '';
 
         if (!($group_to_remove = $this->findGroup($group_to_remove))) {
             throw new \Exception('Group ' . $group_to_remove . ' not found!' . PHP_EOL);
         }
 
         foreach ($datasetNames as $datasetName) {
-            $log_output .= $status = str_pad($datasetName, 100, ' . ');
-            echo $status;
+            $this->say(str_pad($datasetName, 100, ' . '), '');
 
             try {
                 $dataset = $this->Ckan->package_show($datasetName);
             } catch (NotFoundHttpException $ex) {
-                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-                echo $status;
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
                 continue;
             }
 
             $dataset = json_decode($dataset, true);
             if (!$dataset['success']) {
-                $log_output .= $status = str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-                echo $status;
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
                 continue;
             }
 
             $dataset = $dataset['result'];
-
 
 //            removing group
             $groups = [];
@@ -560,8 +567,7 @@ class CkanManager
             }
 
             if (sizeof($dataset['groups']) > sizeof($groups)) {
-                $log_output .= $status = str_pad('-GROUP', 8, ' . ', STR_PAD_LEFT);
-                echo $status;
+                $this->say(str_pad('-GROUP', 8, ' . ', STR_PAD_LEFT), '');
             }
 
             $dataset['groups'] = $groups;
@@ -576,18 +582,16 @@ class CkanManager
                 } else {
                     $extra['value'] = null;
                     $extras[] = $extra;
-                    $log_output .= $status = str_pad('-TAGS', 7, ' . ', STR_PAD_LEFT);
-                    echo $status;
+                    $this->say(str_pad('-TAGS', 7, ' . ', STR_PAD_LEFT), '');
                 }
             }
 
             $dataset['extras'] = $extras;
 
             $this->Ckan->package_update($dataset);
-            $log_output .= $status = str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT) . PHP_EOL;
-            echo $status;
+            $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
-        file_put_contents($results_dir . '/groups.log', $log_output, FILE_APPEND | LOCK_EX);
+        file_put_contents($results_dir . '/groups.log', $this->log_output, FILE_APPEND | LOCK_EX);
     }
 }

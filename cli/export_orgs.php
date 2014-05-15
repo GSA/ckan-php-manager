@@ -42,7 +42,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
  */
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$Importer->export_orgs(ORGANIZATION_TO_EXPORT, $termsArray, $results_dir);
+$Importer->export_organizations($termsArray, $results_dir);
 
 // show running time on finish
 timer();
