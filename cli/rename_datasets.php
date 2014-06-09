@@ -1,15 +1,18 @@
 <?php
 
+/**
+ * First run validation script, to find matches against CKAN, to get _legacy.csv file
+ */
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_RENAME_DATASETS';
 mkdir($results_dir);
 
 /**
- * Adding Legacy dms tag
  * Production
  */
 $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -25,11 +28,8 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
- * Sample csv
- * dataset,group,categories
- * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
- * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
-
+ * CSV
+ * datasetName, newDatasetName_legacy
  */
 
 foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
@@ -39,7 +39,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    file_put_contents($results_dir . '/groups.log', $status, FILE_APPEND | LOCK_EX);
+    file_put_contents($results_dir . '/rename.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {
@@ -48,18 +48,14 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url'])) {
+        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'old dataset url'])) {
             continue;
         }
 
-//        format group tags
-        $categories = [];
-        if (isset($row['2']) && $row['2']) {
-            $categories = explode(';', $row['2']);
-        }
+        $datasetName    = basename($row['0']);
+        $newDatasetName = basename($row['1']);
 
-        $dataset = basename($row['0']);
-        $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['1'], $categories, $results_dir);
+        $Importer->renameDataset($datasetName, $newDatasetName, $results_dir);
     }
 }
 

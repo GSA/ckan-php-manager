@@ -5,19 +5,19 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_RESTORE_DATASETS';
 mkdir($results_dir);
 
 /**
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$ProductionClient = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+$StagingClient = new \CKAN\Manager\CkanManager(CKAN_UAT_API_URL);
 
 /**
  * Dev
@@ -58,8 +58,25 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             $categories = explode(';', $row['2']);
         }
 
-        $dataset = basename($row['0']);
-        $Importer->assign_groups_and_categories_to_datasets([$dataset], $row['1'], $categories, $results_dir);
+        $datasetName = basename($row['0']);
+
+        $StagingClient->say(str_pad($datasetName, 100, ' . '), '');
+
+        try {
+            $DatasetArray = $StagingClient->get_dataset($datasetName);
+//            no exception, cool
+            $StagingClient->say(str_pad('Staging OK', 15, ' . '), '');
+
+            $ProductionClient->diffUpdate($datasetName, $DatasetArray);
+//            var_dump($DatasetArray);die();
+        } catch (\CKAN\Exceptions\NotFoundHttpException $ex) {
+            $StagingClient->say(str_pad('Staging 404', 15, ' . '));
+        } catch (Exception $ex) {
+            $StagingClient->say(str_pad('Staging Error: ' . $ex->getMessage(), 15, ' . '));
+        }
+
+//        debug
+//        die();
     }
 }
 

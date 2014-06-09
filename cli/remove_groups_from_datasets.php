@@ -36,6 +36,9 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
+    //    fix wrong END-OF-LINE
+    file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
+
     file_put_contents($results_dir . '/groups.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
@@ -49,8 +52,9 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             continue;
         }
 
-        $dataset = basename($row['0']);
-        $Importer->remove_tags_and_groups_to_datasets([$dataset], 'Climate', $results_dir);
+        $dataset  = basename($row['0']);
+        $category = isset($row['1']) ? ($row['1'] ? : '') : '';
+        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $results_dir);
     }
 }
 

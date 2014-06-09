@@ -4,3 +4,4 @@ vendor/
 composer.phar
 inc/config.php
 backup/
+results/2*

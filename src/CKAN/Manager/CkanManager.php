@@ -83,7 +83,7 @@ class CkanManager
     /**
      * Shorthand for sending output to stdout and appending to log buffer at the same time.
      */
-    private function say($output, $eol = PHP_EOL)
+    public function say($output, $eol = PHP_EOL)
     {
         echo $output . $eol;
         $this->log_output .= $output . $eol;
@@ -244,11 +244,13 @@ class CkanManager
 
         $count = sizeof($datasets);
 
-        $log_file = "$count.log";
+        $log_file = PARENT_TERM . "_add_legacy_make_private.log";
 
 //        update dataset tags list
         foreach ($datasets as $key => $dataset) {
-            $this->say("[ $key / $count ] " . $dataset['name']);
+            echo str_pad("$key / $count ", 10, ' ');
+            $this->say(str_pad($dataset['name'], 100, ' . '), '');
+
             $dataset['tags'][] = [
                 'name' => $tag_name,
             ];
@@ -259,12 +261,16 @@ class CkanManager
 
             try {
                 $this->Ckan->package_update($dataset);
+                $this->say(str_pad('OK', 7, ' '));
             } catch (\Exception $ex) {
-                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
+                $this->say(str_pad('ERROR', 7, ' '));
+//                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
+                file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
             }
-        }
 
-        file_put_contents($results_dir . '/' . $log_file, $this->log_output);
+            file_put_contents($results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
+            $this->log_output = '';
+        }
     }
 
     /**
@@ -345,6 +351,47 @@ class CkanManager
     }
 
     /**
+     * Rename $dataset['name'], preserving all the metadata
+     *
+     * @param $datasetName
+     * @param $newDatasetName
+     * @param $results_dir
+     */
+    public function renameDataset($datasetName, $newDatasetName, $results_dir)
+    {
+        $this->log_output = '';
+        $log_file         = 'rename.log';
+
+        $this->say(str_pad($datasetName, 100, ' . '), '');
+
+        try {
+            $ckanResult = $this->Ckan->package_show($datasetName);
+        } catch (NotFoundHttpException $ex) {
+            $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
+            file_put_contents($results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
+            $this->log_output = '';
+
+            return;
+        }
+
+        $ckanResult = json_decode($ckanResult, true);
+        $dataset    = $ckanResult['result'];
+
+        $dataset['name'] = $newDatasetName;
+
+        try {
+            $this->Ckan->package_update($dataset);
+            $this->say(str_pad('OK', 7, ' '));
+        } catch (\Exception $ex) {
+            $this->say(str_pad('ERROR', 7, ' '));
+            file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+
+        file_put_contents($results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
+        $this->log_output = '';
+    }
+
+    /**
      * Moves legacy datasets to parent organization
      */
     public function reorganize_datasets($organization, $termsArray, $backup_dir, $results_dir)
@@ -374,7 +421,7 @@ class CkanManager
 
         if (!empty($department_id)) {
 
-            $output       = "Reorganizing $organization (id: $department_id / name: " . (isset($department) ? $department : '-') . ")" . PHP_EOL;
+            $output = "Reorganizing $organization (id: $department_id / name: " . (isset($department) ? $department : '-') . ")" . PHP_EOL;
             $this->say($output);
 
             foreach ($termsArray as $org_slug => $org_name) {
@@ -427,6 +474,64 @@ class CkanManager
 
         file_put_contents($results_dir . '/' . $log_file, $this->log_output);
 
+    }
+
+    /**
+     * @param $datasetName
+     * @param $stagingDataset
+     */
+    public function diffUpdate($datasetName, $stagingDataset)
+    {
+        try {
+            $freshDataset = $this->get_dataset($datasetName);
+//            no exception, cool
+            $this->say(str_pad('Prod OK', 15, ' . '));
+
+            $freshExtras = [];
+            foreach ($freshDataset['extras'] as $extra) {
+                if (!strpos($extra['key'], 'category_tag')) {
+                    $freshExtras[$extra['key']] = true;
+                }
+            }
+
+            $diff = [];
+            foreach ($stagingDataset['extras'] as $extra) {
+                if (!strpos($extra['key'], 'category_tag')) {
+                    if (!isset($freshExtras[$extra['key']])) {
+                        $diff[] = $extra;
+                    }
+                }
+            }
+
+            $freshDataset['extras'] = array_merge($freshDataset['extras'], $diff);
+
+            $this->Ckan->package_update($freshDataset);
+
+        } catch (NotFoundHttpException $ex) {
+            $this->say(str_pad('Prod 404: ' . $ex->getMessage(), 15, ' . '));
+        } catch (\Exception $ex) {
+            $this->say(str_pad('Prod Error: ' . $ex->getMessage(), 15, ' . '));
+        }
+    }
+
+    /**
+     * @param $datasetName
+     *
+     * @return mixed
+     * @throws \Exception
+     */
+    public function get_dataset($datasetName)
+    {
+        $dataset = $this->Ckan->package_show($datasetName);
+
+        $dataset = json_decode($dataset, true);
+        if (!$dataset['success']) {
+            throw new \Exception('Dataset does not have "success" key');
+        }
+
+        $dataset = $dataset['result'];
+
+        return $dataset;
     }
 
     /**
