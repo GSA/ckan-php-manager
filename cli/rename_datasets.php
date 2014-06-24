@@ -39,7 +39,8 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    file_put_contents($results_dir . '/rename.log', $status, FILE_APPEND | LOCK_EX);
+    $basename = str_replace('.csv', '', basename($csv_file));
+    file_put_contents($results_dir . '/' . $basename . '_rename.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {
@@ -55,7 +56,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
         $datasetName    = basename($row['0']);
         $newDatasetName = basename($row['1']);
 
-        $Importer->renameDataset($datasetName, $newDatasetName, $results_dir);
+        $Importer->renameDataset($datasetName, $newDatasetName, $results_dir, $basename);
     }
 }
 

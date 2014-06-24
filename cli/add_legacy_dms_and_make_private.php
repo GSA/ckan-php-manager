@@ -3,7 +3,12 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Department of Labor');
+define('ORGANIZATION_TO_TAG', 'Small Business Administration');
+
+/**
+ * Just list those datasets, no need to edit anything
+ */
+define('LIST_ONLY', false);
 
 /**
  * Make it TRUE, if you want datasets to be marked as PRIVATE
@@ -24,7 +29,7 @@ $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_TAG);
  * sometimes there is no parent term (ex. Department of Labor)
  */
 if (!defined('PARENT_TERM')) {
-    define('PARENT_TERM', '_');
+    die('PARENT_TERM not found');
 }
 
 /**
@@ -37,7 +42,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
 
 /**
  * Staging

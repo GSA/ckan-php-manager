@@ -83,7 +83,7 @@ class CkanManager
     /**
      * Shorthand for sending output to stdout and appending to log buffer at the same time.
      */
-    public function say($output, $eol = PHP_EOL)
+    public function say($output = '', $eol = PHP_EOL)
     {
         echo $output . $eol;
         $this->log_output .= $output . $eol;
@@ -249,23 +249,29 @@ class CkanManager
 //        update dataset tags list
         foreach ($datasets as $key => $dataset) {
             echo str_pad("$key / $count ", 10, ' ');
-            $this->say(str_pad($dataset['name'], 100, ' . '), '');
 
-            $dataset['tags'][] = [
-                'name' => $tag_name,
-            ];
 
-            if (defined('MARK_PRIVATE') && MARK_PRIVATE) {
-                $dataset['private'] = true;
-            }
+            if (LIST_ONLY) {
+                $this->say('http://catalog.data.gov/dataset/' . $dataset['name']);
+            } else {
+                $this->say(str_pad($dataset['name'], 100, ' . '), '');
 
-            try {
-                $this->Ckan->package_update($dataset);
-                $this->say(str_pad('OK', 7, ' '));
-            } catch (\Exception $ex) {
-                $this->say(str_pad('ERROR', 7, ' '));
+                $dataset['tags'][] = [
+                    'name' => $tag_name,
+                ];
+
+                if (defined('MARK_PRIVATE') && MARK_PRIVATE) {
+                    $dataset['private'] = true;
+                }
+
+                try {
+                    $this->Ckan->package_update($dataset);
+                    $this->say(str_pad('OK', 7, ' '));
+                } catch (\Exception $ex) {
+                    $this->say(str_pad('ERROR', 7, ' '));
 //                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
-                file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+                    file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+                }
             }
 
             file_put_contents($results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
@@ -356,11 +362,12 @@ class CkanManager
      * @param $datasetName
      * @param $newDatasetName
      * @param $results_dir
+     * @param $basename
      */
-    public function renameDataset($datasetName, $newDatasetName, $results_dir)
+    public function renameDataset($datasetName, $newDatasetName, $results_dir, $basename)
     {
         $this->log_output = '';
-        $log_file         = 'rename.log';
+        $log_file = $basename . '_rename.log';
 
         $this->say(str_pad($datasetName, 100, ' . '), '');
 
@@ -535,15 +542,21 @@ class CkanManager
     }
 
     /**
-     * @param        $datasetNames
-     * @param        $group
-     * @param string $categories
-     * @param        $results_dir
+     * @param      $datasetNames
+     * @param      $group
+     * @param null $categories
+     * @param      $results_dir
+     * @param      $basename
      *
      * @throws \Exception
      */
-    public function assign_groups_and_categories_to_datasets($datasetNames, $group, $categories = null, $results_dir)
-    {
+    public function assign_groups_and_categories_to_datasets(
+        $datasetNames,
+        $group,
+        $categories = null,
+        $results_dir,
+        $basename
+    ) {
         $this->log_output = '';
 
         if (!($group = $this->findGroup($group))) {
@@ -591,11 +604,18 @@ class CkanManager
                     'value' => $formattedCategories,
                 ];
             }
-            $this->Ckan->package_update($dataset);
-            $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
-        }
+            try {
+                $this->Ckan->package_update($dataset);
+                $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
+            } catch (\Exception $ex) {
+                $this->say(str_pad('ERROR', 10, ' . ', STR_PAD_LEFT));
+                file_put_contents($results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
+            }
 
-        file_put_contents($results_dir . '/groups.log', $this->log_output, FILE_APPEND | LOCK_EX);
+
+            file_put_contents($results_dir . '/' . $basename . '_tags.log', $this->log_output, FILE_APPEND | LOCK_EX);
+            $this->log_output = '';
+        }
     }
 
     /**
@@ -698,5 +718,297 @@ class CkanManager
         }
 
         file_put_contents($results_dir . '/groups.log', $this->log_output, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * @param mixed  $tree
+     * @param string $results_dir
+     */
+    public function get_redirect_list($tree, $results_dir)
+    {
+        foreach ($tree as $rootOrganization) {
+            $this->get_redirect_list_by_organization($rootOrganization, $results_dir);
+
+            if (isset($rootOrganization['children'])) {
+                foreach ($rootOrganization['children'] as $subAgency) {
+                    $this->get_redirect_list_by_organization($subAgency, $results_dir);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param mixed  $organization
+     * @param string $results_dir
+     *
+     * @return bool
+     */
+    private function get_redirect_list_by_organization($organization, $results_dir)
+    {
+        $return = [];
+
+        if (ERROR_REPORTING == E_ALL) {
+            echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
+        }
+
+        $list = $this->try_member_list($organization['id']);
+
+        if (!$list) {
+            return;
+        }
+
+        foreach ($list as $package) {
+            $dataset = $this->try_package_show($package[0]);
+            if (!$dataset) {
+                continue;
+            }
+
+//            skip harvest sources etc
+            if ('dataset' != $dataset['type']) {
+                continue;
+            }
+
+//            we need only private datasets
+            if (!$dataset['private']) {
+                continue;
+            }
+
+            $newDataset = $this->try_find_new_dataset_by_identifier($package[0]);
+            if (!$newDataset) {
+                $newDataset = $this->try_find_new_dataset_by_title(trim($dataset['title']));
+            }
+            if (!$newDataset) {
+                continue;
+            }
+
+            $return[] = [
+                $package[0],
+                'http://catalog.data.gov/dataset/' . $package[0],
+                'http://catalog.data.gov/dataset/' . $newDataset['name'],
+                'http://catalog.data.gov/dataset/' . $dataset['name'],
+                'http://catalog.data.gov/dataset/' . $dataset['name'] . '_legacy'
+            ];
+        }
+
+        if (sizeof($return)) {
+            $fp_csv = fopen(($filename = $results_dir . '/' . $organization['id'] . '.csv'), 'w');
+
+            if ($fp_csv == false) {
+                die("Unable to create file: " . $filename);
+            }
+
+//            header
+            fputcsv($fp_csv, ['id', 'socrata_url', 'url_from', 'url_to', 'legacy_url']);
+
+            foreach ($return as $csv_line) {
+                fputcsv($fp_csv, $csv_line);
+            }
+
+            fclose($fp_csv);
+        }
+    }
+
+    /**
+     * @param string $id
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private function try_member_list($id, $try = 5)
+    {
+        $list = false;
+        while ($try) {
+            try {
+                $list = $this->Ckan->member_list($id);
+                $list = json_decode($list, true); // as array
+
+                if (!$list['success']) {
+                    echo 'No success: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($list['result']) || !sizeof($list['result'])) {
+                    echo 'No result: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                $list = $list['result'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Organization not found: " . $id . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        if (ERROR_REPORTING == E_ALL) {
+            echo "Member list: " . sizeof($list) . ' records' . PHP_EOL;
+        }
+
+        return $list;
+    }
+
+    /**
+     * @param string $id
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private function try_package_show($id, $try = 5)
+    {
+        $dataset = false;
+        while ($try) {
+            try {
+                $dataset = $this->Ckan->package_show($id);
+                $dataset = json_decode($dataset, true); // as array
+
+                if (!$dataset['success']) {
+                    echo 'No success: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
+                    echo 'No result: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                $dataset = $dataset['result'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Dataset not found: " . $id . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $dataset;
+    }
+
+    /**
+     * @param string $identifier
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private function try_find_new_dataset_by_identifier($identifier, $try = 5)
+    {
+        $dataset = false;
+        while ($try) {
+            try {
+                $dataset = $this->Ckan->package_search(
+                    'identifier:' . $identifier,
+                    1,
+                    0,
+                    'fq'
+                );
+                $dataset = json_decode($dataset, true); // as array
+
+                if (!$dataset['success']) {
+                    return false;
+                }
+
+                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
+
+                    return false;
+                }
+
+                $dataset = $dataset['result'];
+
+                if (!$dataset['count']) {
+                    return false;
+                }
+
+                $dataset = $dataset['results'][0];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+
+                    return false;
+                }
+            }
+        }
+
+        return $dataset;
+    }
+
+    /**
+     * @param string $title
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private function try_find_new_dataset_by_title($title, $try = 5)
+    {
+        $dataset = false;
+        while ($try) {
+            try {
+                $dataset = $this->Ckan->package_search(
+                    'title:' . $title,
+                    1,
+                    0,
+                    'fq'
+                );
+                $dataset = json_decode($dataset, true); // as array
+
+                if (!$dataset['success']) {
+                    return false;
+                }
+
+                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
+
+                    return false;
+                }
+
+                $dataset = $dataset['result'];
+
+                if (!$dataset['count']) {
+                    return false;
+                }
+
+                $dataset = $dataset['results'][0];
+
+                if ($title != trim($dataset['title'])) {
+                    return false;
+                }
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+
+                    return false;
+                }
+            }
+        }
+
+        return $dataset;
     }
 }
