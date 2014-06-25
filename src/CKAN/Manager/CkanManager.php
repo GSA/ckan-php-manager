@@ -22,6 +22,11 @@ class CkanManager
     private $Ckan;
 
     /**
+     * @var bool
+     */
+    private $return = false;
+
+    /**
      * Ckan results per page
      * @var int
      */
@@ -721,18 +726,46 @@ class CkanManager
     }
 
     /**
-     * @param mixed  $tree
-     * @param string $results_dir
+     * @param mixed       $tree
+     * @param string      $results_dir
+     * @param string|bool $start
+     * @param int|bool    $limit
      */
-    public function get_redirect_list($tree, $results_dir)
+    public function get_redirect_list($tree, $results_dir, $start = false, $limit = 1)
     {
+        $countOfRootOrganizations = sizeof($tree);
+        $i                        = 0;
+        $processed                = 0;
         foreach ($tree as $rootOrganization) {
-            $this->get_redirect_list_by_organization($rootOrganization, $results_dir);
+            $i++;
+
+            if (!$start || $start == $rootOrganization['id']) {
+                $start = false;
+                echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
+                $this->get_redirect_list_by_organization($rootOrganization, $results_dir);
+            }
 
             if (isset($rootOrganization['children'])) {
                 foreach ($rootOrganization['children'] as $subAgency) {
-                    $this->get_redirect_list_by_organization($subAgency, $results_dir);
+                    if (!$start || $start == $subAgency['id']) {
+                        $this->get_redirect_list_by_organization($subAgency, $results_dir);
+                        if ($start && (1 == $limit)) {
+                            return;
+                        }
+                        $start = false;
+                    }
                 }
+            }
+
+            if ($start) {
+                continue;
+            }
+
+            $processed++;
+            if ($limit && $limit == $processed) {
+                echo "processed: $processed root organizations" . PHP_EOL;
+
+                return;
             }
         }
     }
@@ -781,12 +814,18 @@ class CkanManager
                 continue;
             }
 
+            if (strpos($dataset['name'], '_legacy')) {
+                $legacy_url = $dataset['name'] . '_legacy';
+            } else {
+                $legacy_url = '';
+            }
+
             $return[] = [
                 $package[0],
                 'http://catalog.data.gov/dataset/' . $package[0],
                 'http://catalog.data.gov/dataset/' . $newDataset['name'],
                 'http://catalog.data.gov/dataset/' . $dataset['name'],
-                'http://catalog.data.gov/dataset/' . $dataset['name'] . '_legacy'
+                $legacy_url
             ];
         }
 
@@ -798,7 +837,7 @@ class CkanManager
             }
 
 //            header
-            fputcsv($fp_csv, ['id', 'socrata_url', 'url_from', 'url_to', 'legacy_url']);
+            fputcsv($fp_csv, ['id', 'socrata_url', 'private_url', 'public_url', 'legacy_url']);
 
             foreach ($return as $csv_line) {
                 fputcsv($fp_csv, $csv_line);
@@ -1010,5 +1049,95 @@ class CkanManager
         }
 
         return $dataset;
+    }
+
+    /**
+     * @param mixed       $tree
+     * @param string      $results_dir
+     * @param string|bool $start
+     * @param int|bool    $limit
+     */
+    public function get_private_list($tree, $results_dir, $start = false, $limit = 1)
+    {
+        $countOfRootOrganizations = sizeof($tree);
+        $i                        = 0;
+        $processed                = 0;
+        foreach ($tree as $rootOrganization) {
+            $i++;
+
+            if (!$start || $start == $rootOrganization['id']) {
+                $start = false;
+                echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
+                $this->get_private_list_by_organization($rootOrganization, $results_dir);
+            }
+
+            if (isset($rootOrganization['children'])) {
+                foreach ($rootOrganization['children'] as $subAgency) {
+                    if (!$start || $start == $subAgency['id']) {
+                        $this->get_private_list_by_organization($subAgency, $results_dir);
+                        if ($start && (1 == $limit)) {
+                            return;
+                        }
+                        $start = false;
+                    }
+                }
+            }
+
+            if ($start) {
+                continue;
+            }
+
+            $processed++;
+            if ($limit && $limit == $processed) {
+                echo "processed: $processed root organizations" . PHP_EOL;
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * @param mixed  $organization
+     * @param string $results_dir
+     *
+     * @return bool
+     */
+    private function get_private_list_by_organization($organization, $results_dir)
+    {
+        $this->return = [];
+
+        if (ERROR_REPORTING == E_ALL) {
+            echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
+        }
+
+        $list = $this->try_member_list($organization['id']);
+
+        if (!$list) {
+            return;
+        }
+
+        foreach ($list as $package) {
+            $dataset = $this->try_package_show($package[0]);
+            if (!$dataset) {
+                continue;
+            }
+
+//            skip harvest sources etc
+            if ('dataset' != $dataset['type']) {
+                continue;
+            }
+
+//            we need only private datasets
+            if (!$dataset['private']) {
+                continue;
+            }
+
+            $this->return[] = $dataset;
+        }
+
+        if (sizeof($this->return)) {
+            $json = (json_encode($this->return, JSON_PRETTY_PRINT));
+            file_put_contents($results_dir . '/' . $organization['id'] . '_PRIVATE_ONLY.json', $json);
+        }
     }
 }

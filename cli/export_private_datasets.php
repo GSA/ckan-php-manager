@@ -13,7 +13,7 @@ $limit = isset($argv[2]) ? intval($argv[2]) : 1;
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_REDIRECT_DATASETS_' . $start ? : '';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_PRIVATE_DATASETS_' . $start ? : '';
 mkdir($results_dir);
 
 /**
@@ -40,7 +40,7 @@ define('ERROR_REPORTING', E_ALL);
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArray();
 
-$Importer->get_redirect_list($termsArray, $results_dir, $start, $limit);
+$Importer->get_private_list($termsArray, $results_dir, $start, $limit);
 
 // show running time on finish
 timer();
