@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "cd526218f2f2386296443d5df35fc1a6a63e19fa"
+                "reference": "6b08d89af428a58b355e4c874b265a6c7b7dcbed"
             },
             "require": {
                 "ext-curl": "*",
@@ -42,7 +42,7 @@
                 }
             ],
             "description": "CKAN php client",
-            "time": "2014-06-24 03:19:26"
+            "time": "2014-06-25 22:40:58"
         },
         {
             "name": "jwage/easy-csv",
@@ -295,12 +295,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/php-token-stream.git",
-                "reference": "955c24b708f8bfd6a05f303217a8dac3a443d531"
+                "reference": "a0802561692c3b2bb0ed972f7ffafbfab068e580"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/php-token-stream/zipball/955c24b708f8bfd6a05f303217a8dac3a443d531",
-                "reference": "955c24b708f8bfd6a05f303217a8dac3a443d531",
+                "url": "https://api.github.com/repos/sebastianbergmann/php-token-stream/zipball/a0802561692c3b2bb0ed972f7ffafbfab068e580",
+                "reference": "a0802561692c3b2bb0ed972f7ffafbfab068e580",
                 "shasum": ""
             },
             "require": {
@@ -337,7 +337,7 @@
             "keywords": [
                 "tokenizer"
             ],
-            "time": "2014-05-12 05:34:42"
+            "time": "2014-06-26 07:15:38"
         },
         {
             "name": "phpunit/phpunit",

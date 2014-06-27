@@ -790,7 +790,12 @@ class CkanManager
             return;
         }
 
+        $i    = 0;
+        $size = sizeof($list);
         foreach ($list as $package) {
+            if (!(++$i % 500)) {
+                echo str_pad($i, 7, ' ', STR_PAD_LEFT) . ' / ' . $size . PHP_EOL;
+            }
             $dataset = $this->try_package_show($package[0]);
             if (!$dataset) {
                 continue;
@@ -803,6 +808,15 @@ class CkanManager
 
 //            we need only private datasets
             if (!$dataset['private']) {
+                if (strpos(json_encode($dataset), 'metadata_from_legacy_dms')) {
+                    $return[] = [
+                        $package[0],
+                        '',
+                        'http://catalog.data.gov/dataset/' . $dataset['name'],
+                        '',
+                        ''
+                    ];
+                }
                 continue;
             }
 
@@ -815,9 +829,9 @@ class CkanManager
             }
 
             if (strpos($dataset['name'], '_legacy')) {
-                $legacy_url = $dataset['name'] . '_legacy';
-            } else {
                 $legacy_url = '';
+            } else {
+                $legacy_url = $dataset['name'] . '_legacy';
             }
 
             $return[] = [
@@ -837,7 +851,7 @@ class CkanManager
             }
 
 //            header
-            fputcsv($fp_csv, ['id', 'socrata_url', 'private_url', 'public_url', 'legacy_url']);
+            fputcsv($fp_csv, ['id', 'socrata_url', 'public_url', 'private_url', 'legacy_url']);
 
             foreach ($return as $csv_line) {
                 fputcsv($fp_csv, $csv_line);
@@ -863,8 +877,7 @@ class CkanManager
 
                 if (!$list['success']) {
                     echo 'No success: ' . $id . PHP_EOL;
-
-                    return false;
+                    die();
                 }
 
                 if (!isset($list['result']) || !sizeof($list['result'])) {
@@ -1059,6 +1072,8 @@ class CkanManager
      */
     public function get_private_list($tree, $results_dir, $start = false, $limit = 1)
     {
+        $this->return = [];
+
         $countOfRootOrganizations = sizeof($tree);
         $i                        = 0;
         $processed                = 0;
@@ -1104,8 +1119,6 @@ class CkanManager
      */
     private function get_private_list_by_organization($organization, $results_dir)
     {
-        $this->return = [];
-
         if (ERROR_REPORTING == E_ALL) {
             echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
         }
