@@ -1017,6 +1017,7 @@ class CkanManager
     private function try_find_new_dataset_by_title($title, $try = 5)
     {
         $dataset = false;
+        $title = $this->escapeSolrValue($title);
         while ($try) {
             try {
                 $dataset = $this->Ckan->package_search(
@@ -1044,7 +1045,7 @@ class CkanManager
 
                 $dataset = $dataset['results'][0];
 
-                if ($title != trim($dataset['title'])) {
+                if ($this->simplifyTitle($title) != $this->simplifyTitle($dataset['title'])) {
                     return false;
                 }
 
@@ -1062,6 +1063,38 @@ class CkanManager
         }
 
         return $dataset;
+    }
+
+    /**
+     * @param $string
+     *
+     * @return mixed
+     */
+    private function escapeSolrValue($string)
+    {
+        $string = preg_replace("/'/u", '', $string);
+        $string = preg_replace('/[\W]+/u', ' ', $string);
+
+        return $string;
+    }
+
+    /**
+     * Sometimes harvested ckan title does not exactly matches, but dataset is same, ex. double spaces
+     * To avoid these cases, we remove all non-word chars, leaving only alphabetic and digit chars
+     * Ex.
+     * Input: Tree dog dataset    , agriculture, 1997 ?????!!!
+     * Output: treedogdatasetagriculture1997
+     *
+     * @param $string
+     *
+     * @return mixed|string
+     */
+    private function simplifyTitle($string)
+    {
+        $string = preg_replace('/[\W]+/', '', $string);
+        $string = strtolower($string);
+
+        return $string;
     }
 
     /**
@@ -1152,5 +1185,141 @@ class CkanManager
             $json = (json_encode($this->return, JSON_PRETTY_PRINT));
             file_put_contents($results_dir . '/' . $organization['id'] . '_PRIVATE_ONLY.json', $json);
         }
+    }
+
+    /**
+     * @param $socrata_list
+     * @param $results_dir
+     */
+    public function get_socrata_pairs($socrata_list, $results_dir)
+    {
+        $socrata_redirects  = ['from,to'];
+        $ckan_rename_legacy = ['from,to'];
+        $ckan_rename_public = ['from,to'];
+        $ckan_redirects     = ['from,to'];
+        $socrata_txt_log    = ['socrata_id,ckan_id,status,private,public'];
+        $notFound           = $publicFound = $privateOnly = $alreadyLegacy = $mustRename = 0;
+
+        $ckan_url = 'https://catalog.data.gov/dataset/';
+
+        $size = sizeof($socrata_list);
+        $i    = 0;
+        foreach ($socrata_list as $socrata_line) {
+            echo ++$i . " / $size $socrata_line" . PHP_EOL;
+            if (!strlen($socrata_line = trim($socrata_line))) {
+                continue;
+            }
+            list($socrata_id, $ckan_id) = explode(': ', $socrata_line);
+            $socrata_id = trim($socrata_id);
+            $ckan_id    = trim($ckan_id);
+
+            /**
+             * Try to find public dataset with same id
+             */
+            $dataset = $this->try_package_show($ckan_id);
+            if (!$dataset) {
+                $notFound++;
+                echo 'nothing found' . PHP_EOL;
+                $socrata_txt_log [] = join(
+                    ',',
+                    [$socrata_id, $ckan_id, 'nothing found', '-', '-']
+                );
+                continue;
+            }
+
+            if (!$dataset['private']) {
+                $publicFound++;
+                echo 'public' . PHP_EOL;
+                $socrata_txt_log []   = join(
+                    ',',
+                    [$socrata_id, $ckan_id, 'public found', '-', $ckan_url . $dataset['name']]
+                );
+                $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
+                $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
+                continue;
+            }
+
+            /**
+             * Dataset is private, let's try to find his public brother
+             */
+            $publicDataset = $this->try_find_new_dataset_by_title($dataset['title']);
+            if (!$publicDataset) {
+                $privateOnly++;
+                echo 'private, public brother not found' . PHP_EOL;
+                $socrata_txt_log [] = join(
+                    ',',
+                    [$socrata_id, $ckan_id, 'private; public brother not found', $ckan_url . $dataset['name'], '-']
+                );
+                continue;
+            }
+
+            /**
+             * Public dataset found, but private dataset already has _legacy postfix
+             */
+            if (strpos($dataset['name'], '_legacy')) {
+                $alreadyLegacy++;
+                echo 'private _legacy; public brother found; no renaming' . PHP_EOL;
+                $socrata_txt_log []   = join(
+                    ',',
+                    [
+                        $socrata_id,
+                        $ckan_id,
+                        'private _legacy; public brother found; no renaming',
+                        $ckan_url . $dataset['name'],
+                        $ckan_url . $publicDataset['name']
+                    ]
+                );
+                $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $publicDataset['name']]);
+                $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $publicDataset['name']]);
+                continue;
+            }
+
+            /**
+             * Public dataset found, let's rename
+             */
+            $mustRename++;
+            echo 'private; public brother found; must rename' . PHP_EOL;
+            $socrata_txt_log []   = join(
+                ',',
+                [
+                    $socrata_id,
+                    $ckan_id,
+                    'private; public brother found; must rename',
+                    $ckan_url . $dataset['name'],
+                    $ckan_url . $publicDataset['name']
+                ]
+            );
+            $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
+            $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
+            $ckan_redirects []    = join(',', [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]);
+            $ckan_rename_legacy[] = join(',', [$ckan_url . $dataset['name'], $ckan_url . $dataset['name'] . '_legacy']);
+            $ckan_rename_public[] = join(',', [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]);
+            continue;
+        }
+
+        $socrata_txt_log = join("\n", $socrata_txt_log);
+        file_put_contents($results_dir . '/socrata_txt_log.csv', $socrata_txt_log);
+
+        $ckan_rename_legacy = join("\n", $ckan_rename_legacy);
+        file_put_contents($results_dir . '/rename_private_datasets_legacy.csv', $ckan_rename_legacy);
+
+        $ckan_rename_public = join("\n", $ckan_rename_public);
+        file_put_contents($results_dir . '/rename_public_datasets.csv', $ckan_rename_public);
+
+        $ckan_redirects = join("\n", $ckan_redirects);
+        file_put_contents($results_dir . '/redirects_ckan.csv', $ckan_redirects);
+
+        $socrata_redirects = join("\n", $socrata_redirects);
+        file_put_contents($results_dir . '/redirects_socrata.csv', $socrata_redirects);
+
+        echo <<<EOR
+Total socrata datasets in list: $size
+Not found on ckan:              $notFound
+Found public on ckan:           $publicFound
+Found only private dataset:     $privateOnly
+Private already _legacy:        $alreadyLegacy
+Renaming needed for datasets:   $mustRename
+EOR;
+
     }
 }
