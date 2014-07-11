@@ -32,14 +32,16 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
  */
 
-foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
+
+    $basename = str_replace('.csv', '', basename($csv_file));
 
     //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    file_put_contents($results_dir . '/groups.log', $status, FILE_APPEND | LOCK_EX);
+    file_put_contents($results_dir . '/' . $basename . '_remove.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {
@@ -48,13 +50,13 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(strtolower($row['0']), ['dataset', 'uid', 'uuid', 'name', 'url'])) {
+        if (in_array(strtolower($row['0']), ['dataset', 'uid', 'uuid', 'name', 'url', 'data.gov url'])) {
             continue;
         }
 
         $dataset  = basename($row['0']);
         $category = isset($row['1']) ? ($row['1'] ? : '') : '';
-        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $results_dir);
+        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $results_dir, $basename);
     }
 }
 

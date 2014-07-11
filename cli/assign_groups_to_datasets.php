@@ -32,7 +32,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
  */
 
-foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -50,7 +50,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url'])) {
+        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'data.gov url'])) {
             continue;
         }
 
