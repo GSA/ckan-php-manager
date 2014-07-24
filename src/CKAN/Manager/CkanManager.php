@@ -42,6 +42,156 @@ class CkanManager
     }
 
     /**
+     * @param $results_dir
+     */
+    public function get_interactive_resources($results_dir)
+    {
+        $log_file = $results_dir . '/resources.csv';
+        $fp       = fopen($log_file, 'w');
+
+//        Title of Dataset in Socrata | dataset URL in Socrata | dataset URL in Catalog
+        $csv_header = [
+            'Title of Dataset in Socrata',
+            'Dataset URL in Socrata',
+            'Dataset URL in Catalog',
+        ];
+
+        fputcsv($fp, $csv_header);
+
+//        http://catalog.data.gov/api/search/resource?url=explore.data.gov&all_fields=1&limit=100
+        $resources = $this->try_api_package_search(['url' => 'explore.data.gov']);
+        if (!$resources) {
+            die('error' . PHP_EOL);
+        }
+
+        foreach ($resources as $resource) {
+            if (!isset($resource['package_id']) || !$resource['package_id']) {
+                echo "error: no package_id: " . $resource['id'] . PHP_EOL;
+                continue;
+            }
+            $dataset = $this->try_package_show($resource['package_id']);
+            if (!$dataset) {
+                echo "error: no dataset: " . $resource['package_id'] . PHP_EOL;
+                continue;
+            }
+
+            echo "http://catalog.data.gov/dataset/" . $dataset['name'] . PHP_EOL . $dataset['title'] . PHP_EOL . PHP_EOL;
+        }
+
+
+    }
+
+    /**
+     * @param        $search
+     * @param int    $rows
+     * @param int    $start
+     * @param string $q
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private
+    function try_package_search(
+        $search,
+        $rows = 100,
+        $start = 0,
+        $q = 'q',
+        $try = 3
+    ) {
+        $datasets = false;
+        while ($try) {
+            try {
+                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
+                $datasets = json_decode($datasets, true); // as array
+
+                if (!$datasets['success'] || !isset($datasets['result'])) {
+                    throw new \Exception('Could not search datasets');
+                }
+
+                $datasets = $datasets['result'];
+
+                if (!$datasets['count']) {
+                    echo 'Nothing found ' . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
+                    echo 'No results ' . PHP_EOL;
+
+                    return false;
+                }
+
+                $datasets = $datasets['results'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Datasets not found " . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $datasets;
+    }
+
+    /**
+     * @param     $search
+     * @param int $try
+     *
+     * @return bool|mixed
+     */
+    private
+    function try_api_package_search(
+        $search,
+        $try = 3
+    ) {
+        $resources = false;
+        while ($try) {
+            try {
+                $resources = $this->Ckan->api_resource_search($search);
+                $resources = json_decode($resources, true); // as array
+
+                if (!$resources['count']) {
+                    echo 'No count ' . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($resources['results']) || !sizeof($resources['results'])) {
+                    echo 'No results ' . PHP_EOL;
+
+                    return false;
+                }
+
+                $resources = $resources['results'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Resources not found " . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $resources;
+    }
+
+    /**
      * @param $search_list
      * @param $results_dir
      */
@@ -68,7 +218,7 @@ class CkanManager
             if (!sizeof($term = trim($term))) {
                 continue;
             }
-            $ckan_query = $this->escapeSolrValue($term);
+            $ckan_query = $this->escapeSolrValue($term) . ' AND dataset_type:dataset';
 
             $done     = false;
             $start    = 0;
@@ -691,6 +841,167 @@ class CkanManager
     }
 
     /**
+     * @param $group
+     * @param $results_dir
+     *
+     * @throws \Exception
+     */
+    public function export_datasets_with_tags_by_group($group, $results_dir)
+    {
+        $this->log_output = '';
+
+        if (!($group = $this->findGroup($group))) {
+            throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
+        }
+
+
+        $log_file = $results_dir . '/export_group_' . $group['name'] . '_with_tags.csv';
+        $fp       = fopen($log_file, 'w');
+
+        $csv_header = [
+            'Name of Dataset',
+            'Dataset Link',
+            'Topic Name',
+            'Topic Categories',
+        ];
+
+        fputcsv($fp, $csv_header);
+
+        $ckan_url = 'https://catalog.data.gov/dataset/';
+
+        $ckan_query = $this->escapeSolrValue($group['name']) . ' AND dataset_type:dataset';
+
+        $category_key = ('__category_tag_' . $group['id']);
+
+        $done     = false;
+        $start    = 0;
+        $per_page = 100;
+        while (!$done) {
+            echo $ckan_query . PHP_EOL;
+            $ckanResult = $this->Ckan->package_search($ckan_query, $per_page, $start, 'fq');
+            $start += $per_page;
+
+            $ckanResult = json_decode($ckanResult, true); //  decode json as array
+            $ckanResult = $ckanResult['result'];
+            var_dump($ckanResult);
+
+            $count = $ckanResult['count'];
+            echo $start . '/' . $count . PHP_EOL;
+            if (!$count) {
+                $done = true;
+                continue;
+            }
+
+            if (sizeof($ckanResult['results'])) {
+                foreach ($ckanResult['results'] as $dataset) {
+
+                    $extras = $dataset['extras'];
+
+                    $tags = false;
+                    foreach ($extras as $extra) {
+                        if ($category_key == $extra['key']) {
+                            $tags = trim($extra['value'], '[]');
+                            break;
+                        }
+                    }
+
+                    fputcsv(
+                        $fp,
+                        [
+                            isset($dataset['title']) ? $dataset['title'] : '---',
+                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
+                            $group['title'],
+                            $tags ? $tags : '---'
+                        ]
+                    );
+                }
+            } else {
+                echo 'no results: ' . $group['name'] . PHP_EOL;
+                continue;
+            }
+            if ($start > $count) {
+                $done = true;
+            }
+        }
+
+        fclose($fp);
+    }
+
+    /**
+     * Return a list of the names of the site’s groups.
+     *
+     * @param string $groupName
+     *
+     * @throws \Exception
+     * @return mixed
+     */
+    private
+    function findGroup(
+        $groupName
+    ) {
+        static $group_list;
+        if (!$group_list) {
+            $list = $this->Ckan->group_list(true);
+            $list = json_decode($list, true);
+            if (!$list['success']) {
+                throw new \Exception('Could not retrieve group list');
+            }
+            $group_list = $list['result'];
+        }
+
+        $group = false;
+        foreach ($group_list as $group) {
+            if (stristr(json_encode($group), $groupName)) {
+                break;
+            }
+        }
+
+        return $group;
+    }
+
+    /**
+     * @param $topicTitle
+     * @param $results_dir
+     */
+    public function cleanup_tags_by_topic($topicTitle, $results_dir)
+    {
+        $start = 0;
+        $limit = 100;
+        while (true) {
+            $datasets = $this->try_package_search('(groups:' . $topicTitle . ')', $limit, $start);
+
+//            Finish
+            if (!$datasets) {
+                break;
+            }
+
+            foreach ($datasets as $dataset) {
+                if (!isset($dataset['groups']) || !sizeof($dataset['groups'])) {
+                    continue;
+                }
+                $groups = $dataset['groups'];
+                foreach ($groups as $group) {
+                    $this->remove_tags_and_groups_to_datasets(
+                        [$dataset['name']],
+                        $group['name'],
+                        'non-existing-tag&&',
+                        $results_dir,
+                        $topicTitle
+                    );
+                }
+            }
+
+            echo sizeof($datasets) . PHP_EOL;
+
+//            Finish
+            if (sizeof($datasets) < $limit) {
+                break;
+            }
+            $start += $limit;
+        }
+    }
+
+    /**
      * @param      $datasetNames
      * @param      $group
      * @param null $categories
@@ -701,7 +1012,7 @@ class CkanManager
      */
     public
     function assign_groups_and_categories_to_datasets(
-    $datasetNames,
+        $datasetNames,
         $group,
         $categories = null,
         $results_dir,
@@ -739,9 +1050,10 @@ class CkanManager
 
             foreach ($extras as $extra) {
                 if ('__category_tag_' . $group['id'] == $extra['key']) {
-                    $oldCategories = trim($extra['value'], '"[]');
+                    $oldCategories = trim($extra['value'], '"[], ');
                     $oldCategories = explode('","', $oldCategories);
                     $categories    = array_merge($categories, $oldCategories);
+                    $categories    = $this->cleanupTags($categories);
                     continue;
                 }
                 $dataset['extras'][] = $extra;
@@ -754,6 +1066,7 @@ class CkanManager
                     'value' => $formattedCategories,
                 ];
             }
+
             try {
                 $this->Ckan->package_update($dataset);
                 $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
@@ -773,35 +1086,23 @@ class CkanManager
     }
 
     /**
-     * Return a list of the names of the site’s groups.
+     * @param array $tagsArray
      *
-     * @param string $groupName
-     *
-     * @throws \Exception
-     * @return mixed
+     * @return array
      */
-    private
-    function findGroup(
-        $groupName
-    ) {
-        static $group_list;
-        if (!$group_list) {
-            $list = $this->Ckan->group_list(true);
-            $list = json_decode($list, true);
-            if (!$list['success']) {
-                throw new \Exception('Could not retrieve group list');
-            }
-            $group_list = $list['result'];
-        }
-
-        $group = false;
-        foreach ($group_list as $group) {
-            if (stristr(json_encode($group), $groupName)) {
-                break;
+    private function cleanupTags($tagsArray)
+    {
+        $return    = [];
+        $tagsArray = array_unique($tagsArray);
+        foreach ($tagsArray as $tag) {
+            $tag = str_replace(['\\t'], [''], $tag);
+            $tag = trim($tag, " \t\n\r\0\x0B\"'");
+            if (strlen($tag)) {
+                $return[] = $tag;
             }
         }
 
-        return $group;
+        return $return;
     }
 
     /**
@@ -809,6 +1110,7 @@ class CkanManager
      *
      * @param $datasetNames
      * @param $group_to_remove
+     * @param $tags_to_remove
      * @param $results_dir
      * @param $basename
      *
@@ -818,10 +1120,11 @@ class CkanManager
     function remove_tags_and_groups_to_datasets(
         $datasetNames,
         $group_to_remove,
+        $tags_to_remove,
         $results_dir,
         $basename
     ) {
-        $this->log_output     = '';
+        $this->log_output = '';
 
         if (!($group_to_remove = $this->findGroup($group_to_remove))) {
             throw new \Exception('Group ' . $group_to_remove . ' not found!' . PHP_EOL);
@@ -845,35 +1148,62 @@ class CkanManager
 
             $dataset = $dataset['result'];
 
+            if (defined('REMOVE_GROUP') && REMOVE_GROUP) {
 //            removing group
-            $groups = [];
-            foreach ($dataset['groups'] as $group) {
-                if ($group['name'] !== $group_to_remove['name']) {
-                    $groups[] = $group;
+                $groups = [];
+                foreach ($dataset['groups'] as $group) {
+                    if ($group['name'] !== $group_to_remove['name']) {
+                        $groups[] = $group;
+                    }
                 }
-            }
 
-            if (sizeof($dataset['groups']) > sizeof($groups)) {
-                $this->say(str_pad('-GROUP', 8, ' . ', STR_PAD_LEFT), '');
-            }
+                if (sizeof($dataset['groups']) > sizeof($groups)) {
+                    $this->say(str_pad('-GROUP', 8, ' . ', STR_PAD_LEFT), '');
+                }
 
-            $dataset['groups'] = $groups;
+                $dataset['groups'] = $groups;
+            }
 
 //            removing extra tags of group
             $category_tag = '__category_tag_' . $group_to_remove['id'];
 
-            $extras = [];
-            foreach ($dataset['extras'] as $extra) {
-                if ($extra['key'] !== $category_tag) {
-                    $extras[] = $extra;
-                } else {
-                    $extra['value'] = null;
-                    $extras[] = $extra;
+
+            $extras = $dataset['extras'];
+
+            $newTags           = [];
+            $dataset['extras'] = [];
+
+            foreach ($extras as $extra) {
+                if ($category_tag == $extra['key']) {
+                    $oldTags = trim($extra['value'], '"[], ');
+                    $oldTags = explode('","', $oldTags);
+                    $newTags = [];
+                    if ($oldTags && is_array($oldTags)) {
+                        foreach ($oldTags as $tag) {
+                            if (trim($tag) != trim($tags_to_remove)) {
+                                $newTags[] = $tag;
+                            }
+                        }
+                    }
+                    $newTags = $this->cleanupTags($newTags);
                     $this->say(str_pad('-TAGS', 7, ' . ', STR_PAD_LEFT), '');
+                    continue;
                 }
+                $dataset['extras'][] = $extra;
             }
 
-            $dataset['extras'] = $extras;
+            if ($newTags) {
+                $formattedTags       = '["' . join('","', $newTags) . '"]';
+                $dataset['extras'][] = [
+                    'key'   => $category_tag,
+                    'value' => $formattedTags,
+                ];
+            } else {
+                $dataset['extras'][] = [
+                    'key'   => $category_tag,
+                    'value' => null,
+                ];
+            }
 
             $this->Ckan->package_update($dataset);
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));

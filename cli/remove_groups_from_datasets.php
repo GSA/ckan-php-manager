@@ -9,6 +9,11 @@ $results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
 mkdir($results_dir);
 
 /**
+ * Set to `true` if you want to remove topic too like 'Climate' etc.
+ */
+define('REMOVE_GROUP', false);
+
+/**
  * Adding Legacy dms tag
  * Production
  */
@@ -56,7 +61,8 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
 
         $dataset  = basename($row['0']);
         $category = isset($row['1']) ? ($row['1'] ? : '') : '';
-        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $results_dir, $basename);
+        $tags     = isset($row['2']) ? ($row['2'] ? : '') : '';
+        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $results_dir, $basename);
     }
 }
 

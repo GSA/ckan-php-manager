@@ -13,7 +13,7 @@ $limit = isset($argv[2]) ? intval($argv[2]) : 1;
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_PAIRS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_INTERACTIVE_RESOURCES';
 mkdir($results_dir);
 
 /**
@@ -41,17 +41,17 @@ define('ERROR_REPORTING', E_ALL & ~E_NOTICE);
 /**
  *
  */
-define('SOCRATA_URL', 'https://explore.data.gov/api/views/');
+//define('SOCRATA_URL', 'https://explore.data.gov/api/views/');
+//
+//if (!is_readable($socrata_file_path = DATA_DIR . '/socrata.txt')) {
+//    die($socrata_file_path . ' not readable');
+//}
+//
+//$socrata_list = file_get_contents($socrata_file_path);
+//$socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
+//$socrata_list = explode("\n", $socrata_list);
 
-if (!is_readable($socrata_file_path = DATA_DIR . '/socrata.txt')) {
-    die($socrata_file_path . ' not readable');
-}
-
-$socrata_list = file_get_contents($socrata_file_path);
-$socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
-$socrata_list = explode("\n", $socrata_list);
-
-$Importer->get_socrata_pairs($socrata_list, $results_dir);
+$Importer->get_interactive_resources($results_dir);
 
 // show running time on finish
 timer();

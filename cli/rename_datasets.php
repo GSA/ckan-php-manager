@@ -32,7 +32,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  * datasetName, newDatasetName_legacy
  */
 
-foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/rename_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -43,19 +43,21 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
     file_put_contents($results_dir . '/' . $basename . '_rename.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
+    $i   = 1;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'old dataset url'])) {
+        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'old dataset url', 'from'])) {
             continue;
         }
 
         $datasetName    = basename($row['0']);
         $newDatasetName = basename($row['1']);
 
+        printf('[%04d] ', $i++);
         $Importer->renameDataset($datasetName, $newDatasetName, $results_dir, $basename);
     }
 }
