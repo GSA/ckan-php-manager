@@ -5,13 +5,8 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_MAKE_PRIVATE';
 mkdir($results_dir);
-
-/**
- * Set to `true` if you want to remove topic too like 'Climate' etc.
- */
-define('REMOVE_GROUP', true);
 
 /**
  * Adding Legacy dms tag
@@ -29,7 +24,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
-foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/private*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -38,7 +33,7 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
     //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    file_put_contents($results_dir . '/' . $basename . '_remove.log', $status, FILE_APPEND | LOCK_EX);
+    file_put_contents($results_dir . '/' . $basename . '.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {
@@ -51,10 +46,8 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
             continue;
         }
 
-        $dataset  = basename($row['0']);
-        $category = isset($row['1']) ? ($row['1'] ? : '') : '';
-        $tags     = isset($row['2']) ? ($row['2'] ? : '') : '';
-        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $results_dir, $basename);
+        $dataset = basename($row['0']);
+        $Importer->make_dataset_private($dataset, $results_dir, $basename);
     }
 }
 

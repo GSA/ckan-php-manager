@@ -82,67 +82,6 @@ class CkanManager
     }
 
     /**
-     * @param        $search
-     * @param int    $rows
-     * @param int    $start
-     * @param string $q
-     * @param int    $try
-     *
-     * @return bool|mixed
-     */
-    private
-    function try_package_search(
-        $search,
-        $rows = 100,
-        $start = 0,
-        $q = 'q',
-        $try = 3
-    ) {
-        $datasets = false;
-        while ($try) {
-            try {
-                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
-                $datasets = json_decode($datasets, true); // as array
-
-                if (!$datasets['success'] || !isset($datasets['result'])) {
-                    throw new \Exception('Could not search datasets');
-                }
-
-                $datasets = $datasets['result'];
-
-                if (!$datasets['count']) {
-                    echo 'Nothing found ' . PHP_EOL;
-
-                    return false;
-                }
-
-                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
-                    echo 'No results ' . PHP_EOL;
-
-                    return false;
-                }
-
-                $datasets = $datasets['results'];
-
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                echo "Datasets not found " . PHP_EOL;
-
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                if (!$try) {
-                    echo 'Too many attempts ' . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $datasets;
-    }
-
-    /**
      * @param     $search
      * @param int $try
      *
@@ -150,7 +89,7 @@ class CkanManager
      */
     private
     function try_api_package_search(
-        $search,
+    $search,
         $try = 3
     ) {
         $resources = false;
@@ -189,6 +128,55 @@ class CkanManager
         }
 
         return $resources;
+    }
+
+    /**
+     * @param string $id
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private
+    function try_package_show(
+        $id,
+        $try = 3
+    ) {
+        $dataset = false;
+        while ($try) {
+            try {
+                $dataset = $this->Ckan->package_show($id);
+                $dataset = json_decode($dataset, true); // as array
+
+                if (!$dataset['success']) {
+                    echo 'No success: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
+                    echo 'No result: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                $dataset = $dataset['result'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Dataset not found: " . $id . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $dataset;
     }
 
     /**
@@ -498,6 +486,37 @@ class CkanManager
             }
         }
         file_put_contents($results_dir . '/_' . $tag_name . '.log', $this->log_output);
+    }
+
+    /**
+     * @param $dataset_id
+     * @param $results_dir
+     * @param $basename
+     */
+    public function make_dataset_private($dataset_id, $results_dir, $basename)
+    {
+        $this->log_output = '';
+
+        $this->say(str_pad($dataset_id, 105, ' . '), '');
+
+        $dataset = $this->try_package_show($dataset_id);
+
+        if (!$dataset) {
+            $this->say(str_pad('NOT_FOUND', 10, ' '));
+        } else {
+
+            $dataset['private'] = true;
+
+            try {
+                $this->Ckan->package_update($dataset);
+                $this->say(str_pad('OK', 10, ' '));
+            } catch (\Exception $ex) {
+                $this->say(str_pad('ERROR', 10, ' '));
+//                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
+                file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+            }
+        }
+        file_put_contents($results_dir . '/_' . $basename . '.log', $this->log_output, FILE_APPEND);
     }
 
     /**
@@ -1002,107 +1021,64 @@ class CkanManager
     }
 
     /**
-     * @param      $datasetNames
-     * @param      $group
-     * @param null $categories
-     * @param      $results_dir
-     * @param      $basename
+     * @param        $search
+     * @param int    $rows
+     * @param int    $start
+     * @param string $q
+     * @param int    $try
      *
-     * @throws \Exception
+     * @return bool|mixed
      */
-    public
-    function assign_groups_and_categories_to_datasets(
-        $datasetNames,
-        $group,
-        $categories = null,
-        $results_dir,
-        $basename
+    private
+    function try_package_search(
+        $search,
+        $rows = 100,
+        $start = 0,
+        $q = 'q',
+        $try = 3
     ) {
-        $this->log_output = '';
-
-        if (!($group = $this->findGroup($group))) {
-            throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
-        }
-
-        foreach ($datasetNames as $datasetName) {
-            $this->say(str_pad($datasetName, 100, ' . '), '');
-
+        $datasets = false;
+        while ($try) {
             try {
-                $dataset = $this->Ckan->package_show($datasetName);
-            } catch (NotFoundHttpException $ex) {
-                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
-                continue;
-            }
+                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
+                $datasets = json_decode($datasets, true); // as array
 
-            $dataset = json_decode($dataset, true);
-            if (!$dataset['success']) {
-                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
-                continue;
-            }
-
-            $dataset             = $dataset['result'];
-            $dataset['groups'][] = [
-                'name' => $group['name'],
-            ];
-
-            $extras            = $dataset['extras'];
-            $dataset['extras'] = [];
-
-            foreach ($extras as $extra) {
-                if ('__category_tag_' . $group['id'] == $extra['key']) {
-                    $oldCategories = trim($extra['value'], '"[], ');
-                    $oldCategories = explode('","', $oldCategories);
-                    $categories    = array_merge($categories, $oldCategories);
-                    $categories    = $this->cleanupTags($categories);
-                    continue;
+                if (!$datasets['success'] || !isset($datasets['result'])) {
+                    throw new \Exception('Could not search datasets');
                 }
-                $dataset['extras'][] = $extra;
-            }
 
-            if ($categories) {
-                $formattedCategories = '["' . join('","', $categories) . '"]';
-                $dataset['extras'][] = [
-                    'key'   => '__category_tag_' . $group['id'],
-                    'value' => $formattedCategories,
-                ];
-            }
+                $datasets = $datasets['result'];
 
-            try {
-                $this->Ckan->package_update($dataset);
-                $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
+                if (!$datasets['count']) {
+                    echo 'Nothing found ' . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
+                    echo 'No results ' . PHP_EOL;
+
+                    return false;
+                }
+
+                $datasets = $datasets['results'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Datasets not found " . PHP_EOL;
+
+                return false;
             } catch (\Exception $ex) {
-                $this->say(str_pad('ERROR', 10, ' . ', STR_PAD_LEFT));
-                file_put_contents($results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
-            }
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
 
-
-            file_put_contents(
-                $results_dir . '/' . $basename . '_tags.log',
-                $this->log_output,
-                FILE_APPEND | LOCK_EX
-            );
-            $this->log_output = '';
-        }
-    }
-
-    /**
-     * @param array $tagsArray
-     *
-     * @return array
-     */
-    private function cleanupTags($tagsArray)
-    {
-        $return    = [];
-        $tagsArray = array_unique($tagsArray);
-        foreach ($tagsArray as $tag) {
-            $tag = str_replace(['\\t'], [''], $tag);
-            $tag = trim($tag, " \t\n\r\0\x0B\"'");
-            if (strlen($tag)) {
-                $return[] = $tag;
+                    return false;
+                }
             }
         }
 
-        return $return;
+        return $datasets;
     }
 
     /**
@@ -1210,6 +1186,110 @@ class CkanManager
         }
 
         file_put_contents($results_dir . '/' . $basename . '_remove.log', $this->log_output, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * @param array $tagsArray
+     *
+     * @return array
+     */
+    private function cleanupTags($tagsArray)
+    {
+        $return    = [];
+        $tagsArray = array_unique($tagsArray);
+        foreach ($tagsArray as $tag) {
+            $tag = str_replace(['\\t'], [''], $tag);
+            $tag = trim($tag, " \t\n\r\0\x0B\"'");
+            if (strlen($tag)) {
+                $return[] = $tag;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param      $datasetNames
+     * @param      $group
+     * @param null $categories
+     * @param      $results_dir
+     * @param      $basename
+     *
+     * @throws \Exception
+     */
+    public
+    function assign_groups_and_categories_to_datasets(
+        $datasetNames,
+        $group,
+        $categories = null,
+        $results_dir,
+        $basename
+    ) {
+        $this->log_output = '';
+
+        if (!($group = $this->findGroup($group))) {
+            throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
+        }
+
+        foreach ($datasetNames as $datasetName) {
+            $this->say(str_pad($datasetName, 100, ' . '), '');
+
+            try {
+                $dataset = $this->Ckan->package_show($datasetName);
+            } catch (NotFoundHttpException $ex) {
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
+                continue;
+            }
+
+            $dataset = json_decode($dataset, true);
+            if (!$dataset['success']) {
+                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
+                continue;
+            }
+
+            $dataset             = $dataset['result'];
+            $dataset['groups'][] = [
+                'name' => $group['name'],
+            ];
+
+            $extras            = $dataset['extras'];
+            $dataset['extras'] = [];
+
+            foreach ($extras as $extra) {
+                if ('__category_tag_' . $group['id'] == $extra['key']) {
+                    $oldCategories = trim($extra['value'], '"[], ');
+                    $oldCategories = explode('","', $oldCategories);
+                    $categories    = array_merge($categories, $oldCategories);
+                    $categories    = $this->cleanupTags($categories);
+                    continue;
+                }
+                $dataset['extras'][] = $extra;
+            }
+
+            if ($categories) {
+                $formattedCategories = '["' . join('","', $categories) . '"]';
+                $dataset['extras'][] = [
+                    'key'   => '__category_tag_' . $group['id'],
+                    'value' => $formattedCategories,
+                ];
+            }
+
+            try {
+                $this->Ckan->package_update($dataset);
+                $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
+            } catch (\Exception $ex) {
+                $this->say(str_pad('ERROR', 10, ' . ', STR_PAD_LEFT));
+                file_put_contents($results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
+            }
+
+
+            file_put_contents(
+                $results_dir . '/' . $basename . '_tags.log',
+                $this->log_output,
+                FILE_APPEND | LOCK_EX
+            );
+            $this->log_output = '';
+        }
     }
 
     /**
@@ -1406,55 +1486,6 @@ class CkanManager
         }
 
         return $list;
-    }
-
-    /**
-     * @param string $id
-     * @param int    $try
-     *
-     * @return bool|mixed
-     */
-    private
-    function try_package_show(
-        $id,
-        $try = 3
-    ) {
-        $dataset = false;
-        while ($try) {
-            try {
-                $dataset = $this->Ckan->package_show($id);
-                $dataset = json_decode($dataset, true); // as array
-
-                if (!$dataset['success']) {
-                    echo 'No success: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-
-                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
-                    echo 'No result: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-
-                $dataset = $dataset['result'];
-
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                echo "Dataset not found: " . $id . PHP_EOL;
-
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                if (!$try) {
-                    echo 'Too many attempts: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $dataset;
     }
 
     /**

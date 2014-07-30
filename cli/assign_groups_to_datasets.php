@@ -44,26 +44,27 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
     file_put_contents($results_dir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
+    $i = 0;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'data.gov url'])) {
+        if (in_array(trim(strtolower($row['0'])), ['link', 'dataset', 'url', 'data.gov url'])) {
             continue;
         }
 
 //        format group tags
         $categories = [];
         if (isset($row['2']) && $row['2']) {
-            $categories = explode(';', $row['2']);
+            $categories = explode(';', trim($row['2']));
         }
 
-        $dataset = basename($row['0']);
+        $dataset = basename(trim($row['0']));
         $Importer->assign_groups_and_categories_to_datasets(
             [$dataset],
-            $row['1'],
+            trim($row['1']),
             $categories,
             $results_dir,
             $basename
