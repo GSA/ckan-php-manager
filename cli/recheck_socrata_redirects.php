@@ -10,7 +10,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_REDIRECTS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_CHECK_SOCRATA_REDIRECTS';
 mkdir($results_dir);
 
 /**
@@ -63,7 +63,7 @@ $curl_ch_headers = [
     'Accept-Encoding: gzip'
 ];
 
-foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/redirects_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -73,11 +73,13 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
     $csv_source      = new EasyCSV\Reader($csv_file, 'r+', false);
-    $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_long.csv');
+    $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_log.csv');
+
+    $csv_destination->writeRow(['from', 'to', 'status', 'real_redirect']);
 
     $i = 0;
     while (true) {
-        if (!($i++ % 50)) {
+        if (!($i++ % 100)) {
             echo $i . PHP_EOL;
         }
         $row = $csv_source->getRow();
@@ -85,24 +87,43 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row[0])), ['socrata code', 'from'])) {
-            $csv_destination->writeRow($row);
+        if (in_array(trim(strtolower($row[0])), ['socrata code', 'from', 'source url'])) {
+//            $csv_destination->writeRow($row);
             continue;
         }
 
-        $socrata_id = $row[0];
-        $ckan_url   = $row[1];
+        $socrata_url  = $row[0];
+        $redirect_url = $row[1];
 
-//        writing short redirect
-        $socrata_short_url = 'https://explore.data.gov/d/' . $socrata_id;
-        $csv_destination->writeRow([$socrata_short_url, $ckan_url]);
-
-        $socrata_long_url = get_long_socrata_url($curl_ch, $socrata_short_url);
-        if (!$socrata_long_url) {
-            echo 'No result: ' . $socrata_short_url . PHP_EOL;
+        $redirect = try_get_redirect($curl_ch, $socrata_url);
+        if (!$redirect) {
+            echo 'No redirect: ' . $socrata_url . PHP_EOL;
+            $csv_destination->writeRow([$socrata_url, $redirect_url, 'no redirect', '']);
+            continue;
         }
-        $csv_destination->writeRow([$socrata_long_url, $ckan_url]);
+
+        if (url_compare($redirect, $redirect_url)) {
+            $csv_destination->writeRow([$socrata_url, $redirect_url, 'correct', '']);
+        } else {
+            echo 'Wrong redirect: ' . $socrata_url . PHP_EOL;
+            $csv_destination->writeRow([$socrata_url, $redirect_url, 'wrong redirect', '' . $redirect]);
+            continue;
+        }
     }
+}
+
+/**
+ * @param $url1
+ * @param $url2
+ *
+ * @return bool
+ */
+function url_compare($url1, $url2)
+{
+    $u1 = trim(str_replace(['http:', 'https:'], '', $url1), '/ ');
+    $u2 = trim(str_replace(['http:', 'https:'], '', $url2), '/ ');
+
+    return ($u1 === $u2);
 }
 
 /**
@@ -111,9 +132,8 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
  *
  * @return bool
  */
-function get_long_socrata_url($curl_ch, $url)
+function try_get_redirect($curl_ch, $url)
 {
-
     curl_setopt($curl_ch, CURLOPT_URL, $url);
     $method = 'GET';
 
@@ -121,10 +141,18 @@ function get_long_socrata_url($curl_ch, $url)
     curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, $method);
 
     // Execute request and get response headers.
-    curl_exec($curl_ch);
-    $info = curl_getinfo($curl_ch);
-    if (isset($info['redirect_url'])) {
+    $response = curl_exec($curl_ch);
+    $info     = curl_getinfo($curl_ch);
+    if (isset($info['redirect_url']) && $info['redirect_url']) {
         return $info['redirect_url'];
+    }
+
+    if (stripos($response, 'http-equiv="refresh"')) {
+        $pattern = '/content="0;URL=(http[\S\/\-\.]+)"/';
+        preg_match($pattern, $response, $matches, PREG_OFFSET_CAPTURE, 3);
+        if ($matches && isset($matches[1]) && isset($matches[1][0])) {
+            return $matches[1][0];
+        }
     }
 
     return false;

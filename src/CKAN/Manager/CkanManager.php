@@ -3,6 +3,7 @@
 namespace CKAN\Manager;
 
 use CKAN\Core\CkanClient;
+use CKAN\Core\OrganizationList;
 use CKAN\Exceptions\NotFoundHttpException;
 
 /**
@@ -89,7 +90,7 @@ class CkanManager
      */
     private
     function try_api_package_search(
-    $search,
+        $search,
         $try = 3
     ) {
         $resources = false;
@@ -183,10 +184,12 @@ class CkanManager
      * @param $search_list
      * @param $results_dir
      */
-    public function search_terms($search_list, $results_dir)
+    public function search_by_terms($search_list, $results_dir)
     {
-        $log_file = $results_dir . '/search_' . sizeof($search_list) . '_terms.csv';
-        $fp       = fopen($log_file, 'w');
+        $log_file_popularity = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_popularity.csv';
+        $log_file_relevance  = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_relevance.csv';
+        $fp_popularity       = fopen($log_file_popularity, 'w');
+        $fp_relevance        = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -195,12 +198,16 @@ class CkanManager
             'Keyword',
         ];
 
-        fputcsv($fp, $csv_header);
+        fputcsv($fp_popularity, $csv_header);
+        fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
         $i        = 1;
 
+//        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
+//        most popular:
+//        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
         foreach ($search_list as $term) {
             echo $i++ . '/' . sizeof($search_list) . ' : ' . $term . PHP_EOL;
             if (!sizeof($term = trim($term))) {
@@ -208,32 +215,36 @@ class CkanManager
             }
             $ckan_query = $this->escapeSolrValue($term) . ' AND dataset_type:dataset';
 
+            $only_first_page = true;
+            if ('Demographics' == $term) {
+                $only_first_page = false;
+            }
+
             $done     = false;
             $start    = 0;
-            $per_page = 500;
+            $per_page        = 20;
             while (!$done) {
-                $ckanResult = $this->Ckan->package_search($ckan_query, $per_page, $start);
-                $start += $per_page;
+                // relevance
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
+                $ckanResultRelevance = $ckanResultRelevance['result'];
 
-                $ckanResult = json_decode($ckanResult, true); //  decode json as array
-                $ckanResult = $ckanResult['result'];
-
-                $count = $ckanResult['count'];
-                echo $start . '/' . $count . PHP_EOL;
+                $count = $ckanResultRelevance['count'];
+                echo $start . '/' . $count . ' by relevance' . PHP_EOL;
                 if (!$count) {
                     $done = true;
                     continue;
                 }
 
-                if (sizeof($ckanResult['results'])) {
-                    foreach ($ckanResult['results'] as $dataset) {
+                if (sizeof($ckanResultRelevance['results'])) {
+                    foreach ($ckanResultRelevance['results'] as $dataset) {
                         fputcsv(
-                            $fp,
+                            $fp_relevance,
                             [
                                 isset($dataset['title']) ? $dataset['title'] : '---',
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
-                                isset($dataset['organization']) && isset($dataset['name']) ?
+                                isset($dataset['name']) ?
                                     $ckan_url . $dataset['name'] : '---',
                                 $term
                             ]
@@ -243,14 +254,73 @@ class CkanManager
                     echo 'no results: ' . $term . PHP_EOL;
                     continue;
                 }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
                 if ($start > $count) {
                     $done = true;
                 }
             }
 
+            $done     = false;
+            $start    = 0;
+            $per_page = 20;
+            while (!$done) {
+                // popularity
+                $ckanResultPopularity = $this->Ckan->package_search(
+                    $ckan_query,
+                    $per_page,
+                    $start,
+                    'q',
+                    'views_recent desc,name asc'
+                );
+                $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
+                $ckanResultPopularity = $ckanResultPopularity['result'];
+
+                $count = $ckanResultPopularity['count'];
+                echo $start . '/' . $count . ' by popularity' . PHP_EOL;
+                if (!$count) {
+                    $done = true;
+                    continue;
+                }
+
+                if (sizeof($ckanResultPopularity['results'])) {
+                    foreach ($ckanResultPopularity['results'] as $dataset) {
+                        fputcsv(
+                            $fp_popularity,
+                            [
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                isset($dataset['organization']) && isset($dataset['organization']['title']) ?
+                                    $dataset['organization']['title'] : '---',
+                                isset($dataset['name']) ?
+                                    $ckan_url . $dataset['name'] : '---',
+                                $term
+                            ]
+                        );
+                    }
+                } else {
+                    echo 'no results: ' . $term . PHP_EOL;
+                    continue;
+                }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
+                if ($start > $count) {
+                    $done = true;
+                }
+            }
         }
 
-        fclose($fp);
+        fclose($fp_relevance);
+        fclose($fp_popularity);
     }
 
     /**
@@ -266,6 +336,424 @@ class CkanManager
         $string = preg_replace('/[\W]+/u', ' ', $string);
 
         return $string;
+    }
+
+    /**
+     * @param $groups_list
+     * @param $results_dir
+     */
+    public function search_by_topics($groups_list, $results_dir)
+    {
+        $this->log_output    = '';
+        $log_file_popularity = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_popularity.csv';
+        $log_file_relevance  = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_relevance.csv';
+        $error_log           = $results_dir . '/search_' . sizeof($groups_list) . '_topics.log';
+        $fp_popularity       = fopen($log_file_popularity, 'w');
+        $fp_relevance        = fopen($log_file_relevance, 'w');
+
+        $csv_header = [
+            'Name of Dataset',
+            'Agency',
+            'Data.gov URL',
+            'Topic',
+        ];
+
+        fputcsv($fp_popularity, $csv_header);
+        fputcsv($fp_relevance, $csv_header);
+
+        $ckan_url = 'https://catalog.data.gov/dataset/';
+        $i        = 1;
+
+//        most relevant:
+//        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
+//        most popular:
+//        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
+        foreach ($groups_list as $topic) {
+            $this->say(PHP_EOL . $i++ . '/' . sizeof($groups_list) . ' : ' . $topic);
+            if (!sizeof($topic = trim($topic))) {
+                continue;
+            }
+
+            switch ($topic) {
+                case 'Cities':
+//                        http://catalog.data.gov/api/3/action/package_search?q=organization_type:%22City+Government%22
+                    $ckan_query = 'organization_type:"City Government" AND dataset_type:dataset';
+                    break;
+                case 'Counties':
+//                        http://catalog.data.gov/api/3/action/package_search?q=organization_type:%22County+Government%22
+                    $ckan_query = 'organization_type:"County Government" AND dataset_type:dataset';
+                    break;
+                case 'States':
+//                        http://catalog.data.gov/api/3/action/package_search?q=organization_type:%22State+Government%22
+                    $ckan_query = 'organization_type:"State Government" AND dataset_type:dataset';
+                    break;
+                case 'Health':
+//                        http://catalog.data.gov/api/3/action/package_search?q=organization:hhs-gov
+                    $ckan_query = 'organization:"hhs-gov" AND dataset_type:dataset';
+                    break;
+                case 'Science & Research':
+//                        http://catalog.data.gov/api/3/action/package_search?q=groups:research9385
+                    $ckan_query = 'groups:(research9385) AND dataset_type:dataset';
+                    break;
+                case 'Public Safety':
+//                        http://catalog.data.gov/api/3/action/package_search?q=groups:safety3175
+                    $ckan_query = 'groups:(safety3175) AND dataset_type:dataset';
+                    break;
+                default:
+                    $group = $this->findGroup($topic);
+                    if (!$group) {
+                        $this->say('Could not find topic: ' . $topic);
+//                        file_put_contents($error_log, 'Could not find topic: ' . $topic . PHP_EOL, FILE_APPEND);
+                        continue 2;
+                    } else {
+                        $ckan_query = 'groups:(' . $this->escapeSolrValue(
+                                $group['name']
+                            ) . ') AND dataset_type:dataset';
+                    }
+                    break;
+            }
+
+            $this->say('API{' . $ckan_query . '}');
+//            file_put_contents($error_log, PHP_EOL.$topic.PHP_EOL.$ckan_query.PHP_EOL, FILE_APPEND);
+//            echo PHP_EOL.$topic.PHP_EOL.$ckan_query.PHP_EOL;
+
+            $only_first_page = true;
+//            if ('Demographics' == $term) {
+//                $only_first_page = false;
+//            }
+
+            $done     = false;
+            $start    = 0;
+            $per_page = 20;
+            while (!$done) {
+                // relevance
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
+                $ckanResultRelevance = $ckanResultRelevance['result'];
+
+                $count = $ckanResultRelevance['count'];
+                $this->say($start . '/' . $count . ' by relevance');
+                if (!$count) {
+                    $done = true;
+                    continue;
+                }
+
+                if (sizeof($ckanResultRelevance['results'])) {
+                    foreach ($ckanResultRelevance['results'] as $dataset) {
+                        fputcsv(
+                            $fp_relevance,
+                            [
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                isset($dataset['organization']) && isset($dataset['organization']['title']) ?
+                                    $dataset['organization']['title'] : '---',
+                                isset($dataset['name']) ?
+                                    $ckan_url . $dataset['name'] : '---',
+                                $topic
+                            ]
+                        );
+                    }
+                } else {
+                    $this->say('no results: ' . $topic);
+                    continue;
+                }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
+                if ($start > $count) {
+                    $done = true;
+                }
+            }
+
+            $done     = false;
+            $start    = 0;
+            $per_page = 20;
+            while (!$done) {
+                // popularity
+                $ckanResultPopularity = $this->Ckan->package_search(
+                    $ckan_query,
+                    $per_page,
+                    $start,
+                    'q',
+                    'views_recent desc,name asc'
+                );
+                $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
+                $ckanResultPopularity = $ckanResultPopularity['result'];
+
+                $count = $ckanResultPopularity['count'];
+                $this->say($start . '/' . $count . ' by popularity');
+                if (!$count) {
+                    $done = true;
+                    continue;
+                }
+
+                if (sizeof($ckanResultPopularity['results'])) {
+                    foreach ($ckanResultPopularity['results'] as $dataset) {
+                        fputcsv(
+                            $fp_popularity,
+                            [
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                isset($dataset['organization']) && isset($dataset['organization']['title']) ?
+                                    $dataset['organization']['title'] : '---',
+                                isset($dataset['name']) ?
+                                    $ckan_url . $dataset['name'] : '---',
+                                $topic
+                            ]
+                        );
+                    }
+                } else {
+                    $this->say('no results: ' . $topic);
+                    continue;
+                }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
+                if ($start > $count) {
+                    $done = true;
+                }
+            }
+        }
+
+        fclose($fp_relevance);
+        fclose($fp_popularity);
+
+        file_put_contents($error_log, $this->log_output, FILE_APPEND);
+        $this->log_output = '';
+    }
+
+    /**
+     * Return a list of the names of the site’s groups.
+     *
+     * @param string $groupName
+     *
+     * @throws \Exception
+     * @return mixed
+     */
+    private
+    function findGroup(
+        $groupName
+    ) {
+        static $group_list;
+        if (!$group_list) {
+            $list = $this->Ckan->group_list(true);
+            $list = json_decode($list, true);
+            if (!$list['success']) {
+                throw new \Exception('Could not retrieve group list');
+            }
+            $group_list = $list['result'];
+        }
+
+        foreach ($group_list as $group) {
+            if (stristr(json_encode($group), $groupName)) {
+                return $group;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Shorthand for sending output to stdout and appending to log buffer at the same time.
+     */
+    public
+    function say(
+        $output = '',
+        $eol = PHP_EOL
+    ) {
+        echo $output . $eol;
+        $this->log_output .= $output . $eol;
+    }
+
+    /**
+     * @param $organizations_list
+     * @param $results_dir
+     */
+    public function search_by_organizations($organizations_list, $results_dir)
+    {
+        $this->log_output    = '';
+        $log_file_popularity = $results_dir . '/search_' . sizeof(
+                $organizations_list
+            ) . '_organizations_by_popularity.csv';
+        $log_file_relevance  = $results_dir . '/search_' . sizeof(
+                $organizations_list
+            ) . '_organizations_by_relevance.csv';
+        $error_log           = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
+
+        $fp_popularity = fopen($log_file_popularity, 'w');
+        $fp_relevance  = fopen($log_file_relevance, 'w');
+
+        $csv_header = [
+            'Name of Dataset',
+            'Agency',
+            'Data.gov URL',
+        ];
+
+        fputcsv($fp_popularity, $csv_header);
+        fputcsv($fp_relevance, $csv_header);
+
+        $ckan_url = 'http://catalog.data.gov/dataset/';
+
+        $i = 1;
+
+//        most relevant:
+//        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
+//        most popular:
+//        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
+        foreach ($organizations_list as $organization) {
+            $this->say(PHP_EOL . $i++ . '/' . sizeof($organizations_list) . ' : ' . $organization);
+            if (!sizeof($organization = trim($organization))) {
+                continue;
+            }
+
+//            defaults
+            $ckan_query = '';
+
+            switch ($organization) {
+                case 'Federal Highway Administration':
+                    $ckan_query = 'publisher:"Federal Highway Administration" AND dataset_type:dataset';
+                    break;
+                default:
+                    $organization_term = $this->findOrganization($organization);
+
+                    if (!$organization_term) {
+                        $this->say('Could not find organization: ' . $organization);
+                        continue;
+                    }
+
+                    $ckan_query = 'organization:(' . $organization_term . ')' . ' AND dataset_type:dataset';
+                    break;
+            }
+
+            $only_first_page = true;
+//            if ('Demographics' == $term) {
+//                $only_first_page = false;
+//            }
+
+            $done     = false;
+            $start    = 0;
+            $per_page = 20;
+            while (!$done) {
+                // relevance
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
+                $ckanResultRelevance = $ckanResultRelevance['result'];
+
+                $count = $ckanResultRelevance['count'];
+                $this->say($start . '/' . $count . ' by relevance');
+                if (!$count) {
+                    $done = true;
+                    continue;
+                }
+
+                if (sizeof($ckanResultRelevance['results'])) {
+                    foreach ($ckanResultRelevance['results'] as $dataset) {
+                        fputcsv(
+                            $fp_relevance,
+                            [
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                $organization,
+                                isset($dataset['name']) ?
+                                    $ckan_url . $dataset['name'] : '---'
+                            ]
+                        );
+                    }
+                } else {
+                    $this->say('no results: ' . $organization);
+                    continue;
+                }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
+                if ($start > $count) {
+                    $done = true;
+                }
+            }
+
+            $done     = false;
+            $start    = 0;
+            $per_page = 20;
+            while (!$done) {
+                // popularity
+                $ckanResultPopularity = $this->Ckan->package_search(
+                    $ckan_query,
+                    $per_page,
+                    $start,
+                    'q',
+                    'views_recent desc,name asc'
+                );
+                $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
+                $ckanResultPopularity = $ckanResultPopularity['result'];
+
+                $count = $ckanResultPopularity['count'];
+                $this->say($start . '/' . $count . ' by popularity');
+                if (!$count) {
+                    $done = true;
+                    continue;
+                }
+
+                if (sizeof($ckanResultPopularity['results'])) {
+                    foreach ($ckanResultPopularity['results'] as $dataset) {
+                        fputcsv(
+                            $fp_popularity,
+                            [
+                                isset($dataset['title']) ? $dataset['title'] : '---',
+                                $organization,
+                                isset($dataset['name']) ?
+                                    $ckan_url . $dataset['name'] : '---',
+                            ]
+                        );
+                    }
+                } else {
+                    $this->say('no results: ' . $organization);
+                    continue;
+                }
+
+                if ($only_first_page) {
+                    $done = true;
+                    continue;
+                }
+
+                $start += $per_page;
+                if ($start > $count) {
+                    $done = true;
+                }
+            }
+        }
+
+        fclose($fp_relevance);
+        fclose($fp_popularity);
+
+        file_put_contents($error_log, $this->log_output, FILE_APPEND);
+        $this->log_output = '';
+    }
+
+    /**
+     * @param string $organizationName
+     *
+     * @throws \Exception
+     * @return mixed
+     */
+    private
+    function findOrganization(
+        $organizationName
+    ) {
+        static $OrgList;
+        if (!$OrgList) {
+            $OrgList = new OrganizationList(AGENCIES_LIST_URL);
+        }
+
+        return $OrgList->getTermFor($organizationName);
     }
 
     /**
@@ -317,18 +805,6 @@ class CkanManager
             file_put_contents($results_dir . '/' . $term . '.json', $json);
         }
         file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $this->log_output);
-    }
-
-    /**
-     * Shorthand for sending output to stdout and appending to log buffer at the same time.
-     */
-    public
-    function say(
-        $output = '',
-        $eol = PHP_EOL
-    ) {
-        echo $output . $eol;
-        $this->log_output .= $output . $eol;
     }
 
     /**
@@ -902,7 +1378,7 @@ class CkanManager
 
             $ckanResult = json_decode($ckanResult, true); //  decode json as array
             $ckanResult = $ckanResult['result'];
-            var_dump($ckanResult);
+//            var_dump($ckanResult);
 
             $count = $ckanResult['count'];
             echo $start . '/' . $count . PHP_EOL;
@@ -944,38 +1420,6 @@ class CkanManager
         }
 
         fclose($fp);
-    }
-
-    /**
-     * Return a list of the names of the site’s groups.
-     *
-     * @param string $groupName
-     *
-     * @throws \Exception
-     * @return mixed
-     */
-    private
-    function findGroup(
-        $groupName
-    ) {
-        static $group_list;
-        if (!$group_list) {
-            $list = $this->Ckan->group_list(true);
-            $list = json_decode($list, true);
-            if (!$list['success']) {
-                throw new \Exception('Could not retrieve group list');
-            }
-            $group_list = $list['result'];
-        }
-
-        $group = false;
-        foreach ($group_list as $group) {
-            if (stristr(json_encode($group), $groupName)) {
-                break;
-            }
-        }
-
-        return $group;
     }
 
     /**

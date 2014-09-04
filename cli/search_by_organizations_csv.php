@@ -7,18 +7,18 @@ define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
-if (!is_readable($keywords_file_path = DATA_DIR . '/keywords.csv')) {
+if (!is_readable($keywords_file_path = DATA_DIR . '/search_organizations.csv')) {
     die($keywords_file_path . ' not readable');
 }
 
-$keywords_list = file_get_contents($keywords_file_path);
-$keywords_list = preg_replace('/[\\r\\n]+/', "\n", $keywords_list);
-$keywords_list = explode("\n", $keywords_list);
+$organizations_list = file_get_contents($keywords_file_path);
+$organizations_list = preg_replace('/[\\r\\n]+/', "\n", $organizations_list);
+$organizations_list = explode("\n", $organizations_list);
 
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SEARCH_' . sizeof($keywords_list);
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SEARCH_ORGANIZATIONS_' . sizeof($organizations_list);
 mkdir($results_dir);
 
 /**
@@ -35,7 +35,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
  */
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$Importer->search_terms($keywords_list, $results_dir);
+$Importer->search_by_organizations($organizations_list, $results_dir);
 
 // show running time on finish
 timer();
