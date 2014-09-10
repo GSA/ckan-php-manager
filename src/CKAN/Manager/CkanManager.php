@@ -222,7 +222,7 @@ class CkanManager
 
             $done     = false;
             $start    = 0;
-            $per_page        = 20;
+            $per_page = 20;
             while (!$done) {
                 // relevance
                 $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
@@ -529,6 +529,18 @@ class CkanManager
     }
 
     /**
+     * Shorthand for sending output to stdout and appending to log buffer at the same time.
+     */
+    public
+    function say(
+        $output = '',
+        $eol = PHP_EOL
+    ) {
+        echo $output . $eol;
+        $this->log_output .= $output . $eol;
+    }
+
+    /**
      * Return a list of the names of the site’s groups.
      *
      * @param string $groupName
@@ -541,6 +553,9 @@ class CkanManager
         $groupName
     ) {
         static $group_list;
+        if (!$groupName) {
+            return false;
+        }
         if (!$group_list) {
             $list = $this->Ckan->group_list(true);
             $list = json_decode($list, true);
@@ -557,18 +572,6 @@ class CkanManager
         }
 
         return false;
-    }
-
-    /**
-     * Shorthand for sending output to stdout and appending to log buffer at the same time.
-     */
-    public
-    function say(
-        $output = '',
-        $eol = PHP_EOL
-    ) {
-        echo $output . $eol;
-        $this->log_output .= $output . $eol;
     }
 
     /**
@@ -1151,7 +1154,7 @@ class CkanManager
         $basename
     ) {
         $this->log_output = '';
-        $log_file = $basename . '_rename.log';
+        $log_file         = $basename . '_rename.log';
 
         $this->say(str_pad($datasetName, 100, ' . '), '');
 
@@ -1203,8 +1206,8 @@ class CkanManager
 
         // Set up logging
         $this->log_output = '';
-        $time = time();
-        $log_file = (isset($department) ? $department : '_') . '_' . "$time.log";
+        $time             = time();
+        $log_file         = (isset($department) ? $department : '_') . '_' . "$time.log";
 
         if (!empty($department)) {
 
@@ -1250,7 +1253,7 @@ class CkanManager
 
                         // note the legacy organization as an extra field
                         $dataset['extras'][] = [
-                            'key' => 'dms_publisher_organization',
+                            'key'   => 'dms_publisher_organization',
                             'value' => $org_slug
                         ];
 
@@ -1669,25 +1672,40 @@ class CkanManager
         $results_dir,
         $basename
     ) {
+        static $counter = 0;
         $this->log_output = '';
 
-        if (!($group = $this->findGroup($group))) {
-            throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
-        }
+        $group = $this->findGroup($group);
 
         foreach ($datasetNames as $datasetName) {
-            $this->say(str_pad($datasetName, 100, ' . '), '');
+            echo str_pad(++$counter, 6);
+//            $this->say(str_pad($datasetName, 100, ' . '), '');
+            $this->say($datasetName . ',', '');
+
+            if (!$group) {
+//                $this->say(str_pad('GROUP "' . $group . '" NOT FOUND', 15, ' . ', STR_PAD_LEFT));
+                $this->say('GROUP "' . $group . '" NOT FOUND');
+                continue;
+            }
+
+            if (!is_array($categories) && !strlen($categories)) {
+//                $this->say(str_pad('EMPTY TOPIC TAG', 15, ' . ', STR_PAD_LEFT));
+                $this->say('EMPTY TOPIC TAG');
+                continue;
+            }
 
             try {
                 $dataset = $this->Ckan->package_show($datasetName);
             } catch (NotFoundHttpException $ex) {
-                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
+//                $this->say(str_pad('NOT FOUND', 15, ' . ', STR_PAD_LEFT));
+                $this->say('NOT FOUND');
                 continue;
             }
 
             $dataset = json_decode($dataset, true);
             if (!$dataset['success']) {
-                $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
+//                $this->say(str_pad('NOT FOUND', 15, ' . ', STR_PAD_LEFT));
+                $this->say('NOT FOUND');
                 continue;
             }
 
@@ -1720,20 +1738,20 @@ class CkanManager
 
             try {
                 $this->Ckan->package_update($dataset);
-                $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
+//                $this->say(str_pad('SUCCESS', 15, ' . ', STR_PAD_LEFT));
+                $this->say('SUCCESS');
             } catch (\Exception $ex) {
-                $this->say(str_pad('ERROR', 10, ' . ', STR_PAD_LEFT));
+//                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
+                $this->say('ERROR: CHECK LOG');
                 file_put_contents($results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
             }
-
-
-            file_put_contents(
-                $results_dir . '/' . $basename . '_tags.log',
-                $this->log_output,
-                FILE_APPEND | LOCK_EX
-            );
-            $this->log_output = '';
         }
+        file_put_contents(
+            $results_dir . '/' . $basename . '_tags.log.csv',
+            $this->log_output,
+            FILE_APPEND | LOCK_EX
+        );
+        $this->log_output = '';
     }
 
     /**
@@ -1999,7 +2017,7 @@ class CkanManager
         $try = 3
     ) {
         $dataset = false;
-        $title = $this->escapeSolrValue($title);
+        $title   = $this->escapeSolrValue($title);
         while ($try) {
             try {
                 $ckanResult = $this->Ckan->package_search(

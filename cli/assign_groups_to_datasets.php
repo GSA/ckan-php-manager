@@ -41,10 +41,10 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    file_put_contents($results_dir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
+//    file_put_contents($results_dir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
-    $i = 0;
+    $i   = 0;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
@@ -59,9 +59,17 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
         $categories = [];
         if (isset($row['2']) && $row['2']) {
             $categories = explode(';', trim($row['2']));
+            $categories = array_map('trim', $categories);
+
+        } else {
+            continue;
         }
 
         $dataset = basename(trim($row['0']));
+        if (!$dataset) {
+            continue;
+        }
+
         $Importer->assign_groups_and_categories_to_datasets(
             [$dataset],
             trim($row['1']),
