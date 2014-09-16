@@ -1678,6 +1678,9 @@ class CkanManager
         $group = $this->findGroup($group);
 
         foreach ($datasetNames as $datasetName) {
+
+            $datasetName = strtolower($datasetName);
+
             echo str_pad(++$counter, 6);
 //            $this->say(str_pad($datasetName, 100, ' . '), '');
             $this->say($datasetName . ',', '');
@@ -2449,5 +2452,94 @@ EOR;
         }
 
         return $title;
+    }
+
+    /**
+     * @param $results_dir
+     * @param $limit
+     * @param $start
+     */
+    public function orphaned_tags_seek($results_dir, $limit, $start)
+    {
+        $counter  = 0;
+        $offset   = $start;
+        $finish   = $start + $limit;
+        $per_page = 50;
+
+        $groups = $this->try_get_groups_array();
+
+        while (true) {
+            $datasets = $this->try_package_search('(dataset_type:dataset)', $per_page, $offset);
+
+//            Finish
+            if (!$datasets) {
+                echo PHP_EOL."no datasets: offset $offset limit: $per_page".PHP_EOL;
+                break;
+            }
+
+
+            foreach ($datasets as $dataset) {
+                $counter++;
+                if (!isset($dataset['extras'])) {
+                    continue;
+                }
+
+                $dataset_groups = null;
+
+                foreach ($dataset['extras'] as $extra) {
+                    if (!strpos($extra['key'], 'category_tag') || !$extra['value']) {
+                        continue;
+                    }
+                    $group_id = str_replace('__category_tag_', '', $extra['key']);
+                    $group    = isset($groups[$group_id]) ? $groups[$group_id] : $group_id;
+
+                    $group_found = false;
+                    if (isset($dataset['groups'])) {
+                        foreach($dataset['groups'] as $dataset_group) {
+                            if ($dataset_group['id'] == $group_id) {
+                                $group_found = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$group_found) {
+                        echo $counter.' '.($out = $dataset['name'].','.$group. ','.$extra['value'].PHP_EOL);
+                        file_put_contents($results_dir.'/orphaned_tags.csv',$out, FILE_APPEND);
+                    }
+                }
+            }
+
+//            Finish
+//            if (($sz = sizeof($datasets)) < $per_page) {
+//                echo PHP_EOL."$sz datasets: offset $offset limit: $per_page".PHP_EOL;
+//                break;
+//            }
+
+            $offset += $per_page;
+
+//            iteration done
+            if ($offset >= $finish) {
+                echo PHP_EOL."done: offset $offset limit: $per_page".PHP_EOL;
+                break;
+            }
+        }
+    }
+
+    /**
+     * @return array
+     */
+    private function try_get_groups_array()
+    {
+        $groups = json_decode($this->Ckan->group_list(true), true);
+        if (!$groups || !$groups['success']) {
+            die('cant get groups array');
+        }
+        $return = [];
+        foreach ($groups['result'] as $group) {
+            $return[$group['id']] = $group['name'];
+        }
+
+        return $return;
     }
 }
