@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "5db7587da0072cc3c905e65a33261b644d74c6a6"
+                "reference": "bae7c3da484aaef534ed5705a678ab20611fbaef"
             },
             "require": {
                 "ext-curl": "*",
@@ -28,9 +28,7 @@
                     "CKAN\\Core\\": "src/",
                     "CKAN\\Exceptions\\": "src/"
                 },
-                "classmap": [
-
-                ]
+                "classmap": []
             },
             "license": [
                 "GPL-3.0+"
@@ -42,7 +40,7 @@
                 }
             ],
             "description": "CKAN php client",
-            "time": "2014-09-10 20:25:27"
+            "time": "2014-09-22 22:35:49"
         },
         {
             "name": "jwage/easy-csv",
@@ -474,12 +472,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Yaml.git",
-                "reference": "b5922e0afc21531b84ddef806e66ba4f84f770b0"
+                "reference": "6644c5c6b395e63a55186dea1817eed0ceb1c075"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Yaml/zipball/b5922e0afc21531b84ddef806e66ba4f84f770b0",
-                "reference": "b5922e0afc21531b84ddef806e66ba4f84f770b0",
+                "url": "https://api.github.com/repos/symfony/Yaml/zipball/6644c5c6b395e63a55186dea1817eed0ceb1c075",
+                "reference": "6644c5c6b395e63a55186dea1817eed0ceb1c075",
                 "shasum": ""
             },
             "require": {
@@ -512,12 +510,10 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "http://symfony.com",
-            "time": "2014-08-31 03:28:38"
+            "time": "2014-09-22 11:59:59"
         }
     ],
-    "aliases": [
-
-    ],
+    "aliases": [],
     "minimum-stability": "dev",
     "stability-flags": {
         "ckan/php-client": 20
@@ -527,7 +523,5 @@
         "php": ">=5.4.17",
         "ext-json": "*"
     },
-    "platform-dev": [
-
-    ]
+    "platform-dev": []
 }

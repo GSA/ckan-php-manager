@@ -11,7 +11,7 @@ mkdir($results_dir);
 /**
  * Set to `true` if you want to remove topic too like 'Climate' etc.
  */
-define('REMOVE_GROUP', true);
+define('REMOVE_GROUP', false);
 
 /**
  * Adding Legacy dms tag
