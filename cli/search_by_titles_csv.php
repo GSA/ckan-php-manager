@@ -52,7 +52,6 @@ foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
 
         /**
          * Search for packages by terms found
-         * add method later
          */
 //        $Importer->search_by_title($title, $csv_destination);
     }

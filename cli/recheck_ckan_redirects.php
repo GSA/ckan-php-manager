@@ -157,7 +157,7 @@ function try_get_page($curl_ch, $url)
         curl_setopt($curl_ch, CURLOPT_CUSTOMREQUEST, $method);
 
         // Execute request and get response headers.
-//        $response = curl_exec($curl_ch);
+        curl_exec($curl_ch);
         $info = curl_getinfo($curl_ch);
 
         switch ($info['http_code']) {
