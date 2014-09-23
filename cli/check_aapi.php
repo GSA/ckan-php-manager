@@ -55,7 +55,7 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
-$date     = new DateTime(null, new DateTimeZone('UTC'));
+$date            = new DateTime(null, new DateTimeZone('UTC'));
 $curl_ch_headers = [
     'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
     'Accept: application/json',
@@ -135,7 +135,7 @@ function try_get_dataset($curl_ch, $url)
 
     // Execute request and get response headers.
     $response = curl_exec($curl_ch);
-    $info = curl_getinfo($curl_ch);
+    $info        = curl_getinfo($curl_ch);
 
     $return = [
         'response' => $response,

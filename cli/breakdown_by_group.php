@@ -28,7 +28,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
  */
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$csv_agencies = new EasyCSV\Writer($results_dir . '/' . GROUP_TO_EXPORT . '_by_agency.csv');
+$csv_agencies   = new EasyCSV\Writer($results_dir . '/' . GROUP_TO_EXPORT . '_by_agency.csv');
 $csv_categories = new EasyCSV\Writer($results_dir . '/' . GROUP_TO_EXPORT . '_by_category.csv');
 
 $Importer->breakdown_by_group($csv_agencies, $csv_categories);

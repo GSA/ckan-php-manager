@@ -681,7 +681,7 @@ class CkanManager
                 $organizations_list
             ) . '_organizations_by_popularity.csv';
         $log_file_relevance = $results_dir . '/search_' . sizeof(
-                $organizations_list
+            $organizations_list
             ) . '_organizations_by_relevance.csv';
         $error_log          = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
 
@@ -1407,14 +1407,14 @@ class CkanManager
             $freshExtras = [];
             foreach ($freshDataset['extras'] as $extra) {
                 if (!strpos($extra['key'], 'category_tag')) {
-                    $freshExtras[ $extra['key'] ] = true;
+                    $freshExtras[$extra['key']] = true;
                 }
             }
 
             $diff = [];
             foreach ($stagingDataset['extras'] as $extra) {
                 if (!strpos($extra['key'], 'category_tag')) {
-                    if (!isset($freshExtras[ $extra['key'] ])) {
+                    if (!isset($freshExtras[$extra['key']])) {
                         $diff[] = $extra;
                     }
                 }
@@ -1646,7 +1646,7 @@ class CkanManager
 
             $extras = $dataset['extras'];
 
-            $newTags = [];
+            $newTags                 = [];
             $dataset['extras'] = [];
 
             foreach ($extras as $extra) {
@@ -2311,7 +2311,7 @@ class CkanManager
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
                     $socrata_txt_log [] = join(
-                        ',',
+                    ',',
                         [
                             $socrata_id,
                             $ckan_id,
@@ -2342,7 +2342,7 @@ class CkanManager
                 $publicFound++;
                 echo 'ckan public found by id' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                    ',',
+                ',',
                     [$socrata_id, $ckan_id, 'ckan public found by id', '-', $ckan_url . $dataset['name']]
                 );
                 $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
@@ -2368,7 +2368,7 @@ class CkanManager
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
                     $socrata_txt_log [] = join(
-                        ',',
+                    ',',
                         [
                             $socrata_id,
                             $ckan_id,
@@ -2405,7 +2405,7 @@ class CkanManager
                 $alreadyLegacy++;
                 echo 'ckan private already _legacy; public brother ok; no renaming' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                    ',',
+                ',',
                     [
                         $socrata_id,
                         $ckan_id,
@@ -2425,7 +2425,7 @@ class CkanManager
             $mustRename++;
             echo 'ckan private and public found; need to rename' . PHP_EOL;
             $socrata_txt_log [] = join(
-                ',',
+            ',',
                 [
                     $socrata_id,
                     $ckan_id,
@@ -2437,7 +2437,7 @@ class CkanManager
             $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
 //            $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
             $ckan_redirects [] = join(
-                ',',
+            ',',
                 [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]
             );
             $ckan_rename_legacy[] = join(
@@ -2547,10 +2547,10 @@ EOR;
                 $counter++;
 
                 echo $dataset['organization']['title'] . PHP_EOL;
-                if (isset($organizations[ $dataset['organization']['title'] ])) {
-                    $organizations[ $dataset['organization']['title'] ]++;
+                if (isset($organizations[$dataset['organization']['title']])) {
+                    $organizations[$dataset['organization']['title']]++;
                 } else {
-                    $organizations[ $dataset['organization']['title'] ] = 1;
+                    $organizations[$dataset['organization']['title']] = 1;
                 }
 
                 if (!isset($dataset['extras'])) {
@@ -2566,10 +2566,10 @@ EOR;
 
                     if (sizeof($extra_tags)) {
                         foreach ($extra_tags as $tag) {
-                            if (isset($tags[ $tag ])) {
-                                $tags[ $tag ]++;
+                            if (isset($tags[$tag])) {
+                                $tags[$tag]++;
                             } else {
-                                $tags[ $tag ] = 1;
+                                $tags[$tag] = 1;
                             }
                         }
                     }
@@ -2628,7 +2628,7 @@ EOR;
                         continue;
                     }
                     $group_id = str_replace('__category_tag_', '', $extra['key']);
-                    $group = isset($groups[ $group_id ]) ? $groups[ $group_id ] : $group_id;
+                    $group = isset($groups[$group_id]) ? $groups[$group_id] : $group_id;
 
                     $group_found = false;
                     if (isset($dataset['groups'])) {
@@ -2674,7 +2674,7 @@ EOR;
         }
         $return = [];
         foreach ($groups['result'] as $group) {
-            $return[ $group['id'] ] = $group['name'];
+            $return[$group['id']] = $group['name'];
         }
 
         return $return;

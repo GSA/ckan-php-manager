@@ -13,7 +13,7 @@ $limit = isset($argv[2]) ? intval($argv[2]) : 1;
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_PRIVATE_DATASETS_' . $start ?: '';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_PRIVATE_DATASETS_' . $start ? : '';
 mkdir($results_dir);
 
 /**
