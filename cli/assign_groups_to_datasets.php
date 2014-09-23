@@ -61,8 +61,6 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
             $categories = explode(';', trim($row['2']));
             $categories = array_map('trim', $categories);
 
-        } else {
-            continue;
         }
 
         $dataset = basename(trim($row['0']));

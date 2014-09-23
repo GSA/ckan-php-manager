@@ -141,6 +141,7 @@ function try_get_dataset($curl_ch, $url)
         'response' => $response,
         'info' => $info
     ];
+
     return $return;
 }
 

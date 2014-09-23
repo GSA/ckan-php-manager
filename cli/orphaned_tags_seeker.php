@@ -5,7 +5,6 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $start = isset($argv[1]) ? intval($argv[1]) : 0;
 $limit = isset($argv[2]) ? intval($argv[2]) : 10000;
 
-
 /**
  * Create results dir for logs
  */

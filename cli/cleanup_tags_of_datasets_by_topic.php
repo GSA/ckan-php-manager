@@ -24,7 +24,6 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
-
 $topicTitle = 'ecosystems0617';
 $Importer->cleanup_tags_by_topic($topicTitle, $results_dir);
 
