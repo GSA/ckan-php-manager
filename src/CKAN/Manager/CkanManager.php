@@ -183,6 +183,111 @@ class CkanManager
     }
 
     /**
+     * @param $title
+     * @param $csv_writer
+     *
+     * @return bool
+     */
+    public function search_by_title($title, Writer $csv_writer)
+    {
+        $solr_title = $this->escapeSolrValue($title);
+        $datasets   = $this->try_package_search("($solr_title)", 3);
+        if ($datasets && isset($datasets[0]) && isset($datasets[0]['name'])) {
+            $found_title = $this->escapeSolrValue($datasets[0]['title']);
+            $exact       = ($solr_title == $found_title);
+            echo PHP_EOL . $title . PHP_EOL . $solr_title . PHP_EOL . ($exact ? 'EXACT MATCH' : 'NOT EXACT MATCH') . PHP_EOL . $datasets[0]['title'] . PHP_EOL . $datasets[0]['name'] . PHP_EOL;
+            $csv_writer->writeRow(
+                [
+                    'https://catalog.data.gov/dataset/' . $datasets[0]['name'],
+                    ($exact ? 'true' : 'false'),
+                    $datasets[0]['title'],
+                    $title
+                ]
+            );
+        } else {
+            $csv_writer->writeRow(['not found', '', 'not found', $title]);
+        }
+
+        return true;
+    }
+
+    /**
+     * @param $string
+     *
+     * @return mixed
+     */
+    private
+    function escapeSolrValue(
+        $string
+    ) {
+        $string = preg_replace("/'/u", '', $string);
+        $string = preg_replace('/[\W]+/u', ' ', $string);
+
+        return $string;
+    }
+
+    /**
+     * @param        $search
+     * @param int    $rows
+     * @param int    $start
+     * @param string $q
+     * @param int    $try
+     *
+     * @return bool|mixed
+     */
+    private
+    function try_package_search(
+        $search,
+        $rows = 100,
+        $start = 0,
+        $q = 'q',
+        $try = 3
+    ) {
+        $datasets = false;
+        while ($try) {
+            try {
+                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
+                $datasets = json_decode($datasets, true); // as array
+
+                if (!$datasets['success'] || !isset($datasets['result'])) {
+                    throw new \Exception('Could not search datasets');
+                }
+
+                $datasets = $datasets['result'];
+
+                if (!$datasets['count']) {
+                    echo 'Nothing found ' . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
+                    echo 'No results ' . PHP_EOL;
+
+                    return false;
+                }
+
+                $datasets = $datasets['results'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Datasets not found " . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $datasets;
+    }
+
+    /**
      * @param $search_list
      * @param $results_dir
      */
@@ -222,7 +327,7 @@ class CkanManager
                 $only_first_page = false;
             }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -268,7 +373,7 @@ class CkanManager
                 }
             }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -326,32 +431,17 @@ class CkanManager
     }
 
     /**
-     * @param $string
-     *
-     * @return mixed
-     */
-    private
-    function escapeSolrValue(
-        $string
-    ) {
-        $string = preg_replace("/'/u", '', $string);
-        $string = preg_replace('/[\W]+/u', ' ', $string);
-
-        return $string;
-    }
-
-    /**
      * @param $groups_list
      * @param $results_dir
      */
     public function search_by_topics($groups_list, $results_dir)
     {
-        $this->log_output = '';
+        $this->log_output   = '';
         $log_file_popularity = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_popularity.csv';
         $log_file_relevance = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_relevance.csv';
-        $error_log        = $results_dir . '/search_' . sizeof($groups_list) . '_topics.log';
-        $fp_popularity    = fopen($log_file_popularity, 'w');
-        $fp_relevance     = fopen($log_file_relevance, 'w');
+        $error_log          = $results_dir . '/search_' . sizeof($groups_list) . '_topics.log';
+        $fp_popularity      = fopen($log_file_popularity, 'w');
+        $fp_relevance       = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -364,7 +454,7 @@ class CkanManager
         fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
-        $i                = 1;
+        $i                  = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
@@ -424,7 +514,7 @@ class CkanManager
 //                $only_first_page = false;
 //            }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -470,7 +560,7 @@ class CkanManager
                 }
             }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -586,17 +676,17 @@ class CkanManager
      */
     public function search_by_organizations($organizations_list, $results_dir)
     {
-        $this->log_output = '';
+        $this->log_output   = '';
         $log_file_popularity = $results_dir . '/search_' . sizeof(
                 $organizations_list
             ) . '_organizations_by_popularity.csv';
         $log_file_relevance = $results_dir . '/search_' . sizeof(
                 $organizations_list
             ) . '_organizations_by_relevance.csv';
-        $error_log        = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
+        $error_log          = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
 
         $fp_popularity = fopen($log_file_popularity, 'w');
-        $fp_relevance     = fopen($log_file_relevance, 'w');
+        $fp_relevance       = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -645,7 +735,7 @@ class CkanManager
 //                $only_first_page = false;
 //            }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -689,7 +779,7 @@ class CkanManager
                 }
             }
 
-            $done = false;
+            $done  = false;
             $start = 0;
             $per_page = 20;
             while (!$done) {
@@ -779,11 +869,11 @@ class CkanManager
     {
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         foreach ($terms as $term => $agency) {
-            $page = 0;
+            $page  = 0;
             $count = 0;
             $results = [];
             while (true) {
-                $start = $page++ * $this->packageSearchPerPage;
+                $start   = $page++ * $this->packageSearchPerPage;
                 $ckanResult = $this->Ckan->package_search(
                     'organization:' . $term,
                     $this->packageSearchPerPage,
@@ -792,7 +882,7 @@ class CkanManager
                 $ckanResult = json_decode($ckanResult, true); //  decode json as array
                 $ckanResult = $ckanResult['result'];
                 $results = array_merge($results, $ckanResult['results']);
-                $count = $ckanResult['count'];
+                $count   = $ckanResult['count'];
                 if ($start) {
                     echo "start from $start / " . $count . ' total ' . PHP_EOL;
                 }
@@ -1395,7 +1485,7 @@ class CkanManager
 
         $category_key = ('__category_tag_' . $group['id']);
 
-        $done = false;
+        $done  = false;
         $start = 0;
         $per_page = 100;
         while (!$done) {
@@ -1492,68 +1582,6 @@ class CkanManager
     }
 
     /**
-     * @param        $search
-     * @param int    $rows
-     * @param int    $start
-     * @param string $q
-     * @param int    $try
-     *
-     * @return bool|mixed
-     */
-    private
-    function try_package_search(
-        $search,
-        $rows = 100,
-        $start = 0,
-        $q = 'q',
-        $try = 3
-    )
-    {
-        $datasets = false;
-        while ($try) {
-            try {
-                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
-                $datasets = json_decode($datasets, true); // as array
-
-                if (!$datasets['success'] || !isset($datasets['result'])) {
-                    throw new \Exception('Could not search datasets');
-                }
-
-                $datasets = $datasets['result'];
-
-                if (!$datasets['count']) {
-                    echo 'Nothing found ' . PHP_EOL;
-
-                    return false;
-                }
-
-                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
-                    echo 'No results ' . PHP_EOL;
-
-                    return false;
-                }
-
-                $datasets = $datasets['results'];
-
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                echo "Datasets not found " . PHP_EOL;
-
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                if (!$try) {
-                    echo 'Too many attempts ' . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $datasets;
-    }
-
-    /**
      * Remove groups & all group tags from dataset
      *
      * @param $datasetNames
@@ -1641,7 +1669,7 @@ class CkanManager
             }
 
             if ($newTags) {
-                $formattedTags = '["' . join('","', $newTags) . '"]';
+                $formattedTags       = '["' . join('","', $newTags) . '"]';
                 $dataset['extras'][] = [
                     'key' => $category_tag,
                     'value' => $formattedTags,
@@ -2235,8 +2263,8 @@ class CkanManager
         $socrata_redirects = ['from,to'];
         $ckan_rename_legacy = ['from,to'];
         $ckan_rename_public = ['from,to'];
-        $ckan_redirects = ['from,to'];
-        $socrata_txt_log = ['socrata_id,ckan_id,status,private,public'];
+        $ckan_redirects    = ['from,to'];
+        $socrata_txt_log   = ['socrata_id,ckan_id,status,private,public'];
 
         $notFound = $publicFound = $privateOnly = $alreadyLegacy = $mustRename = $socrataNotFound = 0;
 
@@ -2245,7 +2273,7 @@ class CkanManager
         $SocrataApi = new ExploreApi('http://explore.data.gov/api/');
 
         $size = sizeof($socrata_list);
-        $i = 0;
+        $i                 = 0;
         foreach ($socrata_list as $socrata_line) {
             echo ++$i . " / $size $socrata_line" . PHP_EOL;
             if (!strlen($socrata_line = trim($socrata_line))) {
@@ -2253,7 +2281,7 @@ class CkanManager
             }
             list($socrata_id, $ckan_id) = explode(': ', $socrata_line);
             $socrata_id = trim($socrata_id);
-            $ckan_id = trim($ckan_id);
+            $ckan_id       = trim($ckan_id);
 
             $socrataDatasetTitle = $this->try_find_socrata_title($SocrataApi, $socrata_id);
 
@@ -2496,12 +2524,12 @@ EOR;
      */
     public function breakdown_by_group(Writer $csv_agencies, Writer $csv_categories)
     {
-        $offset = 0;
+        $offset  = 0;
         $per_page = 50;
         $counter = 0;
 
         $organizations = [];
-        $tags   = [];
+        $tags    = [];
 
         $search_query = '(' . GROUP_TO_EXPORT . ') AND (dataset_type:dataset)';
 //        $group = $this->findGroup(GROUP_TO_EXPORT);
