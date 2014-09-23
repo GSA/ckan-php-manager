@@ -681,7 +681,7 @@ class CkanManager
                 $organizations_list
             ) . '_organizations_by_popularity.csv';
         $log_file_relevance = $results_dir . '/search_' . sizeof(
-            $organizations_list
+                $organizations_list
             ) . '_organizations_by_relevance.csv';
         $error_log          = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
 
@@ -1767,6 +1767,12 @@ class CkanManager
             }
 
             $dataset = $dataset['result'];
+
+            if ('dataset' !== $dataset['type']) {
+                $this->say('NOT A DATASET (type: ' . $dataset['type'] . ')');
+                continue;
+            }
+
             $dataset['groups'][] = [
                 'name' => $group['name'],
             ];
@@ -2311,7 +2317,7 @@ class CkanManager
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
                     $socrata_txt_log [] = join(
-                    ',',
+                        ',',
                         [
                             $socrata_id,
                             $ckan_id,
@@ -2342,7 +2348,7 @@ class CkanManager
                 $publicFound++;
                 echo 'ckan public found by id' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                ',',
+                    ',',
                     [$socrata_id, $ckan_id, 'ckan public found by id', '-', $ckan_url . $dataset['name']]
                 );
                 $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
@@ -2368,7 +2374,7 @@ class CkanManager
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
                     $socrata_txt_log [] = join(
-                    ',',
+                        ',',
                         [
                             $socrata_id,
                             $ckan_id,
@@ -2405,7 +2411,7 @@ class CkanManager
                 $alreadyLegacy++;
                 echo 'ckan private already _legacy; public brother ok; no renaming' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                ',',
+                    ',',
                     [
                         $socrata_id,
                         $ckan_id,
@@ -2425,7 +2431,7 @@ class CkanManager
             $mustRename++;
             echo 'ckan private and public found; need to rename' . PHP_EOL;
             $socrata_txt_log [] = join(
-            ',',
+                ',',
                 [
                     $socrata_id,
                     $ckan_id,
@@ -2437,7 +2443,7 @@ class CkanManager
             $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
 //            $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
             $ckan_redirects [] = join(
-            ',',
+                ',',
                 [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]
             );
             $ckan_rename_legacy[] = join(

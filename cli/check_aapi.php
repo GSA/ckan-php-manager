@@ -87,20 +87,49 @@ foreach (glob(DATA_DIR . '/check_*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row[0])), ['socrata code', 'from', 'source url'])) {
-//            $csv_destination->writeRow($row);
+        if (in_array(trim(strtolower($row[0])), ['data.gov url'])) {
             continue;
         }
 
         $url = strtolower($row[0]);
 
+        if (!strpos($url, '/dataset/')) {
+            $csv_destination->writeRow([$url, 'not a dataset', '0']);
+            continue;
+        }
+
         $dataset = try_get_dataset($curl_ch, str_replace('/dataset/', '/api/rest/dataset/', $url));
 
         if (200 !== $dataset['info']['http_code']) {
+//            Redirect check
+            $dataset2 = try_get_dataset($curl_ch, $url);
+            if ((404 == $dataset['info']['http_code']) && (200 == $dataset2['info']['http_code'])) {
+                $response = $dataset2['response'];
+                if (stripos($response, 'http-equiv="refresh"')) {
+                    $pattern = '/content="0;URL=(http[\S\/\-\.]+)"/';
+                    preg_match($pattern, $response, $matches, PREG_OFFSET_CAPTURE, 3);
+                    if ($matches && isset($matches[1]) && isset($matches[1][0])) {
+                        $url2 = $matches[1][0];
+
+                        $dataset3 = try_get_dataset($curl_ch, str_replace('/dataset/', '/api/rest/dataset/', $url2));
+                        if (200 == $dataset3['info']['http_code']) {
+                            $aapi_found = strpos($dataset3['response'], 'aapi0916');
+                            $csv_destination->writeRow([$url, 'ok (redirect)', ($aapi_found ? '1' : '0')]);
+                            continue;
+                        }
+                    }
+                }
+            }
             $csv_destination->writeRow([$url, $dataset['info']['http_code'], '0']);
+            continue;
         } else {
+            if (!strpos($dataset['response'], '"type": "dataset",')) {
+                $csv_destination->writeRow([$url, 'not a dataset', '0']);
+                continue;
+            }
             $aapi_found = strpos($dataset['response'], 'aapi0916');
             $csv_destination->writeRow([$url, 'ok', ($aapi_found ? '1' : '0')]);
+            continue;
         }
     }
 }
