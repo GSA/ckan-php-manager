@@ -4,20 +4,20 @@
  * http://idm.data.gov/fed_agency.json
  */
 
-$topic = isset($argv[1]) ? trim($argv[1]) : false;
+$search = isset($argv[1]) ? trim($argv[1]) : false;
 
-if (!$topic) {
-    die('You should indicate topic to export, as first argument in shell' . PHP_EOL);
+if (!$search) {
+    die('Please define search by first param' . PHP_EOL);
 }
 
-$topic = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $topic);
+$strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_TOPIC_' . $topic;
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_SEARCH_' . $strip_search;
 mkdir($results_dir);
 
 /**
@@ -34,7 +34,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$Importer->export_datasets_with_tags_by_group($topic, $results_dir);
+$Importer->export_datasets_by_search($search, $results_dir);
 
 // show running time on finish
 timer();

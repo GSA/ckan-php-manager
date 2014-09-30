@@ -21,7 +21,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
 foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;

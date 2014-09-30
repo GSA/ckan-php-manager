@@ -40,7 +40,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $Importer->reorganize_datasets(ORGANIZATION_TO_TAG, $termsArray, BACKUP_DIR, $results_dir);
 

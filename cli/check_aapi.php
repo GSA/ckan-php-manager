@@ -22,12 +22,12 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 /**
  * Dev
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  *
@@ -72,7 +72,7 @@ foreach (glob(DATA_DIR . '/check_*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
+    $csv_source      = new EasyCSV\Reader($csv_file, 'r+', false);
     $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_log.csv');
 
     $csv_destination->writeRow(['dataset', 'status', 'aapi found']);
@@ -164,11 +164,11 @@ function try_get_dataset($curl_ch, $url)
 
     // Execute request and get response headers.
     $response = curl_exec($curl_ch);
-    $info        = curl_getinfo($curl_ch);
+    $info     = curl_getinfo($curl_ch);
 
     $return = [
         'response' => $response,
-        'info' => $info
+        'info'     => $info
     ];
 
     return $return;

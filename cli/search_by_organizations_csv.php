@@ -33,7 +33,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
 $Importer->search_by_organizations($organizations_list, $results_dir);
 

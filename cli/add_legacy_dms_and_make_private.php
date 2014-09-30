@@ -47,7 +47,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $Importer->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms', $results_dir);
 

@@ -22,7 +22,7 @@ $StagingClient = new \CKAN\Manager\CkanManager(CKAN_UAT_API_URL);
 /**
  * Dev
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  * Sample csv

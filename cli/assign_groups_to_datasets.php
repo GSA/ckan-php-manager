@@ -17,12 +17,17 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 /**
  * Dev
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+
+/**
+ * UAT
+ */
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
 
 /**
  * Sample csv
@@ -66,6 +71,18 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
         $dataset = basename(trim($row['0']));
         if (!$dataset) {
             continue;
+        }
+
+//        double trouble check
+        if (strpos($row['0'], '://')) {
+            if (!strpos($row['0'], '/dataset/')) {
+                file_put_contents(
+                    $results_dir . '/' . $basename . '_tags.log.csv',
+                    $row['0'] . ',WRONG URL' . PHP_EOL,
+                    FILE_APPEND | LOCK_EX
+                );
+                continue;
+            }
         }
 
         $Importer->assign_groups_and_categories_to_datasets(

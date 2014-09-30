@@ -38,7 +38,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 /**
  * Staging
  */
-//$Importer = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
 $Importer->export_packages_by_org_terms($termsArray, $results_dir);
 
