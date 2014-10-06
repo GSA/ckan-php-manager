@@ -29,7 +29,8 @@ $CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY)
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
 
-$CkanManager->test_dev('title-27-usc-205-list-of-permittees-frequently-requested-listings', $results_dir);
+$CkanManager->results_dir = $results_dir;
+$CkanManager->test_dev();
 
 // show running time on finish
 timer();

@@ -29,6 +29,11 @@ class CkanManager
     private $return = false;
 
     /**
+     * @var string
+     */
+    public $results_dir = RESULTS_DIR;
+
+    /**
      * Ckan results per page
      * @var int
      */
@@ -44,26 +49,167 @@ class CkanManager
     }
 
     /**
-     * @param $id
-     * @param $results_dir
+     * @param $dataset
+     *
+     * @return bool
+     * @throws \Exception
      */
-    public function test_dev($id, $results_dir)
+    public function package_update($dataset)
     {
-        $dataset = $this->try_package_show($id);
-        file_put_contents($results_dir . '/1.json', json_encode($dataset, JSON_PRETTY_PRINT));
+        if ('dataset' !== $dataset['type']) {
+//            throw new \Exception('Not a dataset');
+            return false;
+        }
 
         $this->Ckan->package_update($dataset);
+        if (!$this->check_dataset_consistency($dataset)) {
+            throw new \Exception('dataset consistency check failed');
+        }
 
-        $dataset = $this->try_package_show($id);
-        file_put_contents($results_dir . '/2.json', json_encode($dataset, JSON_PRETTY_PRINT));
+        return true;
+    }
+
+    /**
+     * @param $dataset
+     *
+     * @return bool
+     * @throws \Exception
+     */
+    public function check_dataset_consistency($dataset)
+    {
+        $id              = $dataset['name'];
+        $updated_dataset = $this->try_package_show($id);
+
+        try {
+            if (sizeof($dataset['resources']) != sizeof($updated_dataset['resources'])) {
+                throw new \Exception('Number of resources does not match after update (check dumps): ' . $id);
+
+                return false;
+            }
+
+
+            if (isset($dataset['extras'])) {
+                $this->pre_diff_sort($dataset);
+                $this->pre_diff_sort($updated_dataset);
+            }
+
+            $diff = $this->array_diff_assoc_recursive($dataset, $updated_dataset);
+
+            if (sizeof($diff)) {
+                file_put_contents(
+                    $this->results_dir . '/dump-diff__' . $id . '.json',
+                    json_encode($diff, JSON_PRETTY_PRINT)
+                );
+                throw new \Exception('Consistency check failed (check diff): ' . $id);
+
+                return false;
+            }
+
+        } catch (\Exception $ex) {
+            file_put_contents(
+                $this->results_dir . '/dump-before__' . $id . '.json',
+                json_encode($dataset, JSON_PRETTY_PRINT)
+            );
+            file_put_contents(
+                $this->results_dir . '/dump-after__' . $id . '.json',
+                json_encode($updated_dataset, JSON_PRETTY_PRINT)
+            );
+            throw $ex;
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param array $dataset
+     */
+    private function pre_diff_sort(array &$dataset)
+    {
+        if (isset($dataset['extras']) && sizeof($dataset['extras'])) {
+            $extras = [];
+            foreach ($dataset['extras'] as $extra) {
+                $extras[$extra['key']] = $extra;
+            }
+            ksort($extras);
+            $dataset['extras'] = $extras;
+        }
+    }
+
+    /**
+     * @param $array1
+     * @param $array2
+     *
+     * @return array
+     */
+    private function  array_diff_assoc_recursive($array1, $array2)
+    {
+        $blacklist  = [
+            'revision_timestamp',
+            'metadata_modified',
+            'revision_id',
+            'no_real_name',
+            'tags',
+        ];
+        $difference = array();
+        foreach ($array1 as $key => $value) {
+            if (is_array($value)) {
+                if (!isset($array2[$key]) || !is_array($array2[$key])) {
+                    if (!in_array($key, $blacklist)) {
+                        $difference[$key] = $value;
+                    }
+                } else {
+                    $new_diff = $this->array_diff_assoc_recursive($value, $array2[$key]);
+                    if (!empty($new_diff)) {
+                        if (!in_array($key, $blacklist)) {
+                            $difference[$key] = $new_diff;
+                        }
+                    }
+                }
+            } else {
+                if (!array_key_exists($key, $array2) || $array2[$key] !== $value) {
+                    if (!in_array($key, $blacklist)) {
+                        $difference[$key] = $value;
+                    }
+                }
+            }
+        }
+
+        return $difference;
+    }
+
+    /**
+     *
+     */
+    public
+    function test_dev()
+    {
+        $datasets = $this->try_package_search('u');
+
+        $i = 0;
+        foreach ($datasets as $dataset) {
+            $dataset = $this->try_package_show($dataset['name']);
+
+            echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
+
+            $this->package_update($dataset);
+
+            if (defined('QUIT')) {
+                die();
+            }
+        }
+
 
     }
 
     /**
      * @param $results_dir
      */
-    public function get_interactive_resources($results_dir)
-    {
+    public
+    function get_interactive_resources(
+        $results_dir
+    ) {
         $log_file = $results_dir . '/resources.csv';
         $fp       = fopen($log_file, 'w');
 
@@ -202,8 +348,11 @@ class CkanManager
      *
      * @return bool
      */
-    public function search_by_title($title, Writer $csv_writer)
-    {
+    public
+    function search_by_title(
+        $title,
+        Writer $csv_writer
+    ) {
         $solr_title = $this->escapeSolrValue($title);
         $datasets   = $this->try_package_search("($solr_title)", 3);
         if ($datasets && isset($datasets[0]) && isset($datasets[0]['name'])) {
@@ -305,8 +454,11 @@ class CkanManager
      * @param $search_list
      * @param $results_dir
      */
-    public function search_by_terms($search_list, $results_dir)
-    {
+    public
+    function search_by_terms(
+        $search_list,
+        $results_dir
+    ) {
         $log_file_popularity = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_popularity.csv';
         $log_file_relevance  = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_relevance.csv';
         $fp_popularity       = fopen($log_file_popularity, 'w');
@@ -448,8 +600,11 @@ class CkanManager
      * @param $groups_list
      * @param $results_dir
      */
-    public function search_by_topics($groups_list, $results_dir)
-    {
+    public
+    function search_by_topics(
+        $groups_list,
+        $results_dir
+    ) {
         $this->log_output    = '';
         $log_file_popularity = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_popularity.csv';
         $log_file_relevance  = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_relevance.csv';
@@ -687,8 +842,11 @@ class CkanManager
      * @param $organizations_list
      * @param $results_dir
      */
-    public function search_by_organizations($organizations_list, $results_dir)
-    {
+    public
+    function search_by_organizations(
+        $organizations_list,
+        $results_dir
+    ) {
         $this->log_output    = '';
         $log_file_popularity = $results_dir . '/search_' . sizeof(
                 $organizations_list
@@ -1064,7 +1222,7 @@ class CkanManager
 
                 $this->say($dataset['name']);
 
-                $this->Ckan->package_update($dataset);
+                $this->package_update($dataset);
                 $marked_true++;
             }
 
@@ -1081,8 +1239,12 @@ class CkanManager
      * @param $results_dir
      * @param $basename
      */
-    public function make_dataset_private($dataset_id, $results_dir, $basename)
-    {
+    public
+    function make_dataset_private(
+        $dataset_id,
+        $results_dir,
+        $basename
+    ) {
         $this->log_output = '';
 
         $this->say(str_pad($dataset_id, 105, ' . '), '');
@@ -1096,7 +1258,7 @@ class CkanManager
             $dataset['private'] = true;
 
             try {
-                $this->Ckan->package_update($dataset);
+                $this->package_update($dataset);
                 $this->say(str_pad('OK', 10, ' '));
             } catch (\Exception $ex) {
                 $this->say(str_pad('ERROR', 10, ' '));
@@ -1147,7 +1309,7 @@ class CkanManager
                 }
 
                 try {
-                    $this->Ckan->package_update($dataset);
+                    $this->package_update($dataset);
                     $this->say(str_pad('OK', 7, ' '));
                 } catch (\Exception $ex) {
                     $this->say(str_pad('ERROR', 7, ' '));
@@ -1289,7 +1451,7 @@ class CkanManager
         $dataset['name'] = $newDatasetName;
 
         try {
-            $this->Ckan->package_update($dataset);
+            $this->package_update($dataset);
             $this->say(str_pad('OK', 7, ' '));
         } catch (\Exception $ex) {
             $this->say(str_pad('ERROR', 7, ' '));
@@ -1379,7 +1541,7 @@ class CkanManager
 
                         $dataset['owner_org'] = $department_id;
 
-                        $this->Ckan->package_update($dataset);
+                        $this->package_update($dataset);
 
                         $output = 'Moved ' . $current_record;
                         $this->say($output);
@@ -1427,7 +1589,7 @@ class CkanManager
 
             $freshDataset['extras'] = array_merge($freshDataset['extras'], $diff);
 
-            $this->Ckan->package_update($freshDataset);
+            $this->package_update($freshDataset);
 
         } catch (NotFoundHttpException $ex) {
             $this->say(str_pad('Prod 404: ' . $ex->getMessage(), 15, ' . '));
@@ -1464,8 +1626,11 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function export_datasets_with_tags_by_group($group, $results_dir)
-    {
+    public
+    function export_datasets_with_tags_by_group(
+        $group,
+        $results_dir
+    ) {
         $this->log_output = '';
 
         if (!($group = $this->findGroup($group))) {
@@ -1537,8 +1702,11 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function export_datasets_by_search($search, $results_dir)
-    {
+    public
+    function export_datasets_by_search(
+        $search,
+        $results_dir
+    ) {
         $this->log_output = '';
 
         $log_file = $results_dir . '/export_' . $search . '.csv';
@@ -1601,8 +1769,11 @@ class CkanManager
      * @param $topicTitle
      * @param $results_dir
      */
-    public function cleanup_tags_by_topic($topicTitle, $results_dir)
-    {
+    public
+    function cleanup_tags_by_topic(
+        $topicTitle,
+        $results_dir
+    ) {
         $start = 0;
         $limit = 100;
         while (true) {
@@ -1738,7 +1909,7 @@ class CkanManager
                 ];
             }
 
-            $this->Ckan->package_update($dataset);
+            $this->package_update($dataset);
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
@@ -1750,8 +1921,10 @@ class CkanManager
      *
      * @return array
      */
-    private function cleanupTags($tagsArray)
-    {
+    private
+    function cleanupTags(
+        $tagsArray
+    ) {
         $return    = [];
         $tagsArray = array_unique($tagsArray);
         foreach ($tagsArray as $tag) {
@@ -1858,7 +2031,7 @@ class CkanManager
             }
 
             try {
-                $this->Ckan->package_update($dataset);
+                $this->package_update($dataset);
 //                $this->say(str_pad('SUCCESS', 15, ' . ', STR_PAD_LEFT));
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
@@ -2540,8 +2713,12 @@ EOR;
      *
      * @return bool
      */
-    private function try_find_socrata_title(ExploreApi $SocrataApi, $socrata_id, $try = 3)
-    {
+    private
+    function try_find_socrata_title(
+        ExploreApi $SocrataApi,
+        $socrata_id,
+        $try = 3
+    ) {
         $title = false;
         while ($try) {
             try {
@@ -2576,8 +2753,11 @@ EOR;
      * @param Writer $csv_agencies
      * @param Writer $csv_categories
      */
-    public function breakdown_by_group(Writer $csv_agencies, Writer $csv_categories)
-    {
+    public
+    function breakdown_by_group(
+        Writer $csv_agencies,
+        Writer $csv_categories
+    ) {
         $offset   = 0;
         $per_page = 50;
         $counter  = 0;
@@ -2651,8 +2831,12 @@ EOR;
      * @param $limit
      * @param $start
      */
-    public function orphaned_tags_seek($results_dir, $limit, $start)
-    {
+    public
+    function orphaned_tags_seek(
+        $results_dir,
+        $limit,
+        $start
+    ) {
         $counter  = 0;
         $offset   = $start;
         $finish   = $start + $limit;
@@ -2720,7 +2904,8 @@ EOR;
     /**
      * @return array
      */
-    private function try_get_groups_array()
+    private
+    function try_get_groups_array()
     {
         $groups = json_decode($this->Ckan->group_list(true), true);
         if (!$groups || !$groups['success']) {
@@ -2737,7 +2922,8 @@ EOR;
     /**
      * @return array
      */
-    public function groups_array()
+    public
+    function groups_array()
     {
         return $this->try_get_groups_array();
     }
@@ -2747,15 +2933,19 @@ EOR;
      * @param CkanManager $CkanManagerProduction
      * @param             $results_dir
      */
-    public function check_group_against_prod($category, self $CkanManagerProduction, $results_dir)
-    {
+    public
+    function check_group_against_prod(
+        $category,
+        self $CkanManagerProduction,
+        $results_dir
+    ) {
         $csv = new Writer($results_dir . '/' . $category . date('_Ymd-His') . '.csv');
         $csv->writeRow(
             [
                 'Staging dataset name',
                 'Staging Source',
                 'Prod exists',
-                'Prod has '.$category,
+                'Prod has ' . $category,
                 'Prod Source'
             ]
         );
@@ -2771,46 +2961,74 @@ EOR;
             }
 
             foreach ($packages as $package) {
-                if (is_array($package['extras']) && sizeof($package['extras']) &&(strpos(json_encode($package['extras']), '"dms"'))) {
+                if (is_array($package['extras']) && sizeof($package['extras']) && (strpos(
+                        json_encode($package['extras']),
+                        '"dms"'
+                    ))
+                ) {
                     $resource_type = 'DMS';
 //                    echo "DMS ".$package['name'].PHP_EOL;
-                } elseif(is_array($package['extras']) && sizeof($package['extras']) && strpos(json_encode($package['extras']), '"value":"geospatial"')) {
+                } elseif (is_array($package['extras']) && sizeof($package['extras']) && strpos(
+                        json_encode($package['extras']),
+                        '"value":"geospatial"'
+                    )
+                ) {
                     $resource_type = 'GEO';
 //                    echo "GEO ".$package['name'].PHP_EOL;
-                } elseif(is_array($package['extras']) && sizeof($package['extras']) && strpos(json_encode($package['extras']), 'source_datajson_identifier')) {
+                } elseif (is_array($package['extras']) && sizeof($package['extras']) && strpos(
+                        json_encode($package['extras']),
+                        'source_datajson_identifier'
+                    )
+                ) {
                     $resource_type = 'JSON';
 //                    echo "JSON ".$package['name'].PHP_EOL;
                 } else {
                     $resource_type = 'OTHER';
-                    echo json_encode($package['extras']).PHP_EOL;
-                    echo "UNKNOWN: ".$package['name'].PHP_EOL;
+                    echo json_encode($package['extras']) . PHP_EOL;
+                    echo "UNKNOWN: " . $package['name'] . PHP_EOL;
                 }
 
-                $prod_package = $CkanManagerProduction->try_package_show($package['name']);
-                $exists = $prod_package ? 'EXISTS':'NOT FOUND';
+                $prod_package        = $CkanManagerProduction->try_package_show($package['name']);
+                $exists              = $prod_package ? 'EXISTS' : 'NOT FOUND';
                 $prod_category_found = '';
-                $prod_resource_type = '';
+                $prod_resource_type  = '';
 
                 if ($prod_package) {
                     $prod_category_found = 'FALSE';
 
-                    if (isset($prod_package['groups']) && sizeof($prod_package['groups']) && strpos(json_encode($prod_package['groups']), $category)) {
+                    if (isset($prod_package['groups']) && sizeof($prod_package['groups']) && strpos(
+                            json_encode($prod_package['groups']),
+                            $category
+                        )
+                    ) {
                         $prod_category_found = 'HAS';
                     }
 
-                    if (is_array($prod_package['extras']) && sizeof($prod_package['extras']) &&(strpos(json_encode($prod_package['extras']), '"dms"'))) {
+                    if (is_array($prod_package['extras']) && sizeof($prod_package['extras']) && (strpos(
+                            json_encode($prod_package['extras']),
+                            '"dms"'
+                        ))
+                    ) {
                         $prod_resource_type = 'DMS';
 //                    echo "DMS ".$prod_package['name'].PHP_EOL;
-                    } elseif(is_array($prod_package['extras']) && sizeof($prod_package['extras']) && strpos(json_encode($prod_package['extras']), '"value":"geospatial"')) {
+                    } elseif (is_array($prod_package['extras']) && sizeof($prod_package['extras']) && strpos(
+                            json_encode($prod_package['extras']),
+                            '"value":"geospatial"'
+                        )
+                    ) {
                         $prod_resource_type = 'GEO';
 //                    echo "GEO ".$prod_package['name'].PHP_EOL;
-                    } elseif(is_array($prod_package['extras']) && sizeof($prod_package['extras']) && strpos(json_encode($prod_package['extras']), 'source_datajson_identifier')) {
+                    } elseif (is_array($prod_package['extras']) && sizeof($prod_package['extras']) && strpos(
+                            json_encode($prod_package['extras']),
+                            'source_datajson_identifier'
+                        )
+                    ) {
                         $prod_resource_type = 'JSON';
 //                    echo "JSON ".$prod_package['name'].PHP_EOL;
                     } else {
                         $prod_resource_type = 'OTHER';
-                        echo json_encode($prod_package['extras']).PHP_EOL;
-                    echo "UNKNOWN on PROD: ".$prod_package['name'].PHP_EOL;
+                        echo json_encode($prod_package['extras']) . PHP_EOL;
+                        echo "UNKNOWN on PROD: " . $prod_package['name'] . PHP_EOL;
                     }
                 }
 
