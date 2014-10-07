@@ -20,7 +20,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -51,7 +51,7 @@ $socrata_list = file_get_contents($socrata_file_path);
 $socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
 $socrata_list = explode("\n", $socrata_list);
 
-$Importer->get_socrata_pairs($socrata_list, $results_dir);
+$CkanManager->get_socrata_pairs($socrata_list, $results_dir);
 
 // show running time on finish
 timer();

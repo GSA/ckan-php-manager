@@ -20,7 +20,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -40,7 +40,7 @@ define('ERROR_REPORTING', E_ALL);
 $OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArray();
 
-$Importer->get_private_list($termsArray, $results_dir, $start, $limit);
+$CkanManager->get_private_list($termsArray, $results_dir, $start, $limit);
 
 // show running time on finish
 timer();

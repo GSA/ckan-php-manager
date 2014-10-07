@@ -17,7 +17,7 @@ define('REMOVE_GROUP', true);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -54,7 +54,7 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
         $dataset  = basename($row['0']);
         $category = isset($row['1']) ? ($row['1'] ? : '') : '';
         $tags     = isset($row['2']) ? ($row['2'] ? : '') : '';
-        $Importer->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $results_dir, $basename);
+        $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $results_dir, $basename);
     }
 }
 

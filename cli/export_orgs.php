@@ -35,14 +35,14 @@ mkdir($results_dir);
 /**
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$Importer->export_organizations($termsArray, $results_dir);
+$CkanManager->export_organizations($termsArray, $results_dir);
 
 // show running time on finish
 timer();

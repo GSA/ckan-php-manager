@@ -16,7 +16,7 @@ mkdir($results_dir);
 /**
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 
 /**
  * Staging
@@ -53,7 +53,7 @@ foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
         /**
          * Search for packages by terms found
          */
-        $Importer->search_by_title($title, $csv_destination);
+        $CkanManager->search_by_title($title, $csv_destination);
     }
 
 //    fix wrong END-OF-LINE

@@ -16,7 +16,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -33,7 +33,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV2_API_URL, CKAN_DEV2_API_KEY);
 
-$Importer->tag_by_extra_field('identifier', 'source_datajson_identifier', $results_dir);
+$CkanManager->tag_by_extra_field('identifier', 'source_datajson_identifier', $results_dir);
 
 // show running time on finish
 timer();

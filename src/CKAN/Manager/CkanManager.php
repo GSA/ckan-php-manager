@@ -39,6 +39,8 @@ class CkanManager
      */
     private $packageSearchPerPage = 200;
 
+    private $expectedFieldsDiff = [];
+
     /**
      * @param string $apiUrl
      * @param null   $apiKey
@@ -83,8 +85,6 @@ class CkanManager
         try {
             if (sizeof($dataset['resources']) != sizeof($updated_dataset['resources'])) {
                 throw new \Exception('Number of resources does not match after update (check dumps): ' . $id);
-
-                return false;
             }
 
 
@@ -101,8 +101,6 @@ class CkanManager
                     json_encode($diff, JSON_PRETTY_PRINT)
                 );
                 throw new \Exception('Consistency check failed (check diff): ' . $id);
-
-                return false;
             }
 
         } catch (\Exception $ex) {
@@ -115,8 +113,6 @@ class CkanManager
                 json_encode($updated_dataset, JSON_PRETTY_PRINT)
             );
             throw $ex;
-
-            return false;
         }
 
         return true;
@@ -145,13 +141,15 @@ class CkanManager
      */
     private function  array_diff_assoc_recursive($array1, $array2)
     {
-        $blacklist  = [
+        $blacklist = [
             'revision_timestamp',
             'metadata_modified',
             'revision_id',
             'no_real_name',
             'tags',
         ];
+        $blacklist = array_merge($blacklist, $this->expectedFieldsDiff);
+
         $difference = array();
         foreach ($array1 as $key => $value) {
             if (is_array($value)) {
@@ -1274,13 +1272,11 @@ class CkanManager
      *
      * @param $termsArray
      * @param $tag_name
-     * @param $results_dir
      */
     public
     function tag_legacy_dms(
         $termsArray,
-        $tag_name,
-        $results_dir
+        $tag_name
     ) {
         $this->log_output = '';
 
@@ -1290,6 +1286,11 @@ class CkanManager
         $count = sizeof($datasets);
 
         $log_file = PARENT_TERM . "_add_legacy_make_private.log";
+
+        $this->expectedFieldsDiff = [
+            'num_tags',
+            'extras',
+        ];
 
 //        update dataset tags list
         foreach ($datasets as $key => $dataset) {
@@ -1314,11 +1315,11 @@ class CkanManager
                 } catch (\Exception $ex) {
                     $this->say(str_pad('ERROR', 7, ' '));
 //                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
-                    file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+                    file_put_contents($this->results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
                 }
             }
 
-            file_put_contents($results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
+            file_put_contents($this->results_dir . '/' . $log_file, $this->log_output, FILE_APPEND);
             $this->log_output = '';
         }
     }
@@ -1698,30 +1699,28 @@ class CkanManager
 
     /**
      * @param $search
-     * @param $results_dir
      *
      * @throws \Exception
      */
     public
     function export_datasets_by_search(
-        $search,
-        $results_dir
+        $search
     ) {
         $this->log_output = '';
 
-        $log_file = $results_dir . '/export_' . $search . '.csv';
+        $log_file = $this->results_dir . '/export_' . $search . date('_Ymd-His') . '.csv';
         $fp       = fopen($log_file, 'w');
 
         $csv_header = [
             'data.gov url',
-            'agency',
+            'title',
         ];
 
         fputcsv($fp, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-        $ckan_query = '(' . $search . ') + (dataset_type:dataset)';
+        $ckan_query = '(("' . $search . '") + (dataset_type:dataset))';
 
         $done     = false;
         $start    = 0;
@@ -1749,7 +1748,7 @@ class CkanManager
                         $fp,
                         [
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
-                            $dataset['organization']['title'],
+                            $dataset['title'],
                         ]
                     );
                 }
@@ -1942,7 +1941,6 @@ class CkanManager
      * @param      $datasetNames
      * @param      $group
      * @param null $categories
-     * @param      $results_dir
      * @param      $basename
      *
      * @throws \Exception
@@ -1952,13 +1950,15 @@ class CkanManager
         $datasetNames,
         $group,
         $categories = null,
-        $results_dir,
         $basename
     ) {
         static $counter = 0;
         $this->log_output = '';
 
-        $group = $this->findGroup($group);
+        $group                    = $this->findGroup($group);
+        $this->expectedFieldsDiff = [
+            'groups'
+        ];
 
         foreach ($datasetNames as $datasetName) {
 
@@ -2037,11 +2037,11 @@ class CkanManager
             } catch (\Exception $ex) {
 //                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
                 $this->say('ERROR: CHECK LOG');
-                file_put_contents($results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
+                file_put_contents($this->results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
             }
         }
         file_put_contents(
-            $results_dir . '/' . $basename . '_tags.log.csv',
+            $this->results_dir . '/' . $basename . '_tags.log.csv',
             $this->log_output,
             FILE_APPEND | LOCK_EX
         );

@@ -3,12 +3,12 @@
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Small Business Administration');
+define('ORGANIZATION_TO_TAG', 'US Equal Employment Opportunity Commission');
 
 /**
  * Just list those datasets, no need to edit anything
  */
-define('LIST_ONLY', false);
+define('LIST_ONLY', true);
 
 /**
  * Make it TRUE, if you want datasets to be marked as PRIVATE
@@ -42,14 +42,15 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
 
 /**
  * Staging
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
-$Importer->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms', $results_dir);
+$CkanManager->results_dir = $results_dir;
+$CkanManager->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms');
 
 // show running time on finish
 timer();

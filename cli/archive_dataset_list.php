@@ -12,7 +12,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -24,6 +24,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
+$CkanManager->results_dir = $results_dir;
 foreach (glob(DATA_DIR . '/private*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
@@ -47,7 +48,7 @@ foreach (glob(DATA_DIR . '/private*.csv') as $csv_file) {
         }
 
         $dataset = basename($row['0']);
-        $Importer->make_dataset_private($dataset, $results_dir, $basename);
+        $CkanManager->make_dataset_private($dataset, $results_dir, $basename);
     }
 }
 

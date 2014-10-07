@@ -15,7 +15,7 @@ mkdir($results_dir);
 /**
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -58,7 +58,7 @@ foreach (glob(DATA_DIR . '/rename_*.csv') as $csv_file) {
         $newDatasetName = basename($row['1']);
 
         printf('[%04d] ', $i++);
-        $Importer->renameDataset($datasetName, $newDatasetName, $results_dir, $basename);
+        $CkanManager->renameDataset($datasetName, $newDatasetName, $results_dir, $basename);
     }
 }
 

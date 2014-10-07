@@ -21,21 +21,21 @@ mkdir($results_dir);
 /**
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$csv_agencies = new EasyCSV\Writer($results_dir . '/breakdown_' . GROUP_TO_EXPORT . '_by_agency_' . date(
-    'Ymd-His'
-) . '.csv');
+$csv_agencies   = new EasyCSV\Writer($results_dir . '/breakdown_' . GROUP_TO_EXPORT . '_by_agency_' . date(
+        'Ymd-His'
+    ) . '.csv');
 $csv_categories = new EasyCSV\Writer($results_dir . '/breakdown_' . GROUP_TO_EXPORT . '_by_category_' . date(
-    'Ymd-His'
-) . '.csv');
+        'Ymd-His'
+    ) . '.csv');
 
-$Importer->breakdown_by_group($csv_agencies, $csv_categories);
+$CkanManager->breakdown_by_group($csv_agencies, $csv_categories);
 
 // show running time on finish
 timer();

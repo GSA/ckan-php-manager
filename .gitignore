@@ -5,4 +5,5 @@ composer.phar
 inc/config.php
 backup/
 results/2*
+results/*.json
 data/old/

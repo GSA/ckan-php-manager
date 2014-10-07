@@ -27,14 +27,15 @@ mkdir($results_dir);
 /**
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
 
-$Importer->export_datasets_by_search($search, $results_dir);
+$CkanManager->results_dir = $results_dir;
+$CkanManager->export_datasets_by_search($search);
 
 // show running time on finish
 timer();

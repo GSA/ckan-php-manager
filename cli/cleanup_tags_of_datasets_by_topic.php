@@ -12,7 +12,7 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
@@ -25,7 +25,7 @@ $Importer = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 $topicTitle = 'ecosystems0617';
-$Importer->cleanup_tags_by_topic($topicTitle, $results_dir);
+$CkanManager->cleanup_tags_by_topic($topicTitle, $results_dir);
 
 // show running time on finish
 timer();
