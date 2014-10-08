@@ -1815,7 +1815,6 @@ class CkanManager
      * @param $datasetNames
      * @param $group_to_remove
      * @param $tags_to_remove
-     * @param $results_dir
      * @param $basename
      *
      * @throws \Exception
@@ -1825,15 +1824,16 @@ class CkanManager
         $datasetNames,
         $group_to_remove,
         $tags_to_remove,
-        $results_dir,
         $basename
     ) {
         $this->log_output = '';
 
+//        Getting Group object
         if (!($group_to_remove = $this->findGroup($group_to_remove))) {
             throw new \Exception('Group ' . $group_to_remove . ' not found!' . PHP_EOL);
         }
 
+//        Remove Group from each dataset given
         foreach ($datasetNames as $datasetName) {
             $this->say(str_pad($datasetName, 100, ' . '), '');
 
@@ -1852,6 +1852,7 @@ class CkanManager
 
             $dataset = $dataset['result'];
 
+//            Removing group from dataset found
             if (defined('REMOVE_GROUP') && REMOVE_GROUP) {
 //            removing group
                 $groups = [];
@@ -1868,7 +1869,7 @@ class CkanManager
                 $dataset['groups'] = $groups;
             }
 
-//            removing extra tags of group
+//            removing extra tags for the removed group
             $category_tag = '__category_tag_' . $group_to_remove['id'];
 
             $extras = $dataset['extras'];
@@ -1912,7 +1913,7 @@ class CkanManager
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
-        file_put_contents($results_dir . '/' . $basename . '_remove.log', $this->log_output, FILE_APPEND | LOCK_EX);
+        file_put_contents($this->results_dir . '/' . $basename . '_remove.log', $this->log_output, FILE_APPEND | LOCK_EX);
     }
 
     /**

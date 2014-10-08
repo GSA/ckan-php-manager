@@ -29,6 +29,7 @@ $CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
+$CkanManager->results_dir = $results_dir;
 foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
@@ -54,7 +55,7 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
         $dataset  = basename($row['0']);
         $category = isset($row['1']) ? ($row['1'] ? : '') : '';
         $tags     = isset($row['2']) ? ($row['2'] ? : '') : '';
-        $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $results_dir, $basename);
+        $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $basename);
     }
 }
 
