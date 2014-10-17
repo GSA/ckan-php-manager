@@ -10,24 +10,8 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_CHECK_CKAN_REDIRECTS';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_REDIRECTS_CHECK';
 mkdir($results_dir);
-
-/**
- * Adding Legacy dms tag
- * Production
- */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  *
@@ -63,7 +47,7 @@ $curl_ch_headers = [
     'Accept-Encoding: gzip'
 ];
 
-foreach (glob(DATA_DIR . '/redirects_ckan.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/redirects*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -75,7 +59,7 @@ foreach (glob(DATA_DIR . '/redirects_ckan.csv') as $csv_file) {
     $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
     $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_log.csv');
 
-    $csv_destination->writeRow(['url_xyz', 'url', 'url status', 'api_rest_xyz status', 'api_rest_xyz url']);
+    $csv_destination->writeRow(['from', 'to', 'status']);
 
     $i = 0;
     while (true) {
@@ -87,27 +71,37 @@ foreach (glob(DATA_DIR . '/redirects_ckan.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row[0])), ['socrata code', 'from', 'source url'])) {
+        if (in_array(trim(strtolower($row[0])), ['from', 'source url'])) {
 //            $csv_destination->writeRow($row);
             continue;
         }
 
-        $dataset_url_xyz = $row[0];
-        $dataset_url = $row[1];
+        $from = $row[0];
+        $to = $row[1];
 
-        $dataset_api_url = str_replace('/dataset/', '/api/rest/dataset/', $dataset_url);
-
-        $pageFound = try_get_page($curl_ch, $dataset_api_url) ? 'OK' : 404;
-        echo $pageFound . "\t" . $dataset_url . PHP_EOL;
-
-        if ('OK' == $pageFound) {
-            $csv_destination->writeRow([$dataset_url_xyz, $dataset_url, $pageFound, '', '']);
+        $redirect = try_get_redirect($curl_ch, $from);
+        if ($to == $redirect) {
+            echo "OK" . PHP_EOL;
+            $csv_destination->writeRow([$from, $to, 'OK']);
         } else {
-            $api_rest_xyz = str_replace('/dataset/', '/api/rest/dataset/', $dataset_url_xyz);
-            $apiRestFound = try_get_page($curl_ch, $api_rest_xyz) ? 'OK' : 404;
-            echo $apiRestFound . "\t" . $api_rest_xyz . PHP_EOL;
-            $csv_destination->writeRow([$dataset_url_xyz, $dataset_url, $pageFound, $apiRestFound, $api_rest_xyz]);
+            echo "Fail: " . $redirect . PHP_EOL;
+            $csv_destination->writeRow([$from, $to, 'FAIL: ' . $redirect]);
         }
+        continue;
+
+//        $dataset_api_url = str_replace('/dataset/', '/api/rest/dataset/', $dataset_url);
+//
+//        $pageFound = try_get_page($curl_ch, $dataset_api_url) ? 'OK' : 404;
+//        echo $pageFound . "\t" . $dataset_url . PHP_EOL;
+//
+//        if ('OK' == $pageFound) {
+//            $csv_destination->writeRow([$dataset_url_xyz, $dataset_url, $pageFound, '', '']);
+//        } else {
+//            $api_rest_xyz = str_replace('/dataset/', '/api/rest/dataset/', $dataset_url_xyz);
+//            $apiRestFound = try_get_page($curl_ch, $api_rest_xyz) ? 'OK' : 404;
+//            echo $apiRestFound . "\t" . $api_rest_xyz . PHP_EOL;
+//            $csv_destination->writeRow([$dataset_url_xyz, $dataset_url, $pageFound, $apiRestFound, $api_rest_xyz]);
+//        }
 
 //        $redirect = try_get_redirect($curl_ch, $dataset_url_xyz);
 //        if (!$redirect) {

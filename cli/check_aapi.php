@@ -55,7 +55,7 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
-$date            = new DateTime(null, new DateTimeZone('UTC'));
+$date = new DateTime(null, new DateTimeZone('UTC'));
 $curl_ch_headers = [
     'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
     'Accept: application/json',
@@ -72,7 +72,7 @@ foreach (glob(DATA_DIR . '/check_*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    $csv_source      = new EasyCSV\Reader($csv_file, 'r+', false);
+    $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
     $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_log.csv');
 
     $csv_destination->writeRow(['dataset', 'status', 'aapi found']);
@@ -164,11 +164,11 @@ function try_get_dataset($curl_ch, $url)
 
     // Execute request and get response headers.
     $response = curl_exec($curl_ch);
-    $info     = curl_getinfo($curl_ch);
+    $info = curl_getinfo($curl_ch);
 
     $return = [
         'response' => $response,
-        'info'     => $info
+        'info' => $info
     ];
 
     return $return;

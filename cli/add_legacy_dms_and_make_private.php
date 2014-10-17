@@ -22,7 +22,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Get organization terms, including all children, as Array
  */
-$OrgList    = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
+$OrgList = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_TAG);
 
 /**

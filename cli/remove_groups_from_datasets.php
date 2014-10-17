@@ -11,7 +11,7 @@ mkdir($results_dir);
 /**
  * Set to `true` if you want to remove topic too like 'Climate' etc.
  */
-define('REMOVE_GROUP', true);
+define('REMOVE_GROUP', false);
 
 /**
  * Adding Legacy dms tag
@@ -48,13 +48,13 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(strtolower($row['0']), ['dataset', 'uid', 'uuid', 'name', 'url', 'data.gov url'])) {
+        if (in_array(strtolower($row['0']), ['dataset', 'uid', 'uuid', 'name', 'url', 'data.gov url', 'dataset link'])) {
             continue;
         }
 
-        $dataset  = basename($row['0']);
-        $category = isset($row['1']) ? ($row['1'] ? : '') : '';
-        $tags     = isset($row['2']) ? ($row['2'] ? : '') : '';
+        $dataset = basename($row['0']);
+        $category = isset($row['1']) ? ($row['1'] ?: '') : '';
+        $tags = isset($row['2']) ? ($row['2'] ?: '') : '';
         $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $basename);
     }
 }

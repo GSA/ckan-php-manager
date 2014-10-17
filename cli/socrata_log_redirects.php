@@ -55,7 +55,7 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
-$date            = new DateTime(null, new DateTimeZone('UTC'));
+$date = new DateTime(null, new DateTimeZone('UTC'));
 $curl_ch_headers = [
     'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
     'Accept: application/json',
@@ -72,7 +72,7 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    $csv_source      = new EasyCSV\Reader($csv_file, 'r+', false);
+    $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
     $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_long.csv');
 
     $i = 0;
@@ -91,7 +91,7 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
         }
 
         $socrata_id = $row[0];
-        $ckan_url   = $row[1];
+        $ckan_url = $row[1];
 
 //        writing short redirect
         $socrata_short_url = 'https://explore.data.gov/d/' . $socrata_id;

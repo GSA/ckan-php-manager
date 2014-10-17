@@ -1879,17 +1879,22 @@ class CkanManager
 
             foreach ($extras as $extra) {
                 if ($category_tag == $extra['key']) {
-                    $oldTags = trim($extra['value'], '"[], ');
-                    $oldTags = explode('","', $oldTags);
-                    $newTags = [];
-                    if ($oldTags && is_array($oldTags)) {
-                        foreach ($oldTags as $tag) {
-                            if (trim($tag) != trim($tags_to_remove)) {
-                                $newTags[] = $tag;
+                    if (defined('REMOVE_GROUP') && REMOVE_GROUP) {
+//                        just remove the whole group
+                    } else {
+                        $oldTags = trim($extra['value'], '"[], ');
+                        $oldTags = explode('","', $oldTags);
+                        $newTags = [];
+                        if ($oldTags && is_array($oldTags)) {
+                            foreach ($oldTags as $tag) {
+                                if (trim($tag) != trim($tags_to_remove)) {
+                                    $newTags[] = $tag;
+                                }
                             }
                         }
+                        $newTags = $this->cleanupTags($newTags);
                     }
-                    $newTags = $this->cleanupTags($newTags);
+
                     $this->say(str_pad('-TAGS', 7, ' . ', STR_PAD_LEFT), '');
                     continue;
                 }

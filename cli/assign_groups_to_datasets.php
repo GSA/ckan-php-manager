@@ -50,7 +50,7 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 //    file_put_contents($results_dir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
-    $i   = 0;
+    $i = 0;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {

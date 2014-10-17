@@ -29,7 +29,7 @@ foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
 
     $basename = str_replace('.csv', '', basename($csv_file));
 
-    $csv_source      = new EasyCSV\Reader($csv_file, 'r+', false);
+    $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
     $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_results.csv');
 
     $csv_destination->writeRow(['url', 'exact match', 'title', 'found by title']);
