@@ -1853,7 +1853,7 @@ class CkanManager
             $dataset = $dataset['result'];
 
 //            Removing group from dataset found
-            if (defined('REMOVE_GROUP') && REMOVE_GROUP) {
+            if (!$tags_to_remove) {
 //            removing group
                 $groups = [];
                 foreach ($dataset['groups'] as $group) {
@@ -1879,7 +1879,7 @@ class CkanManager
 
             foreach ($extras as $extra) {
                 if ($category_tag == $extra['key']) {
-                    if (defined('REMOVE_GROUP') && REMOVE_GROUP) {
+                    if (!$tags_to_remove) {
 //                        just remove the whole group
                     } else {
                         $oldTags = trim($extra['value'], '"[], ');

@@ -8,10 +8,6 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
 mkdir($results_dir);
 
-/**
- * Set to `true` if you want to remove topic too like 'Climate' etc.
- */
-define('REMOVE_GROUP', false);
 
 /**
  * Adding Legacy dms tag
