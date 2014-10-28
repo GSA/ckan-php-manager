@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "958566a91f18ee631ae42b23d2222c3845815a16"
+                "reference": "28e9694b11e10d6bacd0e329ac776076eceb73e9"
             },
             "require": {
                 "ext-curl": "*",
@@ -40,7 +40,7 @@
                 }
             ],
             "description": "CKAN php client",
-            "time": "2014-10-06 22:00:55"
+            "time": "2014-10-28 16:15:16"
         },
         {
             "name": "jwage/easy-csv",
@@ -341,12 +341,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "ae6cefd7cc84586a5ef27e04bae11ee940ec63dc"
+                "reference": "38709dc22d519a3d1be46849868aa2ddf822bcf6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/ae6cefd7cc84586a5ef27e04bae11ee940ec63dc",
-                "reference": "ae6cefd7cc84586a5ef27e04bae11ee940ec63dc",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/38709dc22d519a3d1be46849868aa2ddf822bcf6",
+                "reference": "38709dc22d519a3d1be46849868aa2ddf822bcf6",
                 "shasum": ""
             },
             "require": {
@@ -406,7 +406,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2014-04-30 12:24:19"
+            "time": "2014-10-17 09:04:17"
         },
         {
             "name": "phpunit/phpunit-mock-objects",
@@ -472,12 +472,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Yaml.git",
-                "reference": "499f7d7aa96747ad97940089bd7a1fb24ad8182a"
+                "reference": "4c0baf9a5b5c9e50ddd7a46f3c75cb85baf5d6c5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Yaml/zipball/499f7d7aa96747ad97940089bd7a1fb24ad8182a",
-                "reference": "499f7d7aa96747ad97940089bd7a1fb24ad8182a",
+                "url": "https://api.github.com/repos/symfony/Yaml/zipball/4c0baf9a5b5c9e50ddd7a46f3c75cb85baf5d6c5",
+                "reference": "4c0baf9a5b5c9e50ddd7a46f3c75cb85baf5d6c5",
                 "shasum": ""
             },
             "require": {
@@ -510,7 +510,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "http://symfony.com",
-            "time": "2014-10-05 13:53:50"
+            "time": "2014-10-26 07:46:28"
         }
     ],
     "aliases": [],
