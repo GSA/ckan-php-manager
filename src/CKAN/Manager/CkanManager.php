@@ -1531,7 +1531,7 @@ class CkanManager
         }
 
         // close log file
-        fclose($log_file);
+        fclose($fp_log);
 
     }    
 
