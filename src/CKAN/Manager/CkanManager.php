@@ -1436,6 +1436,106 @@ class CkanManager
     }
 
     /**
+     * Exports information about active users
+     *
+     * @param $results_dir
+     */
+    public
+    function active_users(
+        $results_dir
+    )
+    {
+     
+        $orgs = $this->Ckan->organization_list();
+        $orgs = json_decode($orgs);
+        $orgs = $orgs->result;
+
+
+        // initialize log file
+        $log_file = $results_dir . '/user_list.csv';
+        $fp_log = fopen($log_file, 'w');
+
+        $csv_header = [
+            'Organization Name',
+            'Organization ID',
+            'User Name',
+            'User ID',
+            'User Email',
+            'User Dataset Count',
+            'User Dataset Edits',
+            'User Role',
+            'User Sysadmin',
+            'User Last Activity',
+        ];
+
+        fputcsv($fp_log, $csv_header);
+
+        foreach ($orgs as $org_slug) {
+
+            try {
+                $org_results = $this->Ckan->organization_show($org_slug);
+            } catch (NotFoundHttpException $ex) {
+                echo "Couldn't find org $org_slug";
+                continue;
+            }
+
+            if ($org_results) {
+                $org_results = json_decode($org_results);
+
+                if($users = $org_results->result->users) {
+
+                    foreach ($users as $org_user) {
+                        $user_id = $org_user->name;
+
+                        try {
+                            $user_results = $this->Ckan->user_show($user_id);
+                        } catch (NotFoundHttpException $ex) {
+                            echo "Couldn't find user $user_id";
+                            continue;
+                        }
+
+                        if ($user_results) {
+                            $user_results = json_decode($user_results);
+
+                            if($user = $user_results->result) {
+                               
+                                $last_activity = (!empty($user->activity[0]->timestamp)) ? $user->activity[0]->timestamp : '';
+
+                                $user_row = array(
+                                        $org_results->result->title,
+                                        $org_results->result->name,
+                                        $user->fullname,
+                                        $user->name,
+                                        $user->email,
+                                        $user->number_administered_packages,
+                                        $user->number_of_edits,
+                                        $org_user->capacity,
+                                        $user->sysadmin,
+                                        $last_activity
+                                    );
+
+                                $this->say("Exporting Organization: {$org_results->result->title}, User: {$user->fullname} ({$user->name})");
+
+                                fputcsv($fp_log, $user_row);
+
+                            }                      
+                        }
+
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        // close log file
+        fclose($fp_log);
+
+    }    
+
+    /**
      * Rename $dataset['name'], preserving all the metadata
      *
      * @param $datasetName
