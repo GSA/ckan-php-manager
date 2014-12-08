@@ -5,6 +5,9 @@
  *
  */
 
+namespace CKAN\Manager;
+
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
@@ -17,12 +20,12 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$CkanManagerProduction = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManagerProduction = new CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
-$CkanManagerStaging = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+$CkanManagerStaging = new CkanManager(CKAN_STAGING_API_URL);
 
 $groups = $CkanManagerStaging->groups_array();
 

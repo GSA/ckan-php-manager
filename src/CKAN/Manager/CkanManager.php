@@ -17,22 +17,18 @@ class CkanManager
      * @var string
      */
     public $log_output = '';
-
-    /**
-     * @var \CKAN\Core\CkanClient
-     */
-    private $Ckan;
-
-    /**
-     * @var bool
-     */
-    private $return = false;
-
     /**
      * @var string
      */
     public $results_dir = RESULTS_DIR;
-
+    /**
+     * @var \CKAN\Core\CkanClient
+     */
+    private $Ckan;
+    /**
+     * @var bool
+     */
+    private $return = false;
     /**
      * Ckan results per page
      * @var int
@@ -48,6 +44,142 @@ class CkanManager
     public function __construct($apiUrl, $apiKey = null)
     {
         $this->Ckan = new CkanClient($apiUrl, $apiKey);
+    }
+
+    /**
+     *
+     */
+    public
+    function test_dev()
+    {
+        $datasets = $this->try_package_search('u');
+
+        $i = 0;
+        foreach ($datasets as $dataset) {
+            $dataset = $this->try_package_show($dataset['name']);
+
+            echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
+
+            $this->package_update($dataset);
+
+            if (defined('QUIT')) {
+                die();
+            }
+        }
+
+
+    }
+
+    /**
+     * @param        $search
+     * @param int $rows
+     * @param int $start
+     * @param string $q
+     * @param int $try
+     *
+     * @return bool|mixed
+     */
+    private
+    function try_package_search(
+        $search,
+        $rows = 100,
+        $start = 0,
+        $q = 'q',
+        $try = 3
+    )
+    {
+        $datasets = false;
+        while ($try) {
+            try {
+                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
+                $datasets = json_decode($datasets, true); // as array
+
+                if (!$datasets['success'] || !isset($datasets['result'])) {
+                    throw new \Exception('Could not search datasets');
+                }
+
+                $datasets = $datasets['result'];
+
+                if (!$datasets['count']) {
+                    echo 'Nothing found ' . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
+                    echo 'No results ' . PHP_EOL;
+
+                    return false;
+                }
+
+                $datasets = $datasets['results'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Datasets not found " . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $datasets;
+    }
+
+    /**
+     * @param string $id
+     * @param int $try
+     *
+     * @return bool|mixed
+     */
+    public
+    function try_package_show(
+        $id,
+        $try = 3
+    )
+    {
+        $dataset = false;
+        while ($try) {
+            try {
+                $dataset = $this->Ckan->package_show($id);
+                $dataset = json_decode($dataset, true); // as array
+
+                if (!$dataset['success']) {
+                    echo 'No success: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
+                    echo 'No result: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+
+                $dataset = $dataset['result'];
+
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                echo "Dataset not found: " . $id . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $id . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $dataset;
     }
 
     /**
@@ -178,30 +310,6 @@ class CkanManager
     }
 
     /**
-     *
-     */
-    public
-    function test_dev()
-    {
-        $datasets = $this->try_package_search('u');
-
-        $i = 0;
-        foreach ($datasets as $dataset) {
-            $dataset = $this->try_package_show($dataset['name']);
-
-            echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
-
-            $this->package_update($dataset);
-
-            if (defined('QUIT')) {
-                die();
-            }
-        }
-
-
-    }
-
-    /**
      * @param $results_dir
      */
     public
@@ -294,56 +402,6 @@ class CkanManager
     }
 
     /**
-     * @param string $id
-     * @param int $try
-     *
-     * @return bool|mixed
-     */
-    public
-    function try_package_show(
-        $id,
-        $try = 3
-    )
-    {
-        $dataset = false;
-        while ($try) {
-            try {
-                $dataset = $this->Ckan->package_show($id);
-                $dataset = json_decode($dataset, true); // as array
-
-                if (!$dataset['success']) {
-                    echo 'No success: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-
-                if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
-                    echo 'No result: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-
-                $dataset = $dataset['result'];
-
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                echo "Dataset not found: " . $id . PHP_EOL;
-
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                if (!$try) {
-                    echo 'Too many attempts: ' . $id . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $dataset;
-    }
-
-    /**
      * @param $title
      * @param $csv_writer
      *
@@ -390,68 +448,6 @@ class CkanManager
         $string = preg_replace('/[\W]+/u', ' ', $string);
 
         return $string;
-    }
-
-    /**
-     * @param        $search
-     * @param int $rows
-     * @param int $start
-     * @param string $q
-     * @param int $try
-     *
-     * @return bool|mixed
-     */
-    private
-    function try_package_search(
-        $search,
-        $rows = 100,
-        $start = 0,
-        $q = 'q',
-        $try = 3
-    )
-    {
-        $datasets = false;
-        while ($try) {
-            try {
-                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
-                $datasets = json_decode($datasets, true); // as array
-
-                if (!$datasets['success'] || !isset($datasets['result'])) {
-                    throw new \Exception('Could not search datasets');
-                }
-
-                $datasets = $datasets['result'];
-
-                if (!$datasets['count']) {
-                    echo 'Nothing found ' . PHP_EOL;
-
-                    return false;
-                }
-
-                if (!isset($datasets['results']) || !sizeof($datasets['results'])) {
-                    echo 'No results ' . PHP_EOL;
-
-                    return false;
-                }
-
-                $datasets = $datasets['results'];
-
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                echo "Datasets not found " . PHP_EOL;
-
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                if (!$try) {
-                    echo 'Too many attempts ' . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $datasets;
     }
 
     /**
@@ -2019,12 +2015,14 @@ class CkanManager
                     if (!$tags_to_remove) {
 //                        just remove the whole group
                     } else {
+                        $tags_to_remove = explode(';', $tags_to_remove);
+                        array_walk($tags_to_remove, create_function('&$val', '$val = trim($val);'));
                         $oldTags = trim($extra['value'], '"[], ');
                         $oldTags = explode('","', $oldTags);
                         $newTags = [];
                         if ($oldTags && is_array($oldTags)) {
                             foreach ($oldTags as $tag) {
-                                if (trim($tag) != trim($tags_to_remove)) {
+                                if (!in_array(trim($tag), $tags_to_remove)) {
                                     $newTags[] = $tag;
                                 }
                             }
@@ -3203,5 +3201,10 @@ EOR;
 
             $start += $per_page;
         }
+    }
+
+    public function import_json($json)
+    {
+
     }
 }

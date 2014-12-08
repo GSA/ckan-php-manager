@@ -1,8 +1,15 @@
 <?php
 
+namespace CKAN\Manager;
+
+
+use EasyCSV;
+
+
 /**
  * http://idm.data.gov/fed_agency.json
  */
+
 define('GROUP_TO_EXPORT', 'aapi0916');
 // http://catalog.data.gov/api/3/action/package_search?fq=aapi0916
 
@@ -21,12 +28,12 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $csv_agencies = new EasyCSV\Writer($results_dir . '/breakdown_' . GROUP_TO_EXPORT . '_by_agency_' . date(
         'Ymd-His'

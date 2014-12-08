@@ -1,4 +1,8 @@
 <?php
+
+namespace EasyCSV;
+
+
 /**
  * @author Alex Perfilov
  * @date   5/23/14
@@ -12,22 +16,6 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_REDIRECTS';
 mkdir($results_dir);
-
-/**
- * Adding Legacy dms tag
- * Production
- */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  *
@@ -55,14 +43,6 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
-$date = new DateTime(null, new DateTimeZone('UTC'));
-$curl_ch_headers = [
-    'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
-    'Accept: application/json',
-    'Accept-Charset: utf-8',
-    'Accept-Encoding: gzip'
-];
-
 foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
@@ -72,8 +52,8 @@ foreach (glob(DATA_DIR . '/socrata_*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-    $csv_source = new EasyCSV\Reader($csv_file, 'r+', false);
-    $csv_destination = new EasyCSV\Writer($results_dir . '/' . $basename . '_long.csv');
+    $csv_source = new Reader($csv_file, 'r+', false);
+    $csv_destination = new Writer($results_dir . '/' . $basename . '_long.csv');
 
     $i = 0;
     while (true) {

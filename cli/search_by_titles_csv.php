@@ -1,8 +1,13 @@
 <?php
 
+namespace CKAN\Manager;
+
+use EasyCSV;
+
 /**
  * http://idm.data.gov/fed_agency.json
  */
+
 define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
 
 require_once dirname(__DIR__) . '/inc/common.php';
@@ -16,12 +21,12 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;

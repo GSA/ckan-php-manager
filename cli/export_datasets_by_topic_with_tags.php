@@ -1,5 +1,8 @@
 <?php
 
+namespace CKAN\Manager;
+
+
 /**
  * http://idm.data.gov/fed_agency.json
  */
@@ -27,12 +30,12 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(CKAN_API_URL);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManager->export_datasets_with_tags_by_group($topic, $results_dir);
 

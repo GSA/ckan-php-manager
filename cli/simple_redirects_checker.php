@@ -1,4 +1,10 @@
 <?php
+
+namespace CKAN\Manager;
+
+
+use EasyCSV;
+
 /**
  * @author Alex Perfilov
  * @date   5/23/14
@@ -39,13 +45,6 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
-$date = new DateTime(null, new DateTimeZone('UTC'));
-$curl_ch_headers = [
-    'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
-    'Accept: application/json',
-    'Accept-Charset: utf-8',
-    'Accept-Encoding: gzip'
-];
 
 foreach (glob(DATA_DIR . '/redirects*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
@@ -161,10 +160,10 @@ function try_get_page($curl_ch, $url)
                 return true;
             default:
                 echo $err = 'Unknown code:' . $info['http_code'] . PHP_EOL;
-                throw new Exception($err);
+                throw new \Exception($err);
 //            die('Unknown code:' . $info['http_code'] . PHP_EOL);
         }
-    } catch (Exception $ex) {
+    } catch (\Exception $ex) {
         $try--;
         if (!$try) {
             die($ex->getMessage());

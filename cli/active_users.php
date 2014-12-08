@@ -1,5 +1,8 @@
 <?php
 
+namespace CKAN\Manager;
+
+
 define('LOG_NAME', 'active_users');
 
 echo "Exporting active users" . PHP_EOL;
@@ -19,12 +22,12 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManager->active_users($results_dir);
 

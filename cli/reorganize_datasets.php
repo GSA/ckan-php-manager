@@ -1,5 +1,9 @@
 <?php
 
+namespace CKAN\Manager;
+
+use CKAN\Core\OrganizationList;
+
 /**
  * http://idm.data.gov/fed_agency.json
  */
@@ -15,7 +19,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Get organization terms, including all children, as Array
  */
-$OrgList = new \CKAN\Core\OrganizationList(AGENCIES_LIST_URL);
+$OrgList = new OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_TAG);
 
 /**
@@ -35,12 +39,12 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $CkanManager->reorganize_datasets(ORGANIZATION_TO_TAG, $termsArray, BACKUP_DIR, $results_dir);
 

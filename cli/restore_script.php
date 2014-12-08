@@ -1,5 +1,11 @@
 <?php
 
+namespace CKAN\Manager;
+
+
+use CKAN\Exceptions;
+use EasyCSV;
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
@@ -12,17 +18,17 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-$ProductionClient = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$ProductionClient = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-$StagingClient = new \CKAN\Manager\CkanManager(CKAN_UAT_API_URL);
+$StagingClient = new CkanManager(CKAN_UAT_API_URL);
 
 /**
  * Dev
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  * Sample csv
@@ -52,12 +58,6 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
             continue;
         }
 
-//        format group tags
-        $categories = [];
-        if (isset($row['2']) && $row['2']) {
-            $categories = explode(';', $row['2']);
-        }
-
         $datasetName = basename($row['0']);
 
         $StagingClient->say(str_pad($datasetName, 100, ' . '), '');
@@ -69,9 +69,9 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
 
             $ProductionClient->diffUpdate($datasetName, $DatasetArray);
 //            var_dump($DatasetArray);die();
-        } catch (\CKAN\Exceptions\NotFoundHttpException $ex) {
+        } catch (Exceptions\NotFoundHttpException $ex) {
             $StagingClient->say(str_pad('Staging 404', 15, ' . '));
-        } catch (Exception $ex) {
+        } catch (\Exception $ex) {
             $StagingClient->say(str_pad('Staging Error: ' . $ex->getMessage(), 15, ' . '));
         }
 

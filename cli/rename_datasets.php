@@ -4,6 +4,11 @@
  * First run validation script, to find matches against CKAN, to get _legacy.csv file
  */
 
+namespace CKAN\Manager;
+
+
+use EasyCSV;
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
@@ -15,24 +20,24 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 /**
  * Dev
  */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  * CSV
- * datasetName, newDatasetName_legacy
+ * datasetName, newDatasetName
  */
 
-foreach (glob(DATA_DIR . '/rename_*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/rename*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

@@ -1,5 +1,8 @@
 <?php
 
+namespace CKAN\Manager;
+
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 $start = isset($argv[1]) ? intval($argv[1]) : 0;
@@ -15,17 +18,17 @@ is_dir($results_dir) || mkdir($results_dir);
 /**
  * Production
  */
-$Ckan = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$Ckan = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$Ckan = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$Ckan = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 /**
  * Dev
  */
-//$Ckan = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$Ckan = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 $Ckan->orphaned_tags_seek($results_dir, $limit, $start);
 

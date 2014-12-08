@@ -5,6 +5,10 @@
  *
  */
 
+namespace CKAN\Manager;
+
+use EasyCSV;
+
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
@@ -12,22 +16,6 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_CHECK_AAPI';
 mkdir($results_dir);
-
-/**
- * Adding Legacy dms tag
- * Production
- */
-$CkanManager = new \CKAN\Manager\CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
-//$CkanManager = new \CKAN\Manager\CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**
  *
@@ -54,14 +42,6 @@ curl_setopt($curl_ch, CURLINFO_HEADER_OUT, true);
 // Attempt to retrieve the modification date of the remote document.
 curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
-
-$date = new DateTime(null, new DateTimeZone('UTC'));
-$curl_ch_headers = [
-    'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
-    'Accept: application/json',
-    'Accept-Charset: utf-8',
-    'Accept-Encoding: gzip'
-];
 
 foreach (glob(DATA_DIR . '/check_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
