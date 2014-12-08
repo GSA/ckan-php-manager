@@ -1797,6 +1797,11 @@ class CkanManager
                 foreach ($extras as $extra) {
                     if ($category_key == $extra['key']) {
                         $tags = trim($extra['value'], '[]');
+                        $tags = explode('","', $tags);
+                        foreach($tags as &$tag) {
+                            $tag = trim($tag, '" ');
+                        }
+                        $tags = join(';', $tags);
                         break;
                     }
                 }
@@ -1835,7 +1840,8 @@ class CkanManager
 
         $csv_header = [
             'data.gov url',
-            'title',
+            'topic name',
+            'topic categories',
         ];
 
         fputcsv($fp, $csv_header);
@@ -1874,14 +1880,17 @@ class CkanManager
 
             if (sizeof($ckanResult['results'])) {
                 foreach ($ckanResult['results'] as $dataset) {
+                    if (!sizeof($dataset['groups'])) {
+                        fputcsv(
+                            $fp,
+                            [
+                                isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
+                                $dataset['title'],
+                                $dataset['title'],
+                            ]
+                        );
+                    }
 
-                    fputcsv(
-                        $fp,
-                        [
-                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
-                            $dataset['title'],
-                        ]
-                    );
                 }
             } else {
                 echo 'no results: ' . $search . PHP_EOL;
