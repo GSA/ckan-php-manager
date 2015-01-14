@@ -13,14 +13,18 @@ if (!$search) {
     die('Please define search by first param' . PHP_EOL);
 }
 
-$strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
+$strip_search = preg_replace("/\\(([a-z]+-[a-z\\-]*[a-z]+)\\)/",'"${1}"', $search);
+
+$filename_strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
+
+//die($strip_search.PHP_EOL);
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_SEARCH_' . $strip_search;
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_SEARCH_' . $filename_strip_search;
 mkdir($results_dir);
 
 /**
@@ -38,7 +42,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManager->results_dir = $results_dir;
-$CkanManager->export_datasets_by_search($search);
+$CkanManager->export_datasets_by_search($strip_search);
 
 // show running time on finish
 timer();

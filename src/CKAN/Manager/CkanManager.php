@@ -1835,7 +1835,8 @@ class CkanManager
         $this->log_output = '';
 
         $date = date('Ymd-His');
-        $log_file = $this->results_dir . '/export_' . $search . '_' . $date . '.csv';
+        $filename_strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
+        $log_file = $this->results_dir . '/export_' . $filename_strip_search . '_' . $date . '.csv';
         $fp = fopen($log_file, 'w');
 
         $csv_header = [
@@ -1848,7 +1849,9 @@ class CkanManager
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-        $ckan_query = '(("' . $search . '") + (dataset_type:dataset))';
+        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
+
+        echo $ckan_query.PHP_EOL;
 
         $done = false;
         $start = 0;
@@ -1863,11 +1866,13 @@ class CkanManager
             $totalCount = $ckanResult['count'];
             $count = sizeof($ckanResult['results']);
 
+            echo "Found $totalCount results".PHP_EOL;
+
             /**
              * Sample title:
              * export_fresc_20141117-121528_[1..33].json
              */
-            $out_json_path = $this->results_dir . '/export_' . $search . '_' . $date
+            $out_json_path = $this->results_dir . '/export_' . $filename_strip_search . '_' . $date
                 . '_[' . ($start + 1) . '..' . ($start + $count) . '].json';
             file_put_contents($out_json_path, json_encode($ckanResult['results'], JSON_PRETTY_PRINT));
 
