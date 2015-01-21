@@ -52,7 +52,8 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
             continue;
         }
 
-        $dataset = basename($row['0']);
+//        no anchors please
+        list($dataset,) = explode('#', basename(trim($row['0'])));
         $category = isset($row['1']) ? ($row['1'] ?: '') : '';
         $tags = isset($row['2']) ? ($row['2'] ?: '') : '';
         $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $basename);

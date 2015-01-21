@@ -72,7 +72,9 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 
         }
 
-        $dataset = basename(trim($row['0']));
+//        no anchors please
+        list($dataset,) = explode('#', basename(trim($row['0'])));
+
         if (!$dataset) {
             continue;
         }
