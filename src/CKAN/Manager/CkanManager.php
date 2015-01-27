@@ -35,6 +35,9 @@ class CkanManager
      */
     private $packageSearchPerPage = 200;
 
+    /**
+     * @var array
+     */
     private $expectedFieldsDiff = [];
 
     /**
@@ -1849,7 +1852,7 @@ class CkanManager
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
+        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
 
         echo $ckan_query.PHP_EOL;
 
@@ -1885,17 +1888,14 @@ class CkanManager
 
             if (sizeof($ckanResult['results'])) {
                 foreach ($ckanResult['results'] as $dataset) {
-                    if (!sizeof($dataset['groups'])) {
-                        fputcsv(
-                            $fp,
-                            [
-                                isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
-                                $dataset['title'],
-                                $dataset['title'],
-                            ]
-                        );
-                    }
-
+                    fputcsv(
+                        $fp,
+                        [
+                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
+                            $dataset['title'],
+                            $dataset['title'],
+                        ]
+                    );
                 }
             } else {
                 echo 'no results: ' . $search . PHP_EOL;
@@ -2094,6 +2094,82 @@ class CkanManager
     }
 
     /**
+     * @param $datasetNames
+     * @param $extraField
+     * @param $oldValue
+     * @param $newValue
+     * @param $basename
+     */
+    public function update_extra_fields($datasetNames, $extraField, $oldValue, $newValue, $basename)
+    {
+        static $counter = 0;
+        $this->log_output = '';
+
+        foreach ($datasetNames as $datasetName) {
+
+            $datasetName = strtolower($datasetName);
+
+            echo str_pad(++$counter, 6);
+            $this->say($datasetName . ',', '');
+
+            try {
+                $dataset = $this->Ckan->package_show($datasetName);
+            } catch (NotFoundHttpException $ex) {
+                $this->say('NOT FOUND');
+                continue;
+            }
+
+            $dataset = json_decode($dataset, true);
+            if (!$dataset['success']) {
+                $this->say('NOT FOUND');
+                continue;
+            }
+
+            $dataset = $dataset['result'];
+
+            if ('dataset' !== $dataset['type']) {
+                $this->say('NOT A DATASET (type: ' . $dataset['type'] . ')');
+                continue;
+            }
+
+            $extras = $dataset['extras'];
+            $dataset['extras'] = [];
+
+            $updated = false;
+            $value = '';
+            foreach ($extras as $extra) {
+                if ($extraField == $extra['key'] && $oldValue == $extra['value']) {
+                    $extra['value'] = $newValue;
+                    $updated = true;
+                } elseif ($extraField == $extra['key']) {
+                    $value = $extra['value'];
+                }
+                $dataset['extras'][] = $extra;
+            }
+
+            if (!$updated) {
+                $this->say('NOT UPDATED '.$value);
+                continue;
+            }
+
+            try {
+                $this->package_update($dataset);
+                $this->say('SUCCESS');
+            } catch (\Exception $ex) {
+                $this->say('ERROR: CHECK LOG');
+                file_put_contents($this->results_dir . '/error.log', $ex->getMessage().PHP_EOL, FILE_APPEND | LOCK_EX);
+            }
+        }
+
+        file_put_contents(
+            $this->results_dir . '/' . $basename . '_update_extra_fields.log.csv',
+            $this->log_output,
+            FILE_APPEND | LOCK_EX
+        );
+        $this->log_output = '';
+    }
+
+    /**
      * @param      $datasetNames
      * @param      $group
      * @param null $categories
@@ -2194,7 +2270,7 @@ class CkanManager
             } catch (\Exception $ex) {
 //                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
                 $this->say('ERROR: CHECK LOG');
-                file_put_contents($this->results_dir . '/error.log', $ex->getMessage(), FILE_APPEND | LOCK_EX);
+                file_put_contents($this->results_dir . '/error.log', $ex->getMessage().PHP_EOL, FILE_APPEND | LOCK_EX);
             }
         }
         file_put_contents(
@@ -3217,6 +3293,9 @@ EOR;
         }
     }
 
+    /**
+     * @param $json
+     */
     public function import_json($json)
     {
 
