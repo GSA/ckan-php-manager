@@ -1844,15 +1844,14 @@ class CkanManager
 
         $csv_header = [
             'data.gov url',
-            'topic name',
-            'topic categories',
+            'topic name'
         ];
 
         fputcsv($fp, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
+        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
 
         echo $ckan_query.PHP_EOL;
 
@@ -1892,7 +1891,6 @@ class CkanManager
                         $fp,
                         [
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
-                            $dataset['title'],
                             $dataset['title'],
                         ]
                     );
