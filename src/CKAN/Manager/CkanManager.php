@@ -1444,7 +1444,7 @@ class CkanManager
         $results_dir
     )
     {
-     
+
         $orgs = $this->Ckan->organization_list();
         $orgs = json_decode($orgs);
         $orgs = $orgs->result;
@@ -1481,7 +1481,7 @@ class CkanManager
             if ($org_results) {
                 $org_results = json_decode($org_results);
 
-                if($users = $org_results->result->users) {
+                if ($users = $org_results->result->users) {
 
                     foreach ($users as $org_user) {
                         $user_id = $org_user->name;
@@ -1496,28 +1496,28 @@ class CkanManager
                         if ($user_results) {
                             $user_results = json_decode($user_results);
 
-                            if($user = $user_results->result) {
-                               
+                            if ($user = $user_results->result) {
+
                                 $last_activity = (!empty($user->activity[0]->timestamp)) ? $user->activity[0]->timestamp : '';
 
                                 $user_row = array(
-                                        $org_results->result->title,
-                                        $org_results->result->name,
-                                        $user->fullname,
-                                        $user->name,
-                                        $user->email,
-                                        $user->number_administered_packages,
-                                        $user->number_of_edits,
-                                        $org_user->capacity,
-                                        $user->sysadmin,
-                                        $last_activity
-                                    );
+                                    $org_results->result->title,
+                                    $org_results->result->name,
+                                    $user->fullname,
+                                    $user->name,
+                                    $user->email,
+                                    $user->number_administered_packages,
+                                    $user->number_of_edits,
+                                    $org_user->capacity,
+                                    $user->sysadmin,
+                                    $last_activity
+                                );
 
                                 $this->say("Exporting Organization: {$org_results->result->title}, User: {$user->fullname} ({$user->name})");
 
                                 fputcsv($fp_log, $user_row);
 
-                            }                      
+                            }
                         }
 
 
@@ -1532,7 +1532,7 @@ class CkanManager
         // close log file
         fclose($fp_log);
 
-    }    
+    }
 
     /**
      * Rename $dataset['name'], preserving all the metadata
@@ -1801,7 +1801,7 @@ class CkanManager
                     if ($category_key == $extra['key']) {
                         $tags = trim($extra['value'], '[]');
                         $tags = explode('","', $tags);
-                        foreach($tags as &$tag) {
+                        foreach ($tags as &$tag) {
                             $tag = trim($tag, '" ');
                         }
                         $tags = join(';', $tags);
@@ -1853,7 +1853,7 @@ class CkanManager
 
         $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
 
-        echo $ckan_query.PHP_EOL;
+        echo $ckan_query . PHP_EOL;
 
         $done = false;
         $start = 0;
@@ -1868,7 +1868,7 @@ class CkanManager
             $totalCount = $ckanResult['count'];
             $count = sizeof($ckanResult['results']);
 
-            echo "Found $totalCount results".PHP_EOL;
+            echo "Found $totalCount results" . PHP_EOL;
 
             /**
              * Sample title:
@@ -2146,7 +2146,7 @@ class CkanManager
             }
 
             if (!$updated) {
-                $this->say('NOT UPDATED '.$value);
+                $this->say('NOT UPDATED ' . $value);
                 continue;
             }
 
@@ -2155,7 +2155,7 @@ class CkanManager
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
                 $this->say('ERROR: CHECK LOG');
-                file_put_contents($this->results_dir . '/error.log', $ex->getMessage().PHP_EOL, FILE_APPEND | LOCK_EX);
+                file_put_contents($this->results_dir . '/error.log', $ex->getMessage() . PHP_EOL, FILE_APPEND | LOCK_EX);
             }
         }
 
@@ -2268,7 +2268,7 @@ class CkanManager
             } catch (\Exception $ex) {
 //                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
                 $this->say('ERROR: CHECK LOG');
-                file_put_contents($this->results_dir . '/error.log', $ex->getMessage().PHP_EOL, FILE_APPEND | LOCK_EX);
+                file_put_contents($this->results_dir . '/error.log', $ex->getMessage() . PHP_EOL, FILE_APPEND | LOCK_EX);
             }
         }
         file_put_contents(
