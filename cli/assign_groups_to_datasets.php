@@ -41,7 +41,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
  */
 
-$CkanManager->results_dir = $results_dir;
+$CkanManager->resultsDir = $results_dir;
 foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
@@ -51,7 +51,7 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-//    file_put_contents($results_dir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
+//    file_put_contents($resultsDir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
     while (true) {

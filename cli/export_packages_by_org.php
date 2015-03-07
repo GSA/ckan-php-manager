@@ -8,7 +8,7 @@ use CKAN\Core\OrganizationList;
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
+define('ORGANIZATION_TO_EXPORT', 'Economic Research Service');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
@@ -38,7 +38,8 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 /**
  * Staging

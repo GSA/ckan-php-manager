@@ -34,14 +34,15 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 /**
  * Staging
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
-$CkanManager->results_dir = $results_dir;
+$CkanManager->resultsDir = $results_dir;
 $CkanManager->export_datasets_by_search($strip_search);
 
 // show running time on finish

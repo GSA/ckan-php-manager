@@ -9,17 +9,24 @@ use CKAN\Core\OrganizationList;
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'US Equal Employment Opportunity Commission');
+define('ORGANIZATION_TO_TAG', 'Department of Homeland Security');
 
 /**
  * Just list those datasets, no need to edit anything
  */
-define('LIST_ONLY', true);
+define('LIST_ONLY', false);
 
 /**
  * Make it TRUE, if you want datasets to be marked as PRIVATE
+ * LIST_ONLY must be true
  */
 define('MARK_PRIVATE', true);
+
+/**
+ * Rename adding __legacy to the end of dataset name (url will be changed too)
+ * LIST_ONLY must be true
+ */
+define('RENAME_TO_LEGACY', true);
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
@@ -55,7 +62,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
-$CkanManager->results_dir = $results_dir;
+$CkanManager->resultsDir = $results_dir;
 $CkanManager->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms');
 
 // show running time on finish

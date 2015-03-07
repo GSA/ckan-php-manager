@@ -32,7 +32,7 @@ $CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
 
-$CkanManager->results_dir = $results_dir;
+$CkanManager->resultsDir = $results_dir;
 $CkanManager->test_dev();
 
 // show running time on finish

@@ -29,7 +29,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
-$CkanManager->results_dir = $results_dir;
+$CkanManager->resultsDir = $results_dir;
 foreach (glob(DATA_DIR . '/private*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
