@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "542734aaf53b01b74c78f48b224f5ee1f32a841d"
+                "reference": "0e836e25fb08e6c0f3fceed520b635ced11c5327"
             },
             "require": {
                 "ext-curl": "*",
@@ -40,7 +40,7 @@
                 }
             ],
             "description": "CKAN php client",
-            "time": "2015-03-04 21:26:54"
+            "time": "2015-03-09 21:26:26"
         },
         {
             "name": "jwage/easy-csv",
@@ -472,12 +472,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Yaml.git",
-                "reference": "d04b39229628a0cc36ae5616db9c7f6f7119ac8f"
+                "reference": "601ca9abea0e2742b051de33f5de4bc764f5ce5c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Yaml/zipball/d04b39229628a0cc36ae5616db9c7f6f7119ac8f",
-                "reference": "d04b39229628a0cc36ae5616db9c7f6f7119ac8f",
+                "url": "https://api.github.com/repos/symfony/Yaml/zipball/601ca9abea0e2742b051de33f5de4bc764f5ce5c",
+                "reference": "601ca9abea0e2742b051de33f5de4bc764f5ce5c",
                 "shasum": ""
             },
             "require": {
@@ -513,7 +513,7 @@
             ],
             "description": "Symfony Yaml Component",
             "homepage": "http://symfony.com",
-            "time": "2015-02-18 10:38:04"
+            "time": "2015-03-07 07:43:00"
         }
     ],
     "aliases": [],

@@ -24,7 +24,7 @@ foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
     $basename = str_replace('.csv', '', basename($csv_file));
-    $logFile  = $results_dir . '/' . $basename . '_rename.log';
+    $logFile  = $results_dir . '/' . $basename . '.log';
     file_put_contents($logFile, $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
@@ -42,8 +42,10 @@ foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
         $organization = basename($row['0']);
 
         printf('[%04d] ', $i++);
-        $CkanManager->full_organization_export($organization);
+        $CkanManager->full_organization_export($organization,
+            CkanManager::EXPORT_DMS_ONLY | CkanManager::EXPORT_PRIVATE_ONLY);
     }
+
     file_put_contents($logFile, $CkanManager->logOutput, FILE_APPEND | LOCK_EX);
 }
 
