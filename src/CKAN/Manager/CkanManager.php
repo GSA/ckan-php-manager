@@ -26,6 +26,10 @@ class CkanManager
      */
     const EXPORT_PRIVATE_ONLY = 0b00000100;
     /**
+     *
+     */
+    const IDS_ONLY = 0b00001000;
+    /**
      * @var string
      */
     public $logOutput = '';
@@ -1421,12 +1425,14 @@ class CkanManager
      * Use organization terms array to filter, use null to tag all datasets
      *
      * @param array $terms
+     * @param int $options
      *
      * @return array
      */
     private
     function get_dms_public_datasets(
-        $terms = null
+        $terms = null,
+        $options = 0
     ) {
         $dms_datasets = [];
         $page         = 0;
@@ -1462,7 +1468,11 @@ class CkanManager
                     continue;
                 }
                 if (strpos(json_encode($dataset['extras']), '"dms"')) {
-                    $dms_datasets[] = $dataset;
+                    if ($options & self::IDS_ONLY) {
+                        $dms_datasets[] = $dataset['name'];
+                    } else {
+                        $dms_datasets[] = $dataset;
+                    }
                 }
             }
             $count = $ckanResult['count'];
@@ -1515,26 +1525,42 @@ class CkanManager
      */
     public function full_organization_export($organization, $options = 0)
     {
-        $members = $this->try_member_list($organization);
+        if (($options & self::EXPORT_PUBLIC_ONLY) && ($options & self::EXPORT_DMS_ONLY)) {
+            $members = $this->get_dms_public_datasets([$organization=>$organization], self::IDS_ONLY);
+        } else {
+            $members = $this->try_member_list($organization);
+        }
+
         if (!$members || !is_array($members) || !sizeof($members)) {
-            $this->say(sprintf('%25s%10d', $organization, 0));
+            $this->say(join(',', [$organization, 0]));
+//            $this->say(sprintf('%25s%10d', $organization, 0));
             return;
         }
 
         $export    = [];
         $exportIds = [];
         foreach ($members as $package) {
-            $dataset = $this->try_package_show($package[0]);
+            //  member_list returns weird array
+            $id = is_array($package) ? $package[0] : $package;
+            $dataset = $this->try_package_show($id);
 
             if ('dataset' != $dataset['type']) {
+                echo $id.' :: NOT A DATASET'.PHP_EOL;
+                continue;
+            }
+
+            if ('deleted' == $dataset['state']) {
+                echo $id.' :: DELETED'.PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PRIVATE_ONLY && !$dataset['private']) {
+                echo $id.' :: IS PUBLIC'.PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PUBLIC_ONLY && $dataset['private']) {
+                echo $id.' :: IS PRIVATE'.PHP_EOL;
                 continue;
             }
 
@@ -1544,6 +1570,7 @@ class CkanManager
             if ($options & self::EXPORT_DMS_ONLY
                 && !(strstr($dataset, '"dms"') && strstr($dataset, '"metadata-source"'))
             ) {
+                echo $id.' :: IS DMS'.PHP_EOL;
                 continue;
             }
 
@@ -1552,7 +1579,8 @@ class CkanManager
         }
 
         $total = sizeof($exportIds);
-        $this->say(sprintf('%25s%10d', $organization, $total));
+//        $this->say(sprintf('%25s%10d', $organization, $total));
+        $this->say(join(',', [$organization, $total]));
 
         if (!$total) {
             return;
@@ -1957,13 +1985,13 @@ class CkanManager
             return;
         }
 
-        if (!isset($dataset['private']) || !$dataset['private']) {
-            $this->say(join(',', [$datasetName, $organizationName, 'Not private']));
+        if ('deleted' == $dataset['state']) {
+            $this->say(join(',', [$datasetName, $organizationName, 'Already deleted']));
             return;
         }
 
-        if ('deleted' == $dataset['state']) {
-            $this->say(join(',', [$datasetName, $organizationName, 'Already deleted']));
+        if (!isset($dataset['private']) || !$dataset['private']) {
+            $this->say(join(',', [$datasetName, $organizationName, 'Not private']));
             return;
         }
 
@@ -2320,8 +2348,10 @@ class CkanManager
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-        $ckan_query = '((organization:' . $search . ') AND (dataset_type:dataset))';
-//        $ckan_query = $search;
+//        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
+        $ckan_query = $search;
+        $ckan_query = '(organization:"ers-usda-gov")';
+//        $ckan_query = 'metadata-source:dms';
 
         echo $ckan_query . PHP_EOL;
 
@@ -2330,7 +2360,7 @@ class CkanManager
         $per_page = 100;
         while (!$done) {
             echo $ckan_query . PHP_EOL;
-            $ckanResult = $this->Ckan->package_search($ckan_query, $per_page, $start, 'fq');
+            $ckanResult = $this->Ckan->package_search($ckan_query, $per_page, $start, 'q');
 
             $ckanResult = json_decode($ckanResult, true); //  decode json as array
             $ckanResult = $ckanResult['result'];
