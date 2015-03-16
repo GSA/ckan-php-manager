@@ -1526,7 +1526,7 @@ class CkanManager
     public function full_organization_export($organization, $options = 0)
     {
         if (($options & self::EXPORT_PUBLIC_ONLY) && ($options & self::EXPORT_DMS_ONLY)) {
-            $members = $this->get_dms_public_datasets([$organization=>$organization], self::IDS_ONLY);
+            $members = $this->get_dms_public_datasets([$organization => $organization], self::IDS_ONLY);
         } else {
             $members = $this->try_member_list($organization);
         }
@@ -1541,26 +1541,26 @@ class CkanManager
         $exportIds = [];
         foreach ($members as $package) {
             //  member_list returns weird array
-            $id = is_array($package) ? $package[0] : $package;
+            $id      = is_array($package) ? $package[0] : $package;
             $dataset = $this->try_package_show($id);
 
             if ('dataset' != $dataset['type']) {
-                echo $id.' :: NOT A DATASET'.PHP_EOL;
+                echo $id . ' :: NOT A DATASET' . PHP_EOL;
                 continue;
             }
 
             if ('deleted' == $dataset['state']) {
-                echo $id.' :: DELETED'.PHP_EOL;
+                echo $id . ' :: DELETED' . PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PRIVATE_ONLY && !$dataset['private']) {
-                echo $id.' :: IS PUBLIC'.PHP_EOL;
+                echo $id . ' :: IS PUBLIC' . PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PUBLIC_ONLY && $dataset['private']) {
-                echo $id.' :: IS PRIVATE'.PHP_EOL;
+                echo $id . ' :: IS PRIVATE' . PHP_EOL;
                 continue;
             }
 
@@ -1570,7 +1570,7 @@ class CkanManager
             if ($options & self::EXPORT_DMS_ONLY
                 && !(strstr($dataset, '"dms"') && strstr($dataset, '"metadata-source"'))
             ) {
-                echo $id.' :: IS DMS'.PHP_EOL;
+                echo $id . ' :: IS DMS' . PHP_EOL;
                 continue;
             }
 
@@ -1683,6 +1683,14 @@ class CkanManager
             $filename    = '/inventory_orgs_list_' . (START ?: '') . '.csv';
         }
 
+        $filter = false;
+        if (is_file(DATA_DIR . '/organizations_stats_filter.csv')) {
+            $filter = array_filter(explode(PHP_EOL, file_get_contents(DATA_DIR . '/organizations_stats_filter.csv')));
+            if (!sizeof($filter)) {
+                $filter = false;
+            }
+        }
+
         $orgs = json_decode($orgs);
         $orgs = $orgs->result;
 
@@ -1695,9 +1703,9 @@ class CkanManager
             'Organization ID',
             'Organization Name',
             'Organization URL',
-            'Number of Public Datasets',
+            'Public Packages (incl. harv.src)',
 //            'Number of Private Datasets',
-            'Total Number of Datasets',
+            'Number of Members (incl. private)',
             'State: Active',
             'State: Draft',
             'State: Draft-complete',
@@ -1712,13 +1720,19 @@ class CkanManager
 
         fputcsv($fp_log, $csv_header);
 
-        $total        = sizeof($orgs);
+        $total        = $filter ? sizeof($filter) : sizeof($orgs);
         $digits_count = strlen('' . $total);
         $i            = 0;
         $skip         = (bool)START;
         foreach ($orgs as $org) {
-            $i++;
             $org_slug = is_object($org) ? $org->name : $org;
+
+            if ($filter && !in_array($org_slug, $filter)) {
+                continue;
+            }
+
+            $i++;
+
             if (START && START == $org_slug) {
                 $skip = false;
             }
@@ -1751,14 +1765,14 @@ class CkanManager
                 $dms_public     = $dms_private = $non_dms_public = 0;
 
                 if (is_array($member_list)) {
-                    $total_count  = sizeof($member_list);
-                    $digits_count = strlen('' . $total_count);
+                    $total_count         = sizeof($member_list);
+                    $member_digits_count = strlen('' . $total_count);
 //                    $private_count = $total_count - $org_results->package_count;
 
                     $j = 0;
                     foreach ($member_list as $member) {
                         if (!(++$j % 1000)) {
-                            printf("   [%0{$digits_count}d/%0{$digits_count}d] members of: %s"
+                            printf("   [%0{$member_digits_count}d/%0{$member_digits_count}d] members of: %s"
                                 . PHP_EOL, $j, $total_count, $org_slug);
                         }
                         $id      = $member[0];
@@ -2036,6 +2050,86 @@ class CkanManager
                 }
             }
         }
+        return false;
+    }
+
+    /**
+     * @param $resource
+     */
+    public function resourceCreate($resource)
+    {
+        $dataset_name_or_id = $resource['package_id'];
+        $dataset            = $this->try_package_show($dataset_name_or_id);
+        if (!$dataset) {
+            $this->say(join(',',
+                [$dataset_name_or_id, $resource['url'], 'ERROR', 'could not find dataset by id/name']));
+            return;
+        }
+
+        if ('dataset' !== $dataset['type']) {
+            $this->say(join(',', [$dataset_name_or_id, $resource['url'], 'ERROR', 'package is not of type "dataset"']));
+            return;
+        }
+
+        $existing_resources = json_encode($dataset['resources']);
+        if (strstr($existing_resources, $resource['url']) || strstr($existing_resources, json_encode($resource['url']))
+        ) {
+            $this->say(join(',',
+                [$dataset_name_or_id, $resource['url'], 'ERROR', 'same package url already exists in this dataset']));
+            return;
+        }
+
+        $resource['package_id'] = $dataset['id'];
+
+        $result = $this->try_resource_create($resource);
+
+        $this->say(join(',', [$dataset_name_or_id, $resource['url'], 'SUCCESS', $result['id']]));
+        return;
+
+    }
+
+    /**
+     * @param $resource_json
+     * @param int $try
+     *
+     * @return bool|mixed
+     */
+    private function try_resource_create(
+        $resource_json,
+        $try = 3
+    ) {
+        $resource = false;
+        while ($try) {
+            try {
+                $resource = $this->Ckan->resource_create($resource_json);
+                $resource = json_decode($resource, true); // as array
+
+                if (!$resource['success']) {
+                    echo 'No success: ' . $resource_json['url'] . PHP_EOL;
+                    return false;
+                }
+
+                if (!isset($resource['result']) || !sizeof($resource['result'])) {
+                    echo 'No result: ' . $resource_json['url'] . PHP_EOL;
+                    return false;
+                }
+
+                $resource = $resource['result'];
+
+                $try = 0;
+            } catch (\Exception $ex) {
+                $try--;
+                sleep(3);
+                echo '      zzz   ' . $resource_json['url'] . PHP_EOL;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $resource_json['url'] . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $resource;
     }
 
     /**
@@ -2350,7 +2444,7 @@ class CkanManager
 
 //        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
         $ckan_query = $search;
-        $ckan_query = '(organization:"ers-usda-gov")';
+//        $ckan_query = '(organization:"ers-usda-gov")';
 //        $ckan_query = 'metadata-source:dms';
 
         echo $ckan_query . PHP_EOL;
