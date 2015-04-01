@@ -10,6 +10,8 @@ require_once dirname(__DIR__) . '/inc/common.php';
 define('START', isset($argv[1]) ? trim($argv[1]) : false);
 define('STOP', isset($argv[2]) ? trim($argv[2]) : false);
 
+//define('LIST_ORGS_ONLY', true);
+
 /**
  * Create results dir for logs and json results
  */
@@ -27,7 +29,13 @@ $CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
-$CkanManager->organizations_stats($results_dir);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->organizations_stats();
+
+if ($CkanManager->logOutput) {
+    file_put_contents($results_dir . '/log.csv', $CkanManager->logOutput);
+}
 
 // show running time on finish
 timer();

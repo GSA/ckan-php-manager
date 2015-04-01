@@ -36,7 +36,9 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_DEV2_API_URL, CKAN_DEV2_API_KEY);
 
-$CkanManager->tag_by_extra_field('identifier', 'source_datajson_identifier', $results_dir);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->tag_by_extra_field('identifier', 'source_datajson_identifier');
 
 // show running time on finish
 timer();

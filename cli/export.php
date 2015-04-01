@@ -13,7 +13,7 @@ if (!$search) {
     die('Please define search by first param' . PHP_EOL);
 }
 
-$strip_search = preg_replace("/\\(([a-z]+-[a-z\\-]*[a-z]+)\\)/",'"${1}"', $search);
+$strip_search = preg_replace("/\\(([a-z]+-[a-z\\-]*[a-z]+)\\)/", '"${1}"', $search);
 
 $filename_strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
 
@@ -34,8 +34,8 @@ mkdir($results_dir);
 /**
  * Production
  */
-//$CkanManager = new CkanManager(CKAN_API_URL);
-$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 /**
  * Staging

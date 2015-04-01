@@ -38,7 +38,9 @@ $CkanManager = new CkanManager(CKAN_API_URL);
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
-$CkanManager->search_by_topics($topics_list, $results_dir);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->search_by_topics($topics_list);
 
 // show running time on finish
 timer();

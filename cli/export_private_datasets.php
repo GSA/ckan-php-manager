@@ -46,7 +46,9 @@ define('ERROR_REPORTING', E_ALL);
 $OrgList = new OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArray();
 
-$CkanManager->get_private_list($termsArray, $results_dir, $start, $limit);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->get_private_list($termsArray, $start, $limit);
 
 // show running time on finish
 timer();

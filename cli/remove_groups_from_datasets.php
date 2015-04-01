@@ -48,7 +48,8 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(strtolower($row['0']), ['dataset', 'uid', 'uuid', 'name', 'url', 'data.gov url', 'dataset link'])) {
+        if (in_array(strtolower($row['0']),
+            ['dataset', 'uid', 'uuid', 'name', 'url', 'data.gov url', 'dataset link'])) {
             continue;
         }
 

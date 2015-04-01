@@ -16,7 +16,7 @@ foreach (glob(DATA_DIR . '/de*.json') as $json_file) {
     ]);
 
     foreach ($dataset_names['name'] as $name => $count) {
-        $newName = preg_replace("/^deleted-/",'',$name);
+        $newName = preg_replace("/^deleted-/", '', $name);
         $writer->writeRow([
             $name,
             $newName

@@ -29,8 +29,9 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  * Staging
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
+$CkanManager->resultsDir = $results_dir;
 
-$CkanManager->active_users($results_dir);
+$CkanManager->active_users();
 
 // show running time on finish
 timer();

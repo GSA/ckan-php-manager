@@ -37,6 +37,8 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  * datasetName, newDatasetName
  */
 
+$CkanManager->resultsDir = $results_dir;
+
 foreach (glob(DATA_DIR . '/rename*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
@@ -63,7 +65,7 @@ foreach (glob(DATA_DIR . '/rename*.csv') as $csv_file) {
         $newDatasetName = basename($row['1']);
 
         printf('[%04d] ', $i++);
-        $CkanManager->renameDataset($datasetName, $newDatasetName, $results_dir, $basename);
+        $CkanManager->renameDataset($datasetName, $newDatasetName, $basename);
     }
 }
 

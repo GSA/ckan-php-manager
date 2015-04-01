@@ -46,7 +46,7 @@ class CkanManager
      */
     private $return = false;
     /**
-     * Ckan results per page
+     * CkanManager results per page
      * @var int
      */
     private $packageSearchPerPage = 200;
@@ -60,13 +60,18 @@ class CkanManager
     private $apiUrl = '';
 
     /**
+     * @var int
+     */
+    private $resultCount = 0;
+
+    /**
      * @param string $apiUrl
      * @param null $apiKey
      */
     public function __construct($apiUrl, $apiKey = null)
     {
         $this->apiUrl = $apiUrl;
-        $this->Ckan   = new CkanClient($apiUrl, $apiKey);
+        $this->Ckan = new CkanClient($apiUrl, $apiKey);
     }
 
     /**
@@ -83,7 +88,7 @@ class CkanManager
 
             echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
 
-            $this->package_update($dataset);
+            $this->try_package_update($dataset);
 
             if (defined('QUIT')) {
                 die();
@@ -107,7 +112,8 @@ class CkanManager
         $start = 0,
         $q = 'q',
         $try = 3
-    ) {
+    )
+    {
         $datasets = false;
         while ($try) {
             try {
@@ -119,6 +125,8 @@ class CkanManager
                 }
 
                 $datasets = $datasets['result'];
+
+                $this->resultCount = $datasets['count'];
 
                 if (!$datasets['count']) {
                     echo 'Nothing found ' . PHP_EOL;
@@ -164,7 +172,8 @@ class CkanManager
     function try_package_show(
         $id,
         $try = 3
-    ) {
+    )
+    {
         $dataset = false;
         while ($try) {
             try {
@@ -187,7 +196,7 @@ class CkanManager
 
                 $try = 0;
             } catch (NotFoundHttpException $ex) {
-                echo "Dataset not found: " . $id . PHP_EOL;
+//                echo "Dataset not found: " . $id . PHP_EOL;
 
                 return false;
             } catch (\Exception $ex) {
@@ -211,19 +220,23 @@ class CkanManager
      * @return bool
      * @throws \Exception
      */
-    public function package_update($dataset)
+    private function try_package_update($dataset)
     {
         if ('dataset' !== $dataset['type']) {
 //            throw new \Exception('Not a dataset');
             return false;
         }
 
-        $this->Ckan->package_update($dataset);
-        if (!$this->check_dataset_consistency($dataset)) {
-            throw new \Exception('dataset consistency check failed');
+        try {
+            $this->Ckan->package_update($dataset);
+            if (!$this->check_dataset_consistency($dataset)) {
+                throw new \Exception('dataset consistency check failed');
+            }
+            return true;
+        } catch (\Exception $ex) {
+            echo $ex->getMessage() . PHP_EOL;
+            return false;
         }
-
-        return true;
     }
 
     /**
@@ -234,7 +247,7 @@ class CkanManager
      */
     public function check_dataset_consistency($dataset)
     {
-        $id              = $dataset['name'];
+        $id = $dataset['name'];
         $updated_dataset = $this->try_package_show($id);
 
         try {
@@ -333,14 +346,286 @@ class CkanManager
     }
 
     /**
-     * @param $results_dir
+     * @param $datasetName
+     *
+     * @throws \Exception
+     */
+    public function fix_modified($datasetName)
+    {
+        $dataset = $this->try_package_show($datasetName);
+        if (!$dataset) {
+            $this->say([$datasetName, 'ERROR', 'not found']);
+            return;
+        }
+
+        if (isset($dataset['metadata_modified'])) {
+            $modified = $dataset['metadata_modified'];
+        } else {
+            $this->say([$datasetName, 'ERROR', 'metadata_modified not found']);
+            return;
+        }
+
+        if (strstr(json_encode($dataset['extras']), 'modified')) {
+            foreach ($dataset['extras'] as $extra) {
+                if ('modified' == $extra['key']) {
+                    $modified = $extra['value'];
+                }
+            }
+            $this->say([$datasetName, 'SUCCESS', 'metadata is ' . $modified]);
+            return;
+        }
+
+        $dataset['extras'][] = [
+            'key' => 'modified',
+            'value' => $modified,
+        ];
+
+        $result = $this->try_package_update($dataset);
+        if ($result) {
+            $this->say([$datasetName, 'SUCCESS', 'extras metadata is ' . $modified]);
+        } else {
+            $this->say([$datasetName, 'ERROR', 'could not update dataset']);
+        }
+
+        return;
+    }
+
+    /**
+     * Shorthand for sending output to stdout and appending to log buffer at the same time.
+     *
+     * @param string $output
+     * @param string $eol
      */
     public
-    function get_interactive_resources(
-        $results_dir
-    ) {
-        $log_file = $results_dir . '/resources.csv';
-        $fp       = fopen($log_file, 'w');
+    function say(
+        $output = '',
+        $eol = PHP_EOL
+    )
+    {
+        if (is_array($output)) {
+            $output = join(',', $output);
+        }
+        echo $output . $eol;
+        $this->logOutput .= $output . $eol;
+    }
+
+    /**
+     *
+     */
+    public function findMatches2()
+    {
+        $page = 0;
+        $main_datasets_by_harvest = [];
+        $main_harvest_title = 'Environmental Dataset Gateway';
+        $datasets_by_harvest = [];
+        $titles = [];
+
+        while (true) {
+            $start = $page++ * $this->packageSearchPerPage;
+//                $ckanResult = $this->CkanManager->package_search(
+            $ckanResults = $this->try_package_search(
+                'organization:epa-gov',
+                $this->packageSearchPerPage,
+                $start
+            );
+
+            if (!is_array($ckanResults)) {
+                die('Fatal');
+            }
+
+//                csv for title, url, topic, and topic category
+            foreach ($ckanResults as $dataset) {
+                if ($dataset['type'] !== 'dataset' || !isset($dataset['extras'])) {
+                    continue;
+                }
+
+                $title = $this->simplifyTitle($dataset['title']);
+                $titles[$title] = $dataset['title'];
+//                echo PHP_EOL . $dataset['title'] . PHP_EOL . $title . PHP_EOL;
+
+                $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
+//                echo $harvestSource . PHP_EOL;
+
+                if ($harvestSource == $main_harvest_title) {
+                    $main_datasets_by_harvest[] = [
+                        'title' => $title,
+                        'basename' => $dataset['name']
+                    ];
+                    continue;
+                }
+
+                if (!isset($datasets_by_harvest[$harvestSource])) {
+                    $datasets_by_harvest[$harvestSource] = [];
+                }
+
+                if (!isset($datasets_by_harvest[$harvestSource][$title])) {
+                    $datasets_by_harvest[$harvestSource][$title] = [];
+                }
+                $datasets_by_harvest[$harvestSource][$title][] = $dataset['name'];
+
+            }
+
+            $count = $this->resultCount;
+            if ($start) {
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            }
+
+            if ($this->resultCount - $this->packageSearchPerPage < $start) {
+                break;
+            }
+        }
+
+        $other_harvests = array_keys($datasets_by_harvest);
+
+        foreach ($other_harvests as $harvest) {
+            $csv = new Writer($this->resultsDir . '/matches_' . $harvest . '.csv');
+            $csv->writeRow(['title', $main_harvest_title, $harvest]);
+            foreach ($main_datasets_by_harvest as $dataset) {
+                $matches = [];
+                if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
+                    $matches = $datasets_by_harvest[$harvest][$dataset['title']];
+                }
+                $csv->writeRow(array_merge([$titles[$dataset['title']], $dataset['basename']], $matches));
+            }
+        }
+    }
+
+    /**
+     * Sometimes harvested ckan title does not exactly matches, but dataset is same, ex. double spaces
+     * To avoid these cases, we remove all non-word chars, leaving only alphabetic and digit chars
+     * Ex.
+     * Input: Tree dog dataset    , agriculture, 1997 ?????!!!
+     * Output: treedogdatasetagriculture1997
+     *
+     * @param $string
+     *
+     * @return mixed|string
+     */
+    private
+    function simplifyTitle(
+        $string
+    )
+    {
+        $string = preg_replace('/[\W]+/', '', $string);
+        $string = strtolower($string);
+
+        return $string;
+    }
+
+    /**
+     * @param $extras
+     * @param $extra_key
+     * @return bool
+     */
+    private function extra($extras, $extra_key)
+    {
+        foreach ($extras as $key => $extra) {
+            if ($key === $extra_key) {
+                return $extra;
+            }
+            if (isset($extra['key']) && $extra['key'] == $extra_key) {
+                return $extra['value'];
+            }
+        }
+        return false;
+    }
+
+    /**
+     *
+     */
+    public function findMatches()
+    {
+        $page = 0;
+        $main_datasets_by_harvest = [];
+        $main_harvest_title = 'Environmental Dataset Gateway';
+        $datasets_by_harvest = [];
+        $titles = [];
+
+        $csv = new Writer($this->resultsDir . '/matches.csv');
+
+        while (true) {
+            $start = $page++ * $this->packageSearchPerPage;
+//                $ckanResult = $this->CkanManager->package_search(
+            $ckanResults = $this->try_package_search(
+                'organization:epa-gov',
+                $this->packageSearchPerPage,
+                $start
+            );
+
+            if (!is_array($ckanResults)) {
+                die('Fatal');
+            }
+
+//                csv for title, url, topic, and topic category
+            foreach ($ckanResults as $dataset) {
+                if ($dataset['type'] !== 'dataset' || !isset($dataset['extras'])) {
+                    continue;
+                }
+
+                $title = $this->simplifyTitle($dataset['title']);
+                $titles[$title] = $dataset['title'];
+//                echo PHP_EOL . $dataset['title'] . PHP_EOL . $title . PHP_EOL;
+
+                $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
+//                echo $harvestSource . PHP_EOL;
+
+                if ($harvestSource == $main_harvest_title) {
+                    $main_datasets_by_harvest[] = [
+                        'title' => $title,
+                        'basename' => $dataset['name']
+                    ];
+                    continue;
+                }
+
+                if (!isset($datasets_by_harvest[$harvestSource])) {
+                    $datasets_by_harvest[$harvestSource] = [];
+                }
+
+                if (isset($datasets_by_harvest[$harvestSource][$title])) {
+//                    $this->say('Duplicate '.$dataset['title']);
+                    if (strlen($datasets_by_harvest[$harvestSource][$title]) > strlen($dataset['name'])) {
+                        $datasets_by_harvest[$harvestSource][$title] = $dataset['name'];
+                    }
+                } else {
+                    $datasets_by_harvest[$harvestSource][$title] = $dataset['name'];
+                }
+            }
+
+            $count = $this->resultCount;
+            if ($start) {
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            }
+
+            if ($this->resultCount - $this->packageSearchPerPage < $start) {
+                break;
+            }
+        }
+
+
+        $other_harvests = array_keys($datasets_by_harvest);
+        $csv->writeRow(array_merge(['title', $main_harvest_title], array_keys($datasets_by_harvest)));
+
+        foreach ($main_datasets_by_harvest as $dataset) {
+            $matches = [];
+            foreach ($other_harvests as $harvest) {
+                if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
+                    $matches[] = $datasets_by_harvest[$harvest][$dataset['title']];
+//                    unset($datasets_by_harvest[$harvest][$dataset['title']]);
+                } else {
+                    $matches[] = '';
+                }
+            }
+            $csv->writeRow(array_merge([$titles[$dataset['title']], $dataset['basename']], $matches));
+        }
+    }
+
+    /**
+     */
+    public
+    function get_interactive_resources()
+    {
+        $log_file = $this->resultsDir . '/resources.csv';
+        $fp = fopen($log_file, 'w');
 
 //        Title of Dataset in Socrata | dataset URL in Socrata | dataset URL in Catalog
         $csv_header = [
@@ -383,7 +668,8 @@ class CkanManager
     function try_api_package_search(
         $search,
         $try = 3
-    ) {
+    )
+    {
         $resources = false;
         while ($try) {
             try {
@@ -434,12 +720,13 @@ class CkanManager
     function search_by_title(
         $title,
         Writer $csv_writer
-    ) {
+    )
+    {
         $solr_title = $this->escapeSolrValue($title);
-        $datasets   = $this->try_package_search("($solr_title)", 3);
+        $datasets = $this->try_package_search("($solr_title)", 3);
         if ($datasets && isset($datasets[0]) && isset($datasets[0]['name'])) {
             $found_title = $this->escapeSolrValue($datasets[0]['title']);
-            $exact       = ($solr_title == $found_title);
+            $exact = ($solr_title == $found_title);
             echo PHP_EOL . $title . PHP_EOL . $solr_title . PHP_EOL . ($exact ? 'EXACT MATCH' : 'NOT EXACT MATCH') . PHP_EOL . $datasets[0]['title'] . PHP_EOL . $datasets[0]['name'] . PHP_EOL;
             $csv_writer->writeRow(
                 [
@@ -464,7 +751,8 @@ class CkanManager
     private
     function escapeSolrValue(
         $string
-    ) {
+    )
+    {
         $string = preg_replace("/'/u", '', $string);
         $string = preg_replace('/[\W]+/u', ' ', $string);
 
@@ -473,17 +761,16 @@ class CkanManager
 
     /**
      * @param $search_list
-     * @param $results_dir
      */
     public
     function search_by_terms(
-        $search_list,
-        $results_dir
-    ) {
-        $log_file_popularity = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_popularity.csv';
-        $log_file_relevance  = $results_dir . '/search_' . sizeof($search_list) . '_terms_by_relevance.csv';
-        $fp_popularity       = fopen($log_file_popularity, 'w');
-        $fp_relevance        = fopen($log_file_relevance, 'w');
+        $search_list
+    )
+    {
+        $log_file_popularity = $this->resultsDir . '/search_' . sizeof($search_list) . '_terms_by_popularity.csv';
+        $log_file_relevance = $this->resultsDir . '/search_' . sizeof($search_list) . '_terms_by_relevance.csv';
+        $fp_popularity = fopen($log_file_popularity, 'w');
+        $fp_relevance = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -496,7 +783,7 @@ class CkanManager
         fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
-        $i        = 1;
+        $i = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
@@ -514,8 +801,8 @@ class CkanManager
                 $only_first_page = false;
             }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // relevance
@@ -560,8 +847,8 @@ class CkanManager
                 }
             }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // popularity
@@ -619,19 +906,18 @@ class CkanManager
 
     /**
      * @param $groups_list
-     * @param $results_dir
      */
     public
     function search_by_topics(
-        $groups_list,
-        $results_dir
-    ) {
-        $this->logOutput     = '';
-        $log_file_popularity = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_popularity.csv';
-        $log_file_relevance  = $results_dir . '/search_' . sizeof($groups_list) . '_topics_by_relevance.csv';
-        $error_log           = $results_dir . '/search_' . sizeof($groups_list) . '_topics.log';
-        $fp_popularity       = fopen($log_file_popularity, 'w');
-        $fp_relevance        = fopen($log_file_relevance, 'w');
+        $groups_list
+    )
+    {
+        $this->logOutput = '';
+        $log_file_popularity = $this->resultsDir . '/search_' . sizeof($groups_list) . '_topics_by_popularity.csv';
+        $log_file_relevance = $this->resultsDir . '/search_' . sizeof($groups_list) . '_topics_by_relevance.csv';
+        $error_log = $this->resultsDir . '/search_' . sizeof($groups_list) . '_topics.log';
+        $fp_popularity = fopen($log_file_popularity, 'w');
+        $fp_relevance = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -644,7 +930,7 @@ class CkanManager
         fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
-        $i        = 1;
+        $i = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
@@ -704,8 +990,8 @@ class CkanManager
 //                $only_first_page = false;
 //            }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // relevance
@@ -750,8 +1036,8 @@ class CkanManager
                 }
             }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // popularity
@@ -811,21 +1097,6 @@ class CkanManager
     }
 
     /**
-     * Shorthand for sending output to stdout and appending to log buffer at the same time.
-     *
-     * @param string $output
-     * @param string $eol
-     */
-    public
-    function say(
-        $output = '',
-        $eol = PHP_EOL
-    ) {
-        echo $output . $eol;
-        $this->logOutput .= $output . $eol;
-    }
-
-    /**
      * Return a list of the names of the site’s groups.
      *
      * @param string $groupName
@@ -836,7 +1107,8 @@ class CkanManager
     private
     function findGroup(
         $groupName
-    ) {
+    )
+    {
         static $group_list;
         if (!$groupName) {
             return false;
@@ -861,24 +1133,23 @@ class CkanManager
 
     /**
      * @param $organizations_list
-     * @param $results_dir
      */
     public
     function search_by_organizations(
-        $organizations_list,
-        $results_dir
-    ) {
-        $this->logOutput     = '';
-        $log_file_popularity = $results_dir . '/search_' . sizeof(
+        $organizations_list
+    )
+    {
+        $this->logOutput = '';
+        $log_file_popularity = $this->resultsDir . '/search_' . sizeof(
                 $organizations_list
             ) . '_organizations_by_popularity.csv';
-        $log_file_relevance  = $results_dir . '/search_' . sizeof(
+        $log_file_relevance = $this->resultsDir . '/search_' . sizeof(
                 $organizations_list
             ) . '_organizations_by_relevance.csv';
-        $error_log           = $results_dir . '/search_' . sizeof($organizations_list) . '_organizations.log';
+        $error_log = $this->resultsDir . '/search_' . sizeof($organizations_list) . '_organizations.log';
 
         $fp_popularity = fopen($log_file_popularity, 'w');
-        $fp_relevance  = fopen($log_file_relevance, 'w');
+        $fp_relevance = fopen($log_file_relevance, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -927,8 +1198,8 @@ class CkanManager
 //                $only_first_page = false;
 //            }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // relevance
@@ -971,8 +1242,8 @@ class CkanManager
                 }
             }
 
-            $done     = false;
-            $start    = 0;
+            $done = false;
+            $start = 0;
             $per_page = 20;
             while (!$done) {
                 // popularity
@@ -1038,7 +1309,8 @@ class CkanManager
     private
     function findOrganization(
         $organizationName
-    ) {
+    )
+    {
         static $OrgList;
         if (!$OrgList) {
             $OrgList = new OrganizationList(AGENCIES_LIST_URL);
@@ -1051,73 +1323,85 @@ class CkanManager
      * Export all packages by organization term
      *
      * @param $terms
-     * @param $results_dir
      */
     public
     function export_packages_by_org_terms(
-        $terms,
-        $results_dir
-    ) {
+        $terms
+    )
+    {
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
-        $ckan_url = 'https://catalog.data.gov/dataset/';
+//        $ckan_url = 'http://catalog.data.gov/dataset/';
+        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
 
         foreach ($terms as $term => $agency) {
-            $page    = 0;
-            $count   = 0;
+            $page = 0;
+            $count = 0;
             $results = [];
 
-            $csv_fp = fopen($results_dir . '/' . $term . '.csv', 'w');
+            $csv_tag_writer = new Writer($this->resultsDir . '/' . $term . '_tagging.csv', 'w');
+            $csv_tag_writer->writeRow([
+                'dataset',
+                'topic',
+                'tags'
+            ]);
 
-//                csv for title, url, topic, and topic category
-
-            $csv_header = [
+            $csv = new Writer($this->resultsDir . '/' . $term . '.csv', 'w');
+            $csv->writeRow([
                 'Title',
                 'Url',
                 'Topics',
                 'Topics categories',
-            ];
-
-            fputcsv($csv_fp, $csv_header);
+            ]);
 
             while (true) {
-                $start      = $page++ * $this->packageSearchPerPage;
-                $ckanResult = $this->Ckan->package_search(
+                $start = $page++ * $this->packageSearchPerPage;
+//                $ckanResult = $this->CkanManager->package_search(
+                $ckanResults = $this->try_package_search(
                     'organization:' . $term,
                     $this->packageSearchPerPage,
                     $start
                 );
-                $ckanResult = json_decode($ckanResult, true); //  decode json as array
-                $ckanResult = $ckanResult['result'];
-                $results    = array_merge($results, $ckanResult['results']);
+
+                if (!is_array($ckanResults)) {
+                    die('Fatal');
+                }
+
+                $results = array_merge($results, $ckanResults);
 
 //                csv for title, url, topic, and topic category
-                $datasets = $ckanResult['results'];
-                foreach ($datasets as $dataset) {
-
+                foreach ($ckanResults as $dataset) {
                     $extras = $dataset['extras'];
-
+                    $category_id_tags = [];
                     $categories_tags = [];
                     foreach ($extras as $extra) {
                         if (false !== strpos($extra['key'], '__category_tag_')) {
+                            $category_id = str_replace('__category_tag_', '', $extra['key']);
                             $tags = trim($extra['value'], '[]');
                             $tags = explode('","', $tags);
                             foreach ($tags as &$tag) {
                                 $tag = trim($tag, '" ');
                             }
+                            $category_id_tags[$category_id] = $tags;
                             $categories_tags = array_merge($categories_tags, $tags);
                         }
                     }
                     $categories_tags = sizeof($categories_tags) ? join(';', $categories_tags) : false;
-                    $categories      = [];
+                    $categories = [];
                     if (sizeof($dataset['groups'])) {
                         foreach ($dataset['groups'] as $group) {
                             $categories[] = $group['title'];
+                            $tags = isset($category_id_tags[$group['id']]) ?
+                                join(';', $category_id_tags[$group['id']]) : '';
+                            $csv_tag_writer->writeRow([
+                                $dataset['name'],
+                                $group['title'],
+                                $tags
+                            ]);
                         }
                     }
                     $categories = sizeof($categories) ? join(';', $categories) : false;
 
-                    fputcsv(
-                        $csv_fp,
+                    $csv->writeRow(
                         [
                             isset($dataset['title']) ? $dataset['title'] : '---',
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
@@ -1127,12 +1411,12 @@ class CkanManager
                     );
                 }
 
-                $count = $ckanResult['count'];
+                $count = $this->resultCount;
                 if ($start) {
                     echo "start from $start / " . $count . ' total ' . PHP_EOL;
                 }
 
-                if ($ckanResult['count'] - $this->packageSearchPerPage < $start) {
+                if ($this->resultCount - $this->packageSearchPerPage < $start) {
                     break;
                 }
             }
@@ -1146,33 +1430,31 @@ class CkanManager
                 ) . "[$count]"
             );
 
-            fclose($csv_fp);
             if (sizeof($results)) {
                 $json = (json_encode($results, JSON_PRETTY_PRINT));
-                file_put_contents($results_dir . '/' . $term . '.json', $json);
+                file_put_contents($this->resultsDir . '/' . $term . '.json', $json);
             } else {
-                unlink($results_dir . '/' . $term . '.csv');
+                unlink($this->resultsDir . '/' . $term . '.csv');
             }
         }
-        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $this->logOutput);
+        file_put_contents($this->resultsDir . '/_' . PARENT_TERM . '.log', $this->logOutput);
     }
 
     /**
      * Export all dataset visit tracking by organization term
      *
      * @param $terms
-     * @param $results_dir
      */
     public
     function export_tracking_by_org_terms(
-        $terms,
-        $results_dir
-    ) {
+        $terms
+    )
+    {
         $this->logOutput = '';
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         foreach ($terms as $term => $agency) {
 
-            $fp = fopen($results_dir . '/' . $term . '.csv', 'w');
+            $fp = fopen($this->resultsDir . '/' . $term . '.csv', 'w');
 
             $csv_header = [
                 'Organization',
@@ -1183,10 +1465,10 @@ class CkanManager
 
             fputcsv($fp, $csv_header);
 
-            $page  = 0;
+            $page = 0;
             $count = 0;
             while (true) {
-                $start      = $page++ * $this->packageSearchPerPage;
+                $start = $page++ * $this->packageSearchPerPage;
                 $ckanResult = $this->Ckan->package_search(
                     'organization:' . $term,
                     $this->packageSearchPerPage,
@@ -1232,7 +1514,7 @@ class CkanManager
                 ) . "[$count]"
             );
         }
-        file_put_contents($results_dir . '/_' . PARENT_TERM . '.log', $this->logOutput);
+        file_put_contents($this->resultsDir . '/_' . PARENT_TERM . '.log', $this->logOutput);
     }
 
     /**
@@ -1240,27 +1522,26 @@ class CkanManager
      *
      * @param string $extra_field
      * @param string $tag_name
-     * @param string $results_dir
      */
     public
     function tag_by_extra_field(
         $extra_field,
-        $tag_name,
-        $results_dir
-    ) {
+        $tag_name
+    )
+    {
         $this->logOutput = '';
-        $page            = 0;
-        $processed       = 0;
-        $tag_template    = [
-            'key'   => $tag_name,
+        $page = 0;
+        $processed = 0;
+        $tag_template = [
+            'key' => $tag_name,
             'value' => true,
         ];
 
-        $marked_true  = 0;
+        $marked_true = 0;
         $marked_other = 0;
 
         while (true) {
-            $start      = $page++ * $this->packageSearchPerPage;
+            $start = $page++ * $this->packageSearchPerPage;
             $ckanResult = $this->Ckan->package_search('identifier:*', $this->packageSearchPerPage, $start);
             $ckanResult = json_decode($ckanResult, true); //  decode json as array
             $ckanResult = $ckanResult['result'];
@@ -1302,7 +1583,7 @@ class CkanManager
 
                 $this->say($dataset['name']);
 
-                $this->package_update($dataset);
+                $this->try_package_update($dataset);
                 $marked_true++;
             }
 
@@ -1311,20 +1592,19 @@ class CkanManager
                 break;
             }
         }
-        file_put_contents($results_dir . '/_' . $tag_name . '.log', $this->logOutput);
+        file_put_contents($this->resultsDir . '/_' . $tag_name . '.log', $this->logOutput);
     }
 
     /**
      * @param $dataset_id
-     * @param $results_dir
      * @param $basename
      */
     public
     function make_dataset_private(
         $dataset_id,
-        $results_dir,
         $basename
-    ) {
+    )
+    {
         $this->logOutput = '';
 
         $this->say(str_pad($dataset_id, 105, ' . '), '');
@@ -1338,15 +1618,15 @@ class CkanManager
             $dataset['private'] = true;
 
             try {
-                $this->package_update($dataset);
+                $this->try_package_update($dataset);
                 $this->say(str_pad('OK', 10, ' '));
             } catch (\Exception $ex) {
                 $this->say(str_pad('ERROR', 10, ' '));
 //                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
-                file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+                file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
             }
         }
-        file_put_contents($results_dir . '/_' . $basename . '.log', $this->logOutput, FILE_APPEND);
+        file_put_contents($this->resultsDir . '/_' . $basename . '.log', $this->logOutput, FILE_APPEND);
     }
 
     /**
@@ -1359,7 +1639,8 @@ class CkanManager
     function tag_legacy_dms(
         $termsArray,
         $tag_name
-    ) {
+    )
+    {
         $this->logOutput = '';
 
 //        get all datasets to update
@@ -1407,7 +1688,7 @@ class CkanManager
                 }
 
                 try {
-                    $this->package_update($dataset);
+                    $this->try_package_update($dataset);
                     $this->say(str_pad('OK', 7, ' '));
                 } catch (\Exception $ex) {
                     $this->say(str_pad('ERROR', 7, ' '));
@@ -1433,9 +1714,10 @@ class CkanManager
     function get_dms_public_datasets(
         $terms = null,
         $options = 0
-    ) {
+    )
+    {
         $dms_datasets = [];
-        $page         = 0;
+        $page = 0;
 
         if ($terms) {
             $organizationFilter = array_keys($terms);
@@ -1452,7 +1734,7 @@ class CkanManager
         }
 
         while (true) {
-            $start      = $page++ * $this->packageSearchPerPage;
+            $start = $page++ * $this->packageSearchPerPage;
             $ckanResult = $this->Ckan->package_search(
                 'dms' . $organizationFilter,
                 $this->packageSearchPerPage,
@@ -1491,13 +1773,12 @@ class CkanManager
      * Exports all organizations associated with the department
      *
      * @param $termsArray
-     * @param $results_dir
      */
     public
     function export_organizations(
-        $termsArray,
-        $results_dir
-    ) {
+        $termsArray
+    )
+    {
 
         foreach ($termsArray as $org_slug => $org_name) {
 
@@ -1512,7 +1793,7 @@ class CkanManager
                 $results = json_decode($results);
 
                 $json = (json_encode($results, JSON_PRETTY_PRINT));
-                file_put_contents($results_dir . '/' . $org_slug . '.json', $json);
+                file_put_contents($this->resultsDir . '/' . $org_slug . '.json', $json);
             }
 
         }
@@ -1532,16 +1813,16 @@ class CkanManager
         }
 
         if (!$members || !is_array($members) || !sizeof($members)) {
-            $this->say(join(',', [$organization, 0]));
+            $this->say([$organization, 0]);
 //            $this->say(sprintf('%25s%10d', $organization, 0));
             return;
         }
 
-        $export    = [];
+        $export = [];
         $exportIds = [];
         foreach ($members as $package) {
             //  member_list returns weird array
-            $id      = is_array($package) ? $package[0] : $package;
+            $id = is_array($package) ? $package[0] : $package;
             $dataset = $this->try_package_show($id);
 
             if ('dataset' != $dataset['type']) {
@@ -1564,7 +1845,7 @@ class CkanManager
                 continue;
             }
 
-            $id      = $dataset['name'];
+            $id = $dataset['name'];
             $dataset = json_encode($dataset, JSON_PRETTY_PRINT);
 
             if ($options & self::EXPORT_DMS_ONLY
@@ -1575,12 +1856,12 @@ class CkanManager
             }
 
             $exportIds[] = $id;
-            $export[]    = $dataset;
+            $export[] = $dataset;
         }
 
         $total = sizeof($exportIds);
 //        $this->say(sprintf('%25s%10d', $organization, $total));
-        $this->say(join(',', [$organization, $total]));
+        $this->say([$organization, $total]);
 
         if (!$total) {
             return;
@@ -1614,7 +1895,8 @@ class CkanManager
     function try_member_list(
         $id,
         $try = 3
-    ) {
+    )
+    {
         $list = false;
         while ($try) {
             try {
@@ -1662,25 +1944,24 @@ class CkanManager
     /**
      * Exports information about active users
      *
-     * @param $results_dir
+
      */
     public
-    function organizations_stats(
-        $results_dir
-    ) {
+    function organizations_stats()
+    {
         /**
          * curl --data '{"all_fields":true}' "https://catalog.data.gov/api/action/organization_list" > organizations.json
          */
         $isInventory = false;
         if (false === strstr($this->apiUrl, 'https')) {
             $ckan_url = 'https://catalog.data.gov/';
-            $orgs     = file_get_contents(DATA_DIR . '/organizations.json');
+            $orgs = file_get_contents(DATA_DIR . '/organizations.json');
             $filename = '/catalog_orgs_list_' . (START ?: '') . '.csv';
         } else {
             $isInventory = true;
-            $ckan_url    = 'https://inventory.data.gov/';
-            $orgs        = $this->Ckan->organization_list();
-            $filename    = '/inventory_orgs_list_' . (START ?: '') . '.csv';
+            $ckan_url = 'https://inventory.data.gov/';
+            $orgs = $this->Ckan->organization_list();
+            $filename = '/inventory_orgs_list_' . (START ?: '') . '.csv';
         }
 
         $filter = false;
@@ -1688,6 +1969,9 @@ class CkanManager
             $filter = array_filter(explode(PHP_EOL, file_get_contents(DATA_DIR . '/organizations_stats_filter.csv')));
             if (!sizeof($filter)) {
                 $filter = false;
+            } else {
+                echo 'Applying filter (' . sizeof($filter) . ' orgs)' . PHP_EOL;
+//                $this->say('Applying filter ('.sizeof($filter).' orgs)');
             }
         }
 
@@ -1696,16 +1980,17 @@ class CkanManager
 
 
         // initialize log file
-        $log_file = $results_dir . $filename;
-        $fp_log   = fopen($log_file, 'w');
+        $log_file = $this->resultsDir . $filename;
+        $fp_log = fopen($log_file, 'w');
 
         $csv_header = [
             'Organization ID',
             'Organization Name',
             'Organization URL',
-            'Public Packages (incl. harv.src)',
-//            'Number of Private Datasets',
-            'Number of Members (incl. private)',
+            'organization_show',
+            'Public & Active',
+            'Private & Active',
+            'member_list (incl. private)',
             'State: Active',
             'State: Draft',
             'State: Draft-complete',
@@ -1716,16 +2001,23 @@ class CkanManager
             $csv_header[] = 'DMS Private';
             $csv_header[] = 'DMS Public';
             $csv_header[] = 'Non-DMS Public';
+        } else {
+            $csv_header[] = 'No modified & Public & Active';
+            $csv_header[] = 'No modified & Private & Active';
         }
 
         fputcsv($fp_log, $csv_header);
 
-        $total        = $filter ? sizeof($filter) : sizeof($orgs);
-        $digits_count = strlen('' . $total);
-        $i            = 0;
-        $skip         = (bool)START;
+        $total = $filter ? sizeof($filter) : sizeof($orgs);
+        $i = 0;
+        $skip = (bool)START;
         foreach ($orgs as $org) {
             $org_slug = is_object($org) ? $org->name : $org;
+
+            if (defined('LIST_ORGS_ONLY') && LIST_ORGS_ONLY) {
+//                $this->say([++$i, $org_slug]);
+                continue;
+            }
 
             if ($filter && !in_array($org_slug, $filter)) {
                 continue;
@@ -1756,16 +2048,17 @@ class CkanManager
                 $org_results = json_decode($org_results);
                 $org_results = $org_results->result;
 
-                printf("[%0{$digits_count}d/%0{$digits_count}d] %s" . PHP_EOL, $i, $total, $org_slug);
+//                $this->say(sprintf("[%0{$digits_count}d/%0{$digits_count}d] %s", $i, $total, $org_slug));
 
                 $member_list = $this->try_member_list($org_slug);
 //                $private_count = 'na';
-                $total_count    = 'na';
+                $private = $public = $noExtraModifiedPublic = $noExtraModifiedPrivate = 0;
+                $total_count = 'na';
                 $package_states = [];
-                $dms_public     = $dms_private = $non_dms_public = 0;
+                $dms_public = $dms_private = $non_dms_public = 0;
 
                 if (is_array($member_list)) {
-                    $total_count         = sizeof($member_list);
+                    $total_count = sizeof($member_list);
                     $member_digits_count = strlen('' . $total_count);
 //                    $private_count = $total_count - $org_results->package_count;
 
@@ -1775,7 +2068,7 @@ class CkanManager
                             printf("   [%0{$member_digits_count}d/%0{$member_digits_count}d] members of: %s"
                                 . PHP_EOL, $j, $total_count, $org_slug);
                         }
-                        $id      = $member[0];
+                        $id = $member[0];
                         $package = $this->try_package_show($id);
                         if ('dataset' !== $package['type']) {
                             continue;
@@ -1783,11 +2076,20 @@ class CkanManager
 //                        file_put_contents($resultsDir.'/'.$id.'.json',
 //                            json_encode($package, JSON_PRETTY_PRINT));
 //                        die();
+
                         $state = $package['state'];
                         if (!isset($package_states[$state])) {
                             $package_states[$state] = 1;
                         } else {
                             $package_states[$state]++;
+                        }
+
+                        if ('active' == $state) {
+                            if ($package['private']) {
+                                $private++;
+                            } else {
+                                $public++;
+                            }
                         }
 
                         if (!$isInventory) {
@@ -1807,6 +2109,45 @@ class CkanManager
                             } elseif (!$package['private']) {
                                 $non_dms_public++;
                             }
+                        } else {
+                            if ('active' == $state) {
+                                if (isset($package['extras'])) {
+                                    $extras = json_encode($package['extras']);
+                                    if (!strpos($extras, '"modified"')) {
+                                        if ($package['private']) {
+                                            $this->say([
+                                                'https://inventory.data.gov/dataset/' . $package['name'],
+                                                $org_slug,
+                                                'private'
+                                            ]);
+                                            $noExtraModifiedPrivate++;
+                                        } else {
+                                            $this->say([
+                                                'https://inventory.data.gov/dataset/' . $package['name'],
+                                                $org_slug,
+                                                'public'
+                                            ]);
+                                            $noExtraModifiedPublic++;
+                                        }
+                                    }
+                                } else {
+                                    if ($package['private']) {
+                                        $noExtraModifiedPrivate++;
+                                        $this->say([
+                                            'https://inventory.data.gov/dataset/' . $package['name'],
+                                            $org_slug,
+                                            'private'
+                                        ]);
+                                    } else {
+                                        $noExtraModifiedPublic++;
+                                        $this->say([
+                                            'https://inventory.data.gov/dataset/' . $package['name'],
+                                            $org_slug,
+                                            'public'
+                                        ]);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -1816,6 +2157,8 @@ class CkanManager
                     $org_results->title,
                     $ckan_url . 'organization/' . $org_results->name,
                     $org_results->package_count,
+                    $public,
+                    $private,
 //                    $private_count,
                     $total_count,
                     isset($package_states['active']) ? $package_states['active'] : 0,
@@ -1828,6 +2171,9 @@ class CkanManager
                     $organization_row[] = $dms_private;
                     $organization_row[] = $dms_public;
                     $organization_row[] = $non_dms_public;
+                } else {
+                    $organization_row[] = $noExtraModifiedPublic;
+                    $organization_row[] = $noExtraModifiedPrivate;
                 }
 
                 fputcsv($fp_log, $organization_row);
@@ -1838,7 +2184,7 @@ class CkanManager
 //                        $user_id = $org_user->name;
 //
 //                        try {
-//                            $user_results = $this->Ckan->user_show($user_id);
+//                            $user_results = $this->CkanManager->user_show($user_id);
 //                        } catch (NotFoundHttpException $ex) {
 //                            echo "Couldn't find user $user_id";
 //                            continue;
@@ -1882,12 +2228,11 @@ class CkanManager
     /**
      * Exports information about active users
      *
-     * @param $results_dir
+
      */
     public
-    function active_users(
-        $results_dir
-    ) {
+    function active_users()
+    {
         /**
          * curl --data '{"all_fields":true}' "https://catalog.data.gov/api/action/organization_list" > organizations.json
          */
@@ -1902,8 +2247,8 @@ class CkanManager
 
 
         // initialize log file
-        $log_file = $results_dir . '/user_list.csv';
-        $fp_log   = fopen($log_file, 'w');
+        $log_file = $this->resultsDir . '/user_list.csv';
+        $fp_log = fopen($log_file, 'w');
 
         $csv_header = [
             'Organization Name',
@@ -1995,27 +2340,27 @@ class CkanManager
     {
         $dataset = $this->try_package_show($datasetName);
         if (!$dataset) {
-            $this->say(join(',', [$datasetName, $organizationName, '404 Not Found']));
+            $this->say([$datasetName, $organizationName, '404 Not Found']);
             return;
         }
 
         if ('deleted' == $dataset['state']) {
-            $this->say(join(',', [$datasetName, $organizationName, 'Already deleted']));
+            $this->say([$datasetName, $organizationName, 'Already deleted']);
             return;
         }
 
         if (!isset($dataset['private']) || !$dataset['private']) {
-            $this->say(join(',', [$datasetName, $organizationName, 'Not private']));
+            $this->say([$datasetName, $organizationName, 'Not private']);
             return;
         }
 
         $result = $this->try_package_delete($datasetName);
         if ($result) {
-            $this->say(join(',', [$datasetName, $organizationName, 'DELETED']));
+            $this->say([$datasetName, $organizationName, 'DELETED']);
             return;
         }
 
-        $this->say(join(',', [$datasetName, $organizationName, 'ERROR']));
+        $this->say([$datasetName, $organizationName, 'ERROR']);
     }
 
     /**
@@ -2059,23 +2404,23 @@ class CkanManager
     public function resourceCreate($resource)
     {
         $dataset_name_or_id = $resource['package_id'];
-        $dataset            = $this->try_package_show($dataset_name_or_id);
+        $dataset = $this->try_package_show($dataset_name_or_id);
         if (!$dataset) {
-            $this->say(join(',',
-                [$dataset_name_or_id, $resource['url'], 'ERROR', 'could not find dataset by id/name']));
+            $this->say(
+                [$dataset_name_or_id, $resource['url'], 'ERROR', 'could not find dataset by id/name']);
             return;
         }
 
         if ('dataset' !== $dataset['type']) {
-            $this->say(join(',', [$dataset_name_or_id, $resource['url'], 'ERROR', 'package is not of type "dataset"']));
+            $this->say([$dataset_name_or_id, $resource['url'], 'ERROR', 'package is not of type "dataset"']);
             return;
         }
 
         $existing_resources = json_encode($dataset['resources']);
         if (strstr($existing_resources, $resource['url']) || strstr($existing_resources, json_encode($resource['url']))
         ) {
-            $this->say(join(',',
-                [$dataset_name_or_id, $resource['url'], 'ERROR', 'same package url already exists in this dataset']));
+            $this->say(
+                [$dataset_name_or_id, $resource['url'], 'ERROR', 'same package url already exists in this dataset']);
             return;
         }
 
@@ -2083,7 +2428,7 @@ class CkanManager
 
         $result = $this->try_resource_create($resource);
 
-        $this->say(join(',', [$dataset_name_or_id, $resource['url'], 'SUCCESS', $result['id']]));
+        $this->say([$dataset_name_or_id, $resource['url'], 'SUCCESS', $result['id']]);
         return;
 
     }
@@ -2097,7 +2442,8 @@ class CkanManager
     private function try_resource_create(
         $resource_json,
         $try = 3
-    ) {
+    )
+    {
         $resource = false;
         while ($try) {
             try {
@@ -2137,18 +2483,17 @@ class CkanManager
      *
      * @param $datasetName
      * @param $newDatasetName
-     * @param $results_dir
      * @param $basename
      */
     public
     function renameDataset(
         $datasetName,
         $newDatasetName,
-        $results_dir,
         $basename
-    ) {
+    )
+    {
         $this->logOutput = '';
-        $log_file        = $basename . '_rename.log';
+        $log_file = $basename . '_rename.log';
 
         $this->say(str_pad($datasetName, 100, ' . '), '');
 
@@ -2156,26 +2501,26 @@ class CkanManager
             $ckanResult = $this->Ckan->package_show($datasetName);
         } catch (NotFoundHttpException $ex) {
             $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
-            file_put_contents($results_dir . '/' . $log_file, $this->logOutput, FILE_APPEND);
+            file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);
             $this->logOutput = '';
 
             return;
         }
 
         $ckanResult = json_decode($ckanResult, true);
-        $dataset    = $ckanResult['result'];
+        $dataset = $ckanResult['result'];
 
         $dataset['name'] = $newDatasetName;
 
         try {
-            $this->package_update($dataset);
+            $this->try_package_update($dataset);
             $this->say(str_pad('OK', 7, ' '));
         } catch (\Exception $ex) {
             $this->say(str_pad('ERROR', 7, ' '));
-            file_put_contents($results_dir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+            file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
         }
 
-        file_put_contents($results_dir . '/' . $log_file, $this->logOutput, FILE_APPEND);
+        file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);
         $this->logOutput = '';
     }
 
@@ -2185,15 +2530,14 @@ class CkanManager
      * @param $organization
      * @param $termsArray
      * @param $backup_dir
-     * @param $results_dir
      */
     public
     function reorganize_datasets(
         $organization,
         $termsArray,
-        $backup_dir,
-        $results_dir
-    ) {
+        $backup_dir
+    )
+    {
 
         // Make sure we get the id for the parent organization (department)
         foreach ($termsArray as $org_slug => $org_name) {
@@ -2205,8 +2549,8 @@ class CkanManager
 
         // Set up logging
         $this->logOutput = '';
-        $time            = time();
-        $log_file        = (isset($department) ? $department : '_') . '_' . "$time.log";
+        $time = time();
+        $log_file = (isset($department) ? $department : '_') . '_' . "$time.log";
 
         if (!empty($department)) {
 
@@ -2246,19 +2590,19 @@ class CkanManager
 
                         // load current version of record
                         $ckanResult = $this->Ckan->package_show($current_record);
-                        $dataset    = json_decode($ckanResult, true);
+                        $dataset = json_decode($ckanResult, true);
 
                         $dataset = $dataset['result'];
 
                         // note the legacy organization as an extra field
                         $dataset['extras'][] = [
-                            'key'   => 'dms_publisher_organization',
+                            'key' => 'dms_publisher_organization',
                             'value' => $org_slug
                         ];
 
                         $dataset['owner_org'] = $department_id;
 
-                        $this->package_update($dataset);
+                        $this->try_package_update($dataset);
 
                         $output = 'Moved ' . $current_record;
                         $this->say($output);
@@ -2270,7 +2614,7 @@ class CkanManager
             }
         }
 
-        file_put_contents($results_dir . '/' . $log_file, $this->logOutput);
+        file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput);
 
     }
 
@@ -2282,7 +2626,8 @@ class CkanManager
     function diffUpdate(
         $datasetName,
         $stagingDataset
-    ) {
+    )
+    {
         try {
             $freshDataset = $this->get_dataset($datasetName);
 //            no exception, cool
@@ -2306,7 +2651,7 @@ class CkanManager
 
             $freshDataset['extras'] = array_merge($freshDataset['extras'], $diff);
 
-            $this->package_update($freshDataset);
+            $this->try_package_update($freshDataset);
 
         } catch (NotFoundHttpException $ex) {
             $this->say(str_pad('Prod 404: ' . $ex->getMessage(), 15, ' . '));
@@ -2324,7 +2669,8 @@ class CkanManager
     public
     function get_dataset(
         $datasetName
-    ) {
+    )
+    {
         $dataset = $this->Ckan->package_show($datasetName);
 
         $dataset = json_decode($dataset, true);
@@ -2339,23 +2685,22 @@ class CkanManager
 
     /**
      * @param $group
-     * @param $results_dir
      *
      * @throws \Exception
      */
     public
     function export_datasets_with_tags_by_group(
-        $group,
-        $results_dir
-    ) {
+        $group
+    )
+    {
         $this->logOutput = '';
 
         if (!($group = $this->findGroup($group))) {
             throw new \Exception('Group ' . $group . ' not found!' . PHP_EOL);
         }
 
-        $log_file = $results_dir . '/export_group_' . $group['name'] . '_with_tags.csv';
-        $fp       = fopen($log_file, 'w');
+        $log_file = $this->resultsDir . '/export_group_' . $group['name'] . '_with_tags.csv';
+        $fp = fopen($log_file, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -2372,7 +2717,7 @@ class CkanManager
 
         $category_key = ('__category_tag_' . $group['id']);
 
-        $start    = 0;
+        $start = 0;
         $per_page = 50;
 
         echo $ckan_query . PHP_EOL;
@@ -2425,32 +2770,36 @@ class CkanManager
     public
     function export_datasets_by_search(
         $search
-    ) {
+    )
+    {
         $this->logOutput = '';
 
-        $date                  = date('Ymd-His');
+        $date = date('Ymd-His');
         $filename_strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
-        $log_file              = $this->resultsDir . '/export_' . $filename_strip_search . '_' . $date . '.csv';
-        $fp                    = fopen($log_file, 'w');
+        $log_file = $this->resultsDir . '/export_' . $filename_strip_search . '_' . $date . '.csv';
+        $fp = fopen($log_file, 'w');
 
         $csv_header = [
             'data.gov url',
             'topic name'
         ];
 
+        echo $search;
+
         fputcsv($fp, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-//        $ckan_query = '((' . $search . ') AND (dataset_type:dataset))';
-        $ckan_query = $search;
-//        $ckan_query = '(organization:"ers-usda-gov")';
+//        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
+//        $ckan_query = "'data.jsonld'";
+//        $ckan_query = $search;
+        $ckan_query = '(organization:"epa-gov") AND (dataset_type:dataset)';
 //        $ckan_query = 'metadata-source:dms';
 
         echo $ckan_query . PHP_EOL;
 
-        $done     = false;
-        $start    = 0;
+        $done = false;
+        $start = 0;
         $per_page = 100;
         while (!$done) {
             echo $ckan_query . PHP_EOL;
@@ -2460,7 +2809,7 @@ class CkanManager
             $ckanResult = $ckanResult['result'];
 
             $totalCount = $ckanResult['count'];
-            $count      = sizeof($ckanResult['results']);
+            $count = sizeof($ckanResult['results']);
 
             echo "Found $totalCount results" . PHP_EOL;
 
@@ -2503,13 +2852,13 @@ class CkanManager
 
     /**
      * @param $topicTitle
-     * @param $results_dir
      */
+
     public
     function cleanup_tags_by_topic(
-        $topicTitle,
-        $results_dir
-    ) {
+        $topicTitle
+    )
+    {
         $start = 0;
         $limit = 100;
         while (true) {
@@ -2526,11 +2875,11 @@ class CkanManager
                 }
                 $groups = $dataset['groups'];
                 foreach ($groups as $group) {
-                    $this->remove_tags_and_groups_to_datasets(
+                    $this->
+                    remove_tags_and_groups_to_datasets(
                         [$dataset['name']],
                         $group['name'],
                         'non-existing-tag&&',
-                        $results_dir,
                         $topicTitle
                     );
                 }
@@ -2562,7 +2911,8 @@ class CkanManager
         $group_to_remove,
         $tags_to_remove,
         $basename
-    ) {
+    )
+    {
         $this->logOutput = '';
 
 //        Getting Group object
@@ -2611,7 +2961,7 @@ class CkanManager
 
             $extras = $dataset['extras'];
 
-            $newTags           = [];
+            $newTags = [];
             $dataset['extras'] = [];
 
             foreach ($extras as $extra) {
@@ -2641,19 +2991,19 @@ class CkanManager
             }
 
             if ($newTags) {
-                $formattedTags       = '["' . join('","', $newTags) . '"]';
+                $formattedTags = '["' . join('","', $newTags) . '"]';
                 $dataset['extras'][] = [
-                    'key'   => $category_tag,
+                    'key' => $category_tag,
                     'value' => $formattedTags,
                 ];
             } else {
                 $dataset['extras'][] = [
-                    'key'   => $category_tag,
+                    'key' => $category_tag,
                     'value' => null,
                 ];
             }
 
-            $this->package_update($dataset);
+            $this->try_package_update($dataset);
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
@@ -2669,8 +3019,9 @@ class CkanManager
     private
     function cleanupTags(
         $tagsArray
-    ) {
-        $return    = [];
+    )
+    {
+        $return = [];
         $tagsArray = array_unique($tagsArray);
         foreach ($tagsArray as $tag) {
             $tag = str_replace(['\\t'], [''], $tag);
@@ -2722,15 +3073,15 @@ class CkanManager
                 continue;
             }
 
-            $extras            = $dataset['extras'];
+            $extras = $dataset['extras'];
             $dataset['extras'] = [];
 
             $updated = false;
-            $value   = '';
+            $value = '';
             foreach ($extras as $extra) {
                 if ($extraField == $extra['key'] && $oldValue == $extra['value']) {
                     $extra['value'] = $newValue;
-                    $updated        = true;
+                    $updated = true;
                 } elseif ($extraField == $extra['key']) {
                     $value = $extra['value'];
                 }
@@ -2743,7 +3094,7 @@ class CkanManager
             }
 
             try {
-                $this->package_update($dataset);
+                $this->try_package_update($dataset);
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
                 $this->say('ERROR: CHECK LOG');
@@ -2774,11 +3125,12 @@ class CkanManager
         $group,
         $categories = null,
         $basename
-    ) {
+    )
+    {
         static $counter = 0;
         $this->logOutput = '';
 
-        $group                    = $this->findGroup($group);
+        $group_obj = $this->findGroup($group);
         $this->expectedFieldsDiff = [
             'groups'
         ];
@@ -2791,7 +3143,7 @@ class CkanManager
 //            $this->say(str_pad($datasetName, 100, ' . '), '');
             $this->say($datasetName . ',', '');
 
-            if (!$group) {
+            if (!$group_obj) {
 //                $this->say(str_pad('GROUP "' . $group . '" NOT FOUND', 15, ' . ', STR_PAD_LEFT));
                 $this->say('GROUP "' . $group . '" NOT FOUND');
                 continue;
@@ -2826,19 +3178,19 @@ class CkanManager
             }
 
             $dataset['groups'][] = [
-                'name' => $group['name'],
+                'name' => $group_obj['name'],
             ];
 
             if (is_array($categories) || strlen($categories)) {
-                $extras            = $dataset['extras'];
+                $extras = $dataset['extras'];
                 $dataset['extras'] = [];
 
                 foreach ($extras as $extra) {
-                    if ('__category_tag_' . $group['id'] == $extra['key']) {
+                    if ('__category_tag_' . $group_obj['id'] == $extra['key']) {
                         $oldCategories = trim($extra['value'], '"[], ');
                         $oldCategories = explode('","', $oldCategories);
-                        $categories    = array_merge($categories, $oldCategories);
-                        $categories    = $this->cleanupTags($categories);
+                        $categories = array_merge($categories, $oldCategories);
+                        $categories = $this->cleanupTags($categories);
                         continue;
                     }
                     $dataset['extras'][] = $extra;
@@ -2847,14 +3199,14 @@ class CkanManager
                 if ($categories) {
                     $formattedCategories = '["' . join('","', $categories) . '"]';
                     $dataset['extras'][] = [
-                        'key'   => '__category_tag_' . $group['id'],
+                        'key' => '__category_tag_' . $group_obj['id'],
                         'value' => $formattedCategories,
                     ];
                 }
             }
 
             try {
-                $this->package_update($dataset);
+                $this->try_package_update($dataset);
 //                $this->say(str_pad('SUCCESS', 15, ' . ', STR_PAD_LEFT));
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
@@ -2874,33 +3226,32 @@ class CkanManager
 
     /**
      * @param mixed $tree
-     * @param string $results_dir
      * @param string|bool $start
      * @param int|bool $limit
      */
     public
     function get_redirect_list(
         $tree,
-        $results_dir,
         $start = false,
         $limit = 1
-    ) {
+    )
+    {
         $countOfRootOrganizations = sizeof($tree);
-        $i                        = 0;
-        $processed                = 0;
+        $i = 0;
+        $processed = 0;
         foreach ($tree as $rootOrganization) {
             $i++;
 
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
                 echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
-                $this->get_redirect_list_by_organization($rootOrganization, $results_dir);
+                $this->get_redirect_list_by_organization($rootOrganization);
             }
 
             if (isset($rootOrganization['children'])) {
                 foreach ($rootOrganization['children'] as $subAgency) {
                     if (!$start || $start == $subAgency['id']) {
-                        $this->get_redirect_list_by_organization($subAgency, $results_dir);
+                        $this->get_redirect_list_by_organization($subAgency);
                         if ($start && (1 == $limit)) {
                             return;
                         }
@@ -2924,15 +3275,13 @@ class CkanManager
 
     /**
      * @param mixed $organization
-     * @param string $results_dir
-     *
      * @return bool
      */
     private
     function get_redirect_list_by_organization(
-        $organization,
-        $results_dir
-    ) {
+        $organization
+    )
+    {
         $return = [];
 
         if (ERROR_REPORTING == E_ALL) {
@@ -2945,7 +3294,7 @@ class CkanManager
             return;
         }
 
-        $i    = 0;
+        $i = 0;
         $size = sizeof($list);
         foreach ($list as $package) {
             if (!(++$i % 500)) {
@@ -2999,7 +3348,7 @@ class CkanManager
         }
 
         if (sizeof($return)) {
-            $fp_csv = fopen(($filename = $results_dir . '/' . $organization['id'] . '.csv'), 'w');
+            $fp_csv = fopen(($filename = $this->resultsDir . '/' . $organization['id'] . '.csv'), 'w');
 
             if ($fp_csv == false) {
                 die("Unable to create file: " . $filename);
@@ -3026,7 +3375,8 @@ class CkanManager
     function try_find_new_dataset_by_identifier(
         $identifier,
         $try = 3
-    ) {
+    )
+    {
         $dataset = false;
         while ($try) {
             try {
@@ -3081,9 +3431,10 @@ class CkanManager
     function try_find_new_dataset_by_title(
         $title,
         $try = 3
-    ) {
+    )
+    {
         $dataset = false;
-        $title   = $this->escapeSolrValue($title);
+        $title = $this->escapeSolrValue($title);
         while ($try) {
             try {
                 $ckanResult = $this->Ckan->package_search(
@@ -3132,57 +3483,35 @@ class CkanManager
     }
 
     /**
-     * Sometimes harvested ckan title does not exactly matches, but dataset is same, ex. double spaces
-     * To avoid these cases, we remove all non-word chars, leaving only alphabetic and digit chars
-     * Ex.
-     * Input: Tree dog dataset    , agriculture, 1997 ?????!!!
-     * Output: treedogdatasetagriculture1997
-     *
-     * @param $string
-     *
-     * @return mixed|string
-     */
-    private
-    function simplifyTitle(
-        $string
-    ) {
-        $string = preg_replace('/[\W]+/', '', $string);
-        $string = strtolower($string);
-
-        return $string;
-    }
-
-    /**
      * @param mixed $tree
-     * @param string $results_dir
      * @param string|bool $start
      * @param int|bool $limit
      */
     public
     function get_private_list(
         $tree,
-        $results_dir,
         $start = false,
         $limit = 1
-    ) {
+    )
+    {
         $this->return = [];
 
         $countOfRootOrganizations = sizeof($tree);
-        $i                        = 0;
-        $processed                = 0;
+        $i = 0;
+        $processed = 0;
         foreach ($tree as $rootOrganization) {
             $i++;
 
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
                 echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
-                $this->get_private_list_by_organization($rootOrganization, $results_dir);
+                $this->get_private_list_by_organization($rootOrganization);
             }
 
             if (isset($rootOrganization['children'])) {
                 foreach ($rootOrganization['children'] as $subAgency) {
                     if (!$start || $start == $subAgency['id']) {
-                        $this->get_private_list_by_organization($subAgency, $results_dir);
+                        $this->get_private_list_by_organization($subAgency);
                         if ($start && (1 == $limit)) {
                             return;
                         }
@@ -3206,15 +3535,13 @@ class CkanManager
 
     /**
      * @param mixed $organization
-     * @param string $results_dir
-     *
      * @return bool
      */
     private
     function get_private_list_by_organization(
-        $organization,
-        $results_dir
-    ) {
+        $organization
+    )
+    {
         if (ERROR_REPORTING == E_ALL) {
             echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
         }
@@ -3246,24 +3573,23 @@ class CkanManager
 
         if (sizeof($this->return)) {
             $json = (json_encode($this->return, JSON_PRETTY_PRINT));
-            file_put_contents($results_dir . '/' . $organization['id'] . '_PRIVATE_ONLY.json', $json);
+            file_put_contents($this->resultsDir . '/' . $organization['id'] . '_PRIVATE_ONLY.json', $json);
         }
     }
 
     /**
      * @param $socrata_list
-     * @param $results_dir
      */
     public
     function get_socrata_pairs(
-        $socrata_list,
-        $results_dir
-    ) {
-        $socrata_redirects  = ['from,to'];
+        $socrata_list
+    )
+    {
+        $socrata_redirects = ['from,to'];
         $ckan_rename_legacy = ['from,to'];
         $ckan_rename_public = ['from,to'];
-        $ckan_redirects     = ['from,to'];
-        $socrata_txt_log    = ['socrata_id,ckan_id,status,private,public'];
+        $ckan_redirects = ['from,to'];
+        $socrata_txt_log = ['socrata_id,ckan_id,status,private,public'];
 
         $notFound = $publicFound = $privateOnly = $alreadyLegacy = $mustRename = $socrataNotFound = 0;
 
@@ -3272,7 +3598,7 @@ class CkanManager
         $SocrataApi = new ExploreApi('http://explore.data.gov/api/');
 
         $size = sizeof($socrata_list);
-        $i    = 0;
+        $i = 0;
         foreach ($socrata_list as $socrata_line) {
             echo ++$i . " / $size $socrata_line" . PHP_EOL;
             if (!strlen($socrata_line = trim($socrata_line))) {
@@ -3280,7 +3606,7 @@ class CkanManager
             }
             list($socrata_id, $ckan_id) = explode(': ', $socrata_line);
             $socrata_id = trim($socrata_id);
-            $ckan_id    = trim($ckan_id);
+            $ckan_id = trim($ckan_id);
 
             $socrataDatasetTitle = $this->try_find_socrata_title($SocrataApi, $socrata_id);
 
@@ -3309,7 +3635,7 @@ class CkanManager
                 if ($public_dataset) {
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
-                    $socrata_txt_log []   = join(
+                    $socrata_txt_log [] = join(
                         ',',
                         [
                             $socrata_id,
@@ -3340,7 +3666,7 @@ class CkanManager
             if (!$dataset['private']) {
                 $publicFound++;
                 echo 'ckan public found by id' . PHP_EOL;
-                $socrata_txt_log []   = join(
+                $socrata_txt_log [] = join(
                     ',',
                     [$socrata_id, $ckan_id, 'ckan public found by id', '-', $ckan_url . $dataset['name']]
                 );
@@ -3366,7 +3692,7 @@ class CkanManager
                 if ($public_dataset) {
                     $publicFound++;
                     echo 'ckan public found by socrata title' . PHP_EOL;
-                    $socrata_txt_log []   = join(
+                    $socrata_txt_log [] = join(
                         ',',
                         [
                             $socrata_id,
@@ -3403,7 +3729,7 @@ class CkanManager
             if (strpos($dataset['name'], '_legacy')) {
                 $alreadyLegacy++;
                 echo 'ckan private already _legacy; public brother ok; no renaming' . PHP_EOL;
-                $socrata_txt_log []   = join(
+                $socrata_txt_log [] = join(
                     ',',
                     [
                         $socrata_id,
@@ -3423,7 +3749,7 @@ class CkanManager
              */
             $mustRename++;
             echo 'ckan private and public found; need to rename' . PHP_EOL;
-            $socrata_txt_log []   = join(
+            $socrata_txt_log [] = join(
                 ',',
                 [
                     $socrata_id,
@@ -3435,7 +3761,7 @@ class CkanManager
             );
             $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
 //            $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
-            $ckan_redirects []    = join(
+            $ckan_redirects [] = join(
                 ',',
                 [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]
             );
@@ -3451,19 +3777,19 @@ class CkanManager
         }
 
         $socrata_txt_log = join("\n", $socrata_txt_log);
-        file_put_contents($results_dir . '/socrata_txt_log.csv', $socrata_txt_log);
+        file_put_contents($this->resultsDir . '/socrata_txt_log.csv', $socrata_txt_log);
 
         $ckan_rename_legacy = join("\n", $ckan_rename_legacy);
-        file_put_contents($results_dir . '/rename_private_datasets_legacy.csv', $ckan_rename_legacy);
+        file_put_contents($this->resultsDir . '/rename_private_datasets_legacy.csv', $ckan_rename_legacy);
 
         $ckan_rename_public = join("\n", $ckan_rename_public);
-        file_put_contents($results_dir . '/rename_public_datasets.csv', $ckan_rename_public);
+        file_put_contents($this->resultsDir . '/rename_public_datasets.csv', $ckan_rename_public);
 
         $ckan_redirects = join("\n", $ckan_redirects);
-        file_put_contents($results_dir . '/redirects_ckan.csv', $ckan_redirects);
+        file_put_contents($this->resultsDir . '/redirects_ckan.csv', $ckan_redirects);
 
         $socrata_redirects = join("\n", $socrata_redirects);
-        file_put_contents($results_dir . '/redirects_socrata.csv', $socrata_redirects);
+        file_put_contents($this->resultsDir . '/redirects_socrata.csv', $socrata_redirects);
 
         echo <<<EOR
 Total socrata datasets in list:       $size
@@ -3490,7 +3816,8 @@ EOR;
         ExploreApi $SocrataApi,
         $socrata_id,
         $try = 3
-    ) {
+    )
+    {
         $title = false;
         while ($try) {
             try {
@@ -3507,7 +3834,7 @@ EOR;
 //                }
 
                 $title = $dataset['name'];
-                $try   = 0;
+                $try = 0;
             } catch (\Exception $ex) {
                 $try--;
                 sleep(3);
@@ -3531,13 +3858,14 @@ EOR;
     function breakdown_by_group(
         Writer $csv_agencies,
         Writer $csv_categories
-    ) {
-        $offset   = 0;
+    )
+    {
+        $offset = 0;
         $per_page = 50;
-        $counter  = 0;
+        $counter = 0;
 
         $organizations = [];
-        $tags          = [];
+        $tags = [];
 
         $search_query = '(' . GROUP_TO_EXPORT . ') AND (dataset_type:dataset)';
 //        $group = $this->findGroup(GROUP_TO_EXPORT);
@@ -3601,19 +3929,19 @@ EOR;
     }
 
     /**
-     * @param $results_dir
      * @param $limit
      * @param $start
      */
     public
     function orphaned_tags_seek(
-        $results_dir,
+
         $limit,
         $start
-    ) {
-        $counter  = 0;
-        $offset   = $start;
-        $finish   = $start + $limit;
+    )
+    {
+        $counter = 0;
+        $offset = $start;
+        $finish = $start + $limit;
         $per_page = 50;
 
         $groups = $this->try_get_groups_array();
@@ -3640,7 +3968,7 @@ EOR;
                         continue;
                     }
                     $group_id = str_replace('__category_tag_', '', $extra['key']);
-                    $group    = isset($groups[$group_id]) ? $groups[$group_id] : $group_id;
+                    $group = isset($groups[$group_id]) ? $groups[$group_id] : $group_id;
 
                     $group_found = false;
                     if (isset($dataset['groups'])) {
@@ -3654,7 +3982,7 @@ EOR;
 
                     if (!$group_found) {
                         echo $counter . ' ' . ($out = $dataset['name'] . ',' . $group . ',' . $extra['value'] . PHP_EOL);
-                        file_put_contents($results_dir . '/orphaned_tags.csv', $out, FILE_APPEND);
+                        file_put_contents($this->resultsDir . '/orphaned_tags.csv', $out, FILE_APPEND);
                     }
                 }
             }
@@ -3705,15 +4033,14 @@ EOR;
     /**
      * @param             $category
      * @param CkanManager $CkanManagerProduction
-     * @param             $results_dir
      */
     public
     function check_group_against_prod(
         $category,
-        self $CkanManagerProduction,
-        $results_dir
-    ) {
-        $csv = new Writer($results_dir . '/' . $category . date('_Ymd-His') . '.csv');
+        self $CkanManagerProduction
+    )
+    {
+        $csv = new Writer($this->resultsDir . '/' . $category . date('_Ymd-His') . '.csv');
         $csv->writeRow(
             [
                 'Staging dataset name',
@@ -3725,8 +4052,8 @@ EOR;
         );
 
         $ckan_query = '((groups:' . $category . ') + dataset_type:dataset)';
-        $start      = 0;
-        $per_page   = 20;
+        $start = 0;
+        $per_page = 20;
         while (true) {
             $packages = $this->try_package_search($ckan_query, $per_page, $start);
             if (!$packages) {
@@ -3762,10 +4089,10 @@ EOR;
                     echo "UNKNOWN: " . $package['name'] . PHP_EOL;
                 }
 
-                $prod_package        = $CkanManagerProduction->try_package_show($package['name']);
-                $exists              = $prod_package ? 'EXISTS' : 'NOT FOUND';
+                $prod_package = $CkanManagerProduction->try_package_show($package['name']);
+                $exists = $prod_package ? 'EXISTS' : 'NOT FOUND';
                 $prod_category_found = '';
-                $prod_resource_type  = '';
+                $prod_resource_type = '';
 
                 if ($prod_package) {
                     $prod_category_found = 'FALSE';
@@ -3819,13 +4146,5 @@ EOR;
 
             $start += $per_page;
         }
-    }
-
-    /**
-     * @param $json
-     */
-    public function import_json($json)
-    {
-
     }
 }

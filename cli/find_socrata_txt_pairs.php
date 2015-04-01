@@ -34,6 +34,8 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
+$CkanManager->resultsDir = $results_dir;
+
 /**
  *
  */
@@ -53,7 +55,7 @@ $socrata_list = file_get_contents($socrata_file_path);
 $socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
 $socrata_list = explode("\n", $socrata_list);
 
-$CkanManager->get_socrata_pairs($socrata_list, $results_dir);
+$CkanManager->get_socrata_pairs($socrata_list);
 
 // show running time on finish
 timer();

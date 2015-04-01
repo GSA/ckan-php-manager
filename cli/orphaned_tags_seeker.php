@@ -18,19 +18,20 @@ is_dir($results_dir) || mkdir($results_dir);
 /**
  * Production
  */
-$Ckan = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Staging
  */
-//$Ckan = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 /**
  * Dev
  */
-//$Ckan = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+//$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+$CkanManager->resultsDir = $results_dir;
 
-$Ckan->orphaned_tags_seek($results_dir, $limit, $start);
+$CkanManager->orphaned_tags_seek($limit, $start);
 
 // show running time on finish
 timer();

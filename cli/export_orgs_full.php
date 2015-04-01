@@ -25,11 +25,11 @@ foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
     $basename = str_replace('.csv', '', basename($csv_file));
-    $logFile  = $results_dir . '/' . $basename . '.log';
+    $logFile = $results_dir . '/' . $basename . '.log';
 //    file_put_contents($logFile, $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
-    $i   = 1;
+    $i = 1;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {

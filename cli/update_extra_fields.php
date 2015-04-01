@@ -38,7 +38,6 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  * dataset,group,categories
  * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
  * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
-
  */
 
 $CkanManager->resultsDir = $results_dir;

@@ -52,7 +52,9 @@ define('ERROR_REPORTING', E_ALL & ~E_NOTICE);
 //$socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
 //$socrata_list = explode("\n", $socrata_list);
 
-$CkanManager->get_interactive_resources($results_dir);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->get_interactive_resources();
 
 // show running time on finish
 timer();

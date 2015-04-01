@@ -35,7 +35,6 @@ $StagingClient = new CkanManager(CKAN_UAT_API_URL);
  * dataset,group,categories
  * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
  * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
-
  */
 
 foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {

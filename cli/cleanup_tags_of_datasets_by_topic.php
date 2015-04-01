@@ -27,8 +27,10 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
+$CkanManager->resultsDir = $results_dir;
+
 $topicTitle = 'ecosystems0617';
-$CkanManager->cleanup_tags_by_topic($topicTitle, $results_dir);
+$CkanManager->cleanup_tags_by_topic($topicTitle);
 
 // show running time on finish
 timer();

@@ -31,7 +31,6 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 
-
 $CkanManager->resultsDir = $results_dir;
 
 /**
@@ -47,10 +46,10 @@ foreach (glob(DATA_DIR . '/delete*.csv') as $csv_file) {
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
     $basename = str_replace('.csv', '', basename($csv_file));
-    $logFile = $results_dir.'/'.$basename.'_log.csv';
+    $logFile = $results_dir . '/' . $basename . '_log.csv';
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
-    $i   = 1;
+    $i = 1;
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
@@ -61,7 +60,7 @@ foreach (glob(DATA_DIR . '/delete*.csv') as $csv_file) {
             continue;
         }
 
-        $datasetName    = basename($row['0']);
+        $datasetName = basename($row['0']);
         $organizationName = basename($row['1']);
 
         printf('[%04d] ', $i++);

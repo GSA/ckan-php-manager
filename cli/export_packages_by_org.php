@@ -8,7 +8,7 @@ use CKAN\Core\OrganizationList;
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Economic Research Service');
+define('ORGANIZATION_TO_EXPORT', 'Environmental Protection Agency');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
@@ -38,15 +38,18 @@ mkdir($results_dir);
 /**
  * Production
  */
-//$CkanManager = new CkanManager(CKAN_API_URL);
-$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(CKAN_QA_API_URL);
+//$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 /**
  * Staging
  */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
-$CkanManager->export_packages_by_org_terms($termsArray, $results_dir);
+$CkanManager->resultsDir = $results_dir;
+
+$CkanManager->export_packages_by_org_terms($termsArray);
 
 // show running time on finish
 timer();
