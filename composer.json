@@ -23,6 +23,7 @@
       "url": "git@github.com:GSA/ckan-php-client.git"
     }
   ],
+  "prefer-stable": true,
   "require": {
     "php": ">=5.4.17",
     "ext-json": "*",
