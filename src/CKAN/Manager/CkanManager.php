@@ -148,6 +148,7 @@ class CkanManager
 
                 return false;
             } catch (\Exception $ex) {
+                echo $ex->getMessage() . PHP_EOL;
                 $try--;
                 sleep(3);
                 echo '      zzz   ' . PHP_EOL;
@@ -1317,6 +1318,88 @@ class CkanManager
         }
 
         return $OrgList->getTermFor($organizationName);
+    }
+
+    /**
+     * @param $ckan_query
+     * @param string $ckan_url
+     * @return array
+     */
+    public function export_brief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/')
+    {
+        $this->logOutput = '';
+
+        $return = [];
+
+        $done = false;
+        $start = 0;
+        $per_page = 250;
+        echo $ckan_query . PHP_EOL;
+
+        while (!$done) {
+            $datasets = $this->try_package_search($ckan_query, $per_page, $start);
+            if (false === $datasets) {
+                die('FATAL');
+            }
+
+            $totalCount = $this->resultCount;
+            $count = sizeof($datasets);
+
+            if (!$start) {
+                echo "Found $totalCount results" . PHP_EOL;
+            }
+
+            $start += $per_page;
+            echo $start . '/' . $totalCount . PHP_EOL;
+            if (!$totalCount) {
+                $done = true;
+                continue;
+            }
+
+            if ($count) {
+                foreach ($datasets as $dataset) {
+                    $guid = $this->extra($dataset['extras'], 'guid');
+                    $groups = [];
+                    if (isset($dataset['groups'])) {
+                        foreach ($dataset['groups'] as $group) {
+                            if (strlen(trim($group['title']))) {
+                                $groups[] = trim($group['title']);
+                            }
+                        }
+                    }
+                    $categories = [];
+                    if (isset($dataset['extras'])) {
+                        foreach ($dataset['extras'] as $extra) {
+                            if (false !== strpos($extra['key'], '__category_tag_')) {
+                                $tags = trim($extra['value'], '[]');
+                                $tags = explode('","', $tags);
+                                foreach ($tags as &$tag) {
+                                    $tag = trim($tag, '" ');
+                                }
+                                $categories = array_merge($categories, $tags);
+                            }
+                        }
+                    }
+
+                    $return[$dataset['name']] = [
+                        'title' => $dataset['title'],
+                        'title_simple' => $this->simplifyTitle($dataset['title']),
+                        'name' => $dataset['name'],
+                        'url' => $ckan_url . $dataset['name'],
+                        'guid' => $guid,
+                        'topics' => join(';', $groups),
+                        'categories' => join(';', $categories),
+                    ];
+                }
+            } else {
+                echo 'no results: ' . $ckan_query . PHP_EOL;
+                continue;
+            }
+            if ($start > $totalCount) {
+                $done = true;
+            }
+        }
+        return $return;
     }
 
     /**
@@ -2790,10 +2873,10 @@ class CkanManager
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-//        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
+        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
 //        $ckan_query = "'data.jsonld'";
 //        $ckan_query = $search;
-        $ckan_query = '(organization:"epa-gov") AND (dataset_type:dataset)';
+//        $ckan_query = '(organization:"epa-gov") AND (dataset_type:dataset)';
 //        $ckan_query = 'metadata-source:dms';
 
         echo $ckan_query . PHP_EOL;
