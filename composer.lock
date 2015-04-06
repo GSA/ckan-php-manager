@@ -12,7 +12,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "1fc937e0e3d63c6a4232d86be99b8b3baf75f366"
+                "reference": "ec6c8c7117829d6af604e787abb7b6b31aa2bf21"
             },
             "require": {
                 "ext-curl": "*",
@@ -39,7 +39,7 @@
                 }
             ],
             "description": "CKAN php client",
-            "time": "2015-04-01 22:31:34"
+            "time": "2015-04-06 22:38:15"
         },
         {
             "name": "doctrine/instantiator",
