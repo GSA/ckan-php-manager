@@ -8,60 +8,55 @@
 
 namespace CKAN\Manager;
 
-//use CKAN\Core\CkanClient;
+use CKAN\Exceptions\NotFoundHttpException;
+
+/**
+ * Class CkanManagerTest
+ * @package CKAN\Manager
+ */
+class CkanManagerTest extends \BaseTestCase
+{
 
 
-class CkanManagerTest extends \BaseTestCase {
+    /**
+     * @var CkanManager
+     */
+    private $CkanManager;
 
     public function setUp()
     {
-        $this->CkanManager = $this->getMockBuilder('CkanManager')
-            ->disableOriginalConstructor()
-            ->getMock();
-
-
-        $CkanClient = $this->getMockBuilder('CkanClient')
-            ->disableOriginalConstructor()
-            ->getMock();
-
-//        $this->testClass = 'CkanManager';
-//        parent::setup();
-
-//        $this->setProperty('Ckan', $CkanClient);
-//        $this->CkanManager = $this->testClass;∂
+        $this->CkanManager = new CkanManager('mock://dummy_api_url.gov/');
     }
 
-    public function testTryPackageSearch()
+    public function testTryPackageSearchWithResults()
     {
-//        $CkanManager = $this->getMockBuilder('CkanManager')
-//            ->disableOriginalConstructor()
-//            ->getMock();
-//
-//
-//        $CkanClient = $this->getMockBuilder('CkanClient')
-//            ->disableOriginalConstructor()
-//            ->getMock();
-//
-//        $CkanClient->method('package_search')
-//            ->willReturn(json_encode([
-//                'success'=> true,
-//                'result' => [
-//                    'count'=> 5,
-//                    'results' => [1,2,3,4,5]
-//                ]
-//            ]));
-//
-//        $CkanManager->Ckan = $CkanClient;
-//
-//        // Create a stub for the SomeClass class.
-//        $stub = $this->getMockBuilder('SomeClass')
-//            ->getMock();
-//
-//        // Configure the stub.
-//        $stub->method('doSomething')
-//            ->willReturn('foo');
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_search('testorg', 100, 0, 'q')->willReturn(
+            json_encode([
+                'success' => true,
+                'result' => [
+                    'count' => 5,
+                    'results' => [1, 2, 3, 5, 4]
+                ]
+            ])
+        );
 
+        $this->CkanManager->setCkan($CkanClient->reveal());
 
-        $this->assertTrue(true);
+        $datasets = $this->CkanManager->tryPackageSearch('testorg');
+        $this->assertEquals([1, 2, 3, 5, 4], $datasets);
+    }
+
+    public function testTryPackageSearchWithNoResults()
+    {
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_search('notfound', 100, 0, 'q')->willThrow(new NotFoundHttpException());
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+
+        $this->expectOutputString("Nothing found".PHP_EOL);
+
+        $datasets = $this->CkanManager->tryPackageSearch('notfound');
+        $this->assertEquals(false, $datasets);
     }
 }

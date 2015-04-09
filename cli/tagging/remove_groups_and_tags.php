@@ -4,7 +4,7 @@ namespace CKAN\Manager;
 
 use EasyCSV;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Create results dir for logs
@@ -13,20 +13,9 @@ $results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
 mkdir($results_dir);
 
 
-/**
- * Adding Legacy dms tag
- * Production
- */
-$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
+//$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
@@ -55,8 +44,8 @@ foreach (glob(DATA_DIR . '/remove*.csv') as $csv_file) {
 
 //        no anchors please
         list($dataset,) = explode('#', basename(trim($row['0'])));
-        $category = isset($row['1']) ? ($row['1'] ?: '') : '';
-        $tags = isset($row['2']) ? ($row['2'] ?: '') : '';
+        $category = trim(isset($row['1']) ? ($row['1'] ?: '') : '');
+        $tags = trim(isset($row['2']) ? ($row['2'] ?: '') : '');
         $CkanManager->remove_tags_and_groups_to_datasets([$dataset], $category, $tags, $basename);
     }
 }

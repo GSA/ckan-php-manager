@@ -63,7 +63,8 @@ if (!is_file($results_dir . '/uat.csv')) {
     $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_commerce = $UatCkanManager->export_brief('extras_harvest_source_title:Commerce JSON', 'http://uat-catalog-fe-data.reisys.com/dataset/');
+    $uat_commerce = $UatCkanManager->export_brief('extras_harvest_source_title:Commerce JSON',
+        'http://uat-catalog-fe-data.reisys.com/dataset/');
     $uat->writeFromArray($uat_commerce);
 
 } else {

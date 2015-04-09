@@ -22,7 +22,7 @@ if (!is_dir($results_dir)) {
     mkdir($results_dir);
 }
 
-echo 'prod.csv'.PHP_EOL;
+echo 'prod.csv' . PHP_EOL;
 if (!is_file($results_dir . '/prod.csv')) {
     $prod = new Writer($results_dir . '/prod.csv');
 
@@ -46,7 +46,7 @@ if (!is_file($results_dir . '/prod.csv')) {
     $prod_noaa = $prod->getAll();
 }
 
-echo 'qa.csv'.PHP_EOL;
+echo 'qa.csv' . PHP_EOL;
 if (!is_file($results_dir . '/qa.csv')) {
     $qa = new Writer($results_dir . '/qa.csv');
 
@@ -86,7 +86,7 @@ foreach ($qa_noaa as $name => $dataset) {
     }
 }
 
-echo 'prod_vs_qa.csv'.PHP_EOL;
+echo 'prod_vs_qa.csv' . PHP_EOL;
 is_file($results_dir . '/prod_vs_qa_noaa_geospatial.csv') && unlink($results_dir . '/prod_vs_qa_noaa_geospatial.csv');
 $csv = new Writer($results_dir . '/prod_vs_qa_noaa_geospatial.csv');
 $csv->writeRow([

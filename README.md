@@ -89,7 +89,7 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 * Run script
 
 ```
-    $ php cli/assign_groups_to_datasets.php
+    $ php cli/tagging/assign_groups_and_tags.php
 ```
 
 ### Remove groups and category tags from datasets (revert previous script changes)
@@ -97,5 +97,5 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 * Prepare same csv file as for previous script, and put them to /data dir, with `<any-title>.csv`
 
 ```
-    $ php cli/remove_groups_from_datasets.php
+    $ php cli/tagging/remove_groups_and_tags.php
 ```
