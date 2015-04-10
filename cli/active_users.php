@@ -3,7 +3,7 @@
 namespace CKAN\Manager;
 
 
-define('LOG_NAME', 'active_users');
+define('LOG_NAME', 'activeUsers');
 
 echo "Exporting active users" . PHP_EOL;
 
@@ -31,7 +31,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->active_users();
+$CkanManager->activeUsers();
 
 // show running time on finish
 timer();

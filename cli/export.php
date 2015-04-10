@@ -43,7 +43,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
-$CkanManager->export_datasets_by_search($strip_search);
+$CkanManager->exportDatasetsBySearch($strip_search);
 
 // show running time on finish
 timer();

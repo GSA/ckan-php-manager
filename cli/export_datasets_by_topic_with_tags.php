@@ -39,7 +39,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->export_datasets_with_tags_by_group($topic);
+$CkanManager->exportDatasetsWithTagsByGroup($topic);
 
 // show running time on finish
 timer();

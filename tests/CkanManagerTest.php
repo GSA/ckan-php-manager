@@ -9,6 +9,7 @@
 namespace CKAN\Manager;
 
 use CKAN\Exceptions\NotFoundHttpException;
+use Prophecy\Argument;
 
 /**
  * Class CkanManagerTest
@@ -23,16 +24,35 @@ class CkanManagerTest extends \BaseTestCase
      */
     private $CkanManager;
 
+    /**
+     * @var array
+     */
+    private $mockDataset;
+
+    /**
+     *
+     */
     public function setUp()
     {
         $this->CkanManager = new CkanManager('mock://dummy_api_url.gov/');
+        $this->mockDataset = [
+            'id' => 'dataset-mock-id',
+            'name' => 'dataset-mock-name',
+            'type' => 'dataset',
+            'title' => 'Some Interesting Mock Dataset 2015',
+            'resources' => [1, 2, 3, 5, 4],
+        ];
     }
 
+    /**
+     * ->tryPackageSearch() with results
+     */
     public function testTryPackageSearchWithResults()
     {
         $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
         $CkanClient->package_search('testorg', 100, 0, 'q')->willReturn(
             json_encode([
+                'help' => 'some text',
                 'success' => true,
                 'result' => [
                     'count' => 5,
@@ -47,6 +67,9 @@ class CkanManagerTest extends \BaseTestCase
         $this->assertEquals([1, 2, 3, 5, 4], $datasets);
     }
 
+    /**
+     * ->tryPackageSearch() without results
+     */
     public function testTryPackageSearchWithNoResults()
     {
         $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
@@ -54,9 +77,110 @@ class CkanManagerTest extends \BaseTestCase
 
         $this->CkanManager->setCkan($CkanClient->reveal());
 
-        $this->expectOutputString("Nothing found".PHP_EOL);
+        $this->expectOutputString("Nothing found" . PHP_EOL);
 
         $datasets = $this->CkanManager->tryPackageSearch('notfound');
-        $this->assertEquals(false, $datasets);
+        $this->assertFalse($datasets);
     }
+
+    /**
+     *
+     */
+    public function testTryPackageShow()
+    {
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+            json_encode([
+                'help' => 'some text',
+                'success' => true,
+                'result' => $this->mockDataset
+            ])
+        );
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+
+        $package = $this->CkanManager->tryPackageShow($this->mockDataset['name']);
+        $this->assertEquals($this->mockDataset['id'], $package['id']);
+        $this->assertEquals($this->mockDataset['title'], $package['title']);
+    }
+
+    /**
+     *
+     */
+    public function testTryPackageShowNoResults()
+    {
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_show('dataset-not-found')->willThrow(new NotFoundHttpException());
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+
+        $package = $this->CkanManager->tryPackageShow('dataset-not-found');
+        $this->assertFalse($package);
+    }
+
+    /**
+     *
+     */
+    public function testTryPackageUpdate()
+    {
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_update($this->mockDataset)->willReturn(true);
+        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+            json_encode([
+                'help' => 'some text',
+                'success' => true,
+                'result' => $this->mockDataset,
+            ])
+        );
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+
+        $package = $this->CkanManager->tryPackageUpdate($this->mockDataset);
+        $this->assertTrue($package);
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function testCheckDatasetConsistency()
+    {
+        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+        $CkanClient->package_update($this->mockDataset)->willReturn(true);
+        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+            json_encode([
+                'help' => 'some text',
+                'success' => true,
+                'result' => $this->mockDataset,
+            ])
+        );
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+
+        $check = $this->CkanManager->checkDatasetConsistency($this->mockDataset);
+        $this->assertTrue($check);
+    }
+
+    /**
+     * @throws \Exception
+     */
+//    public function testCheckDatasetConsistencyFail()
+//    {
+//        $dataset = $this->mockDataset;
+//        $dataset['title'] .= ' FAIL';
+//        $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
+//        $CkanClient->package_update($this->mockDataset)->willReturn(true);
+//        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+//            json_encode([
+//                'help' => 'some text',
+//                'success' => true,
+//                'result' => $dataset,
+//            ])
+//        );
+//
+//        $this->CkanManager->setCkan($CkanClient->reveal());
+//
+//        $check = $this->CkanManager->checkDatasetConsistency($this->mockDataset);
+//        $this->assertFalse($check);
+//    }
+
 }

@@ -40,7 +40,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->search_by_terms($keywords_list);
+$CkanManager->searchByTerms($keywords_list);
 
 // show running time on finish
 timer();

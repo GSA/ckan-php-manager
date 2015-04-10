@@ -30,10 +30,10 @@ $CkanManagerStaging = new CkanManager(CKAN_STAGING_API_URL);
 $CkanManagerStaging->resultsDir = $results_dir;
 $CkanManagerProduction->resultsDir = $results_dir;
 
-$groups = $CkanManagerStaging->groups_array();
+$groups = $CkanManagerStaging->groupsArray();
 
 foreach ($groups as $category) {
-    $CkanManagerStaging->check_group_against_prod($category, $CkanManagerProduction);
+    $CkanManagerStaging->checkGroupAgainstProd($category, $CkanManagerProduction);
 }
 
 // show running time on finish

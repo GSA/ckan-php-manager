@@ -54,7 +54,7 @@ define('ERROR_REPORTING', E_ALL & ~E_NOTICE);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->get_interactive_resources();
+$CkanManager->getInteractiveResources();
 
 // show running time on finish
 timer();

@@ -58,7 +58,7 @@ foreach (glob(DATA_DIR . '/find_*.csv') as $csv_file) {
         /**
          * Search for packages by terms found
          */
-        $CkanManager->search_by_title($title, $csv_destination);
+        $CkanManager->searchByTitle($title, $csv_destination);
     }
 
 //    fix wrong END-OF-LINE

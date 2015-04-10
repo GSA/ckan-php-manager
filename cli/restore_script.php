@@ -62,7 +62,7 @@ foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
         $StagingClient->say(str_pad($datasetName, 100, ' . '), '');
 
         try {
-            $DatasetArray = $StagingClient->get_dataset($datasetName);
+            $DatasetArray = $StagingClient->getDataset($datasetName);
 //            no exception, cool
             $StagingClient->say(str_pad('Staging OK', 15, ' . '), '');
 

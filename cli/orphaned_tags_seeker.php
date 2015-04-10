@@ -31,7 +31,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->orphaned_tags_seek($limit, $start);
+$CkanManager->orphanedTagsSeek($limit, $start);
 
 // show running time on finish
 timer();

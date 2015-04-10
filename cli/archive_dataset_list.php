@@ -53,7 +53,7 @@ foreach (glob(DATA_DIR . '/private*.csv') as $csv_file) {
         }
 
         $dataset = basename($row['0']);
-        $CkanManager->make_dataset_private($dataset, $basename);
+        $CkanManager->makeDatasetPrivate($dataset, $basename);
     }
 }
 

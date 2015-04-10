@@ -50,7 +50,7 @@ $CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->export_organizations($termsArray);
+$CkanManager->exportOrganizations($termsArray);
 
 // show running time on finish
 timer();

@@ -63,7 +63,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
-$CkanManager->tag_legacy_dms($termsArray, 'metadata_from_legacy_dms');
+$CkanManager->tagLegacyDms($termsArray, 'metadata_from_legacy_dms');
 
 // show running time on finish
 timer();

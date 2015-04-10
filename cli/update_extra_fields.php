@@ -82,7 +82,7 @@ foreach (glob(DATA_DIR . '/extra*.csv') as $csv_file) {
             }
         }
 
-        $CkanManager->update_extra_fields(
+        $CkanManager->updateExtraFields(
             [$dataset],
             'catalog_@context',
             'https://project-open-data.cio.gov/v1.1/schema/data.jsonld',

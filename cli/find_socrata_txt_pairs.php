@@ -55,7 +55,7 @@ $socrata_list = file_get_contents($socrata_file_path);
 $socrata_list = preg_replace('/[\\r\\n]+/', "\n", $socrata_list);
 $socrata_list = explode("\n", $socrata_list);
 
-$CkanManager->get_socrata_pairs($socrata_list);
+$CkanManager->getSocrataPairs($socrata_list);
 
 // show running time on finish
 timer();

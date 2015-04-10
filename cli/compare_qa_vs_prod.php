@@ -39,7 +39,7 @@ if (!is_file($results_dir . '/prod.csv')) {
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
-    $prod_noaa = $ProdCkanManager->export_brief('organization:noaa-gov AND metadata_type:geospatial');
+    $prod_noaa = $ProdCkanManager->exportBrief('organization:noaa-gov AND metadata_type:geospatial');
     $prod->writeFromArray($prod_noaa);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
@@ -63,7 +63,7 @@ if (!is_file($results_dir . '/qa.csv')) {
     $QaCkanManager = new CkanManager(CKAN_QA_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
-    $qa_noaa = $QaCkanManager->export_brief('organization:noaa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
+    $qa_noaa = $QaCkanManager->exportBrief('organization:noaa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
     $qa->writeFromArray($qa_noaa);
 
 } else {

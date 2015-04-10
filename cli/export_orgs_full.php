@@ -49,7 +49,7 @@ foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
 //        CkanManager::EXPORT_DMS_ONLY
 //        CkanManager::EXPORT_DMS_ONLY | CkanManager::EXPORT_PRIVATE_ONLY
 //        CkanManager::EXPORT_DMS_ONLY | CkanManager::EXPORT_PUBLIC_ONLY
-        $CkanManager->full_organization_export($organization,
+        $CkanManager->fullOrganizationExport($organization,
 //            CkanManager::EXPORT_DMS_ONLY | CkanManager::EXPORT_PUBLIC_ONLY);
             CkanManager::EXPORT_PRIVATE_ONLY);
     }

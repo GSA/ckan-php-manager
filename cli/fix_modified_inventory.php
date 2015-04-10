@@ -44,7 +44,7 @@ foreach (glob(DATA_DIR . '/metadata*.csv') as $csv_file) {
             continue;
         }
 
-        $CkanManager->fix_modified($dataset);
+        $CkanManager->fixModified($dataset);
         file_put_contents($results_dir . '/log.csv', $CkanManager->logOutput, FILE_APPEND | LOCK_EX);
         $CkanManager->logOutput = '';
     }

@@ -48,7 +48,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->reorganize_datasets(ORGANIZATION_TO_TAG, $termsArray, BACKUP_DIR);
+$CkanManager->reorganizeDatasets(ORGANIZATION_TO_TAG, $termsArray, BACKUP_DIR);
 
 // show running time on finish
 timer();

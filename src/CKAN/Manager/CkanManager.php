@@ -72,7 +72,7 @@ class CkanManager
     {
         $this->apiUrl = $apiUrl;
         // skip while unit tests
-        if (defined('RESULTS_DIR')){
+        if (defined('RESULTS_DIR')) {
             $this->resultsDir = RESULTS_DIR;
             echo "api url: " . $apiUrl . PHP_EOL . PHP_EOL;
             sleep(3);
@@ -101,7 +101,7 @@ class CkanManager
 
             echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
 
-            $this->try_package_update($dataset);
+            $this->tryPackageUpdate($dataset);
 
             if (defined('QUIT')) {
                 die();
@@ -227,7 +227,7 @@ class CkanManager
      * @return bool
      * @throws \Exception
      */
-    private function try_package_update($dataset)
+    public function tryPackageUpdate($dataset)
     {
         if ('dataset' !== $dataset['type']) {
             return false;
@@ -235,7 +235,7 @@ class CkanManager
 
         try {
             $this->Ckan->package_update($dataset);
-            if (!$this->check_dataset_consistency($dataset)) {
+            if (!$this->checkDatasetConsistency($dataset)) {
                 throw new \Exception('dataset consistency check failed');
             }
 
@@ -253,7 +253,7 @@ class CkanManager
      * @return bool
      * @throws \Exception
      */
-    public function check_dataset_consistency($dataset)
+    public function checkDatasetConsistency($dataset)
     {
         $id = $dataset['name'];
         $updated_dataset = $this->tryPackageShow($id);
@@ -265,11 +265,11 @@ class CkanManager
 
 
             if (isset($dataset['extras'])) {
-                $this->pre_diff_sort($dataset);
-                $this->pre_diff_sort($updated_dataset);
+                $this->preDiffSort($dataset);
+                $this->preDiffSort($updated_dataset);
             }
 
-            $diff = $this->array_diff_assoc_recursive($dataset, $updated_dataset);
+            $diff = $this->arrayDiffAssocRecursive($dataset, $updated_dataset);
 
             if (sizeof($diff)) {
                 file_put_contents(
@@ -294,7 +294,7 @@ class CkanManager
     /**
      * @param array $dataset
      */
-    private function pre_diff_sort(array &$dataset)
+    private function preDiffSort(array &$dataset)
     {
         if (isset($dataset['extras']) && sizeof($dataset['extras'])) {
             $extras = [];
@@ -312,7 +312,7 @@ class CkanManager
      *
      * @return array
      */
-    private function  array_diff_assoc_recursive($array1, $array2)
+    private function  arrayDiffAssocRecursive($array1, $array2)
     {
         $blacklist = [
             'revision_timestamp',
@@ -331,7 +331,7 @@ class CkanManager
                         $difference[$key] = $value;
                     }
                 } else {
-                    $new_diff = $this->array_diff_assoc_recursive($value, $array2[$key]);
+                    $new_diff = $this->arrayDiffAssocRecursive($value, $array2[$key]);
                     if (!empty($new_diff)) {
                         if (!in_array($key, $blacklist)) {
                             $difference[$key] = $new_diff;
@@ -355,7 +355,7 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function fix_modified($datasetName)
+    public function fixModified($datasetName)
     {
         $dataset = $this->tryPackageShow($datasetName);
         if (!$dataset) {
@@ -388,7 +388,7 @@ class CkanManager
             'value' => $modified,
         ];
 
-        $result = $this->try_package_update($dataset);
+        $result = $this->tryPackageUpdate($dataset);
         if ($result) {
             $this->say([$datasetName, 'SUCCESS', 'extras metadata is ' . $modified]);
         } else {
@@ -612,7 +612,7 @@ class CkanManager
 
     /**
      */
-    public function get_interactive_resources()
+    public function getInteractiveResources()
     {
         $log_file = $this->resultsDir . '/resources.csv';
         $fp = fopen($log_file, 'w');
@@ -627,7 +627,7 @@ class CkanManager
         fputcsv($fp, $csv_header);
 
         /* http://catalog.data.gov/api/search/resource?url=explore.data.gov&all_fields=1&limit=100 */
-        $resources = $this->try_api_package_search(['url' => 'explore.data.gov']);
+        $resources = $this->tryApiPackageSearch(['url' => 'explore.data.gov']);
         if (!$resources) {
             die('error' . PHP_EOL);
         }
@@ -654,7 +654,7 @@ class CkanManager
      *
      * @return bool|mixed
      */
-    private function try_api_package_search(
+    private function tryApiPackageSearch(
         $search,
         $try = 3
     ) {
@@ -704,7 +704,7 @@ class CkanManager
      *
      * @return bool
      */
-    public function search_by_title(
+    public function searchByTitle(
         $title,
         Writer $csv_writer
     ) {
@@ -746,7 +746,7 @@ class CkanManager
     /**
      * @param $search_list
      */
-    public function search_by_terms(
+    public function searchByTerms(
         $search_list
     ) {
         $log_file_popularity = $this->resultsDir . '/search_' . sizeof($search_list) . '_terms_by_popularity.csv';
@@ -882,7 +882,7 @@ class CkanManager
     /**
      * @param $groups_list
      */
-    public function search_by_topics(
+    public function searchByTopics(
         $groups_list
     ) {
         $this->logOutput = '';
@@ -1096,7 +1096,7 @@ class CkanManager
     /**
      * @param $organizations_list
      */
-    public function search_by_organizations(
+    public function searchByOrganizations(
         $organizations_list
     ) {
         $this->logOutput = '';
@@ -1273,7 +1273,7 @@ class CkanManager
      * @param string $ckan_url
      * @return array
      */
-    public function export_brief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/')
+    public function exportBrief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/')
     {
         $this->logOutput = '';
 
@@ -1356,7 +1356,7 @@ class CkanManager
      *
      * @param $terms
      */
-    public function export_packages_by_org_terms(
+    public function exportPackagesByOrgTerms(
         $terms
     ) {
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
@@ -1483,7 +1483,7 @@ class CkanManager
      *
      * @param $terms
      */
-    public function export_tracking_by_org_terms(
+    public function exportTrackingByOrgTerms(
         $terms
     ) {
         $this->logOutput = '';
@@ -1552,7 +1552,7 @@ class CkanManager
      * @param string $extra_field
      * @param string $tag_name
      */
-    public function tag_by_extra_field(
+    public function tagByExtraField(
         $extra_field,
         $tag_name
     ) {
@@ -1609,7 +1609,7 @@ class CkanManager
 
                 $this->say($dataset['name']);
 
-                $this->try_package_update($dataset);
+                $this->tryPackageUpdate($dataset);
                 $marked_true++;
             }
 
@@ -1625,7 +1625,7 @@ class CkanManager
      * @param $dataset_id
      * @param $basename
      */
-    public function make_dataset_private(
+    public function makeDatasetPrivate(
         $dataset_id,
         $basename
     ) {
@@ -1642,7 +1642,7 @@ class CkanManager
             $dataset['private'] = true;
 
             try {
-                $this->try_package_update($dataset);
+                $this->tryPackageUpdate($dataset);
                 $this->say(str_pad('OK', 10, ' '));
             } catch (\Exception $ex) {
                 $this->say(str_pad('ERROR', 10, ' '));
@@ -1659,14 +1659,14 @@ class CkanManager
      * @param $termsArray
      * @param $tag_name
      */
-    public function tag_legacy_dms(
+    public function tagLegacyDms(
         $termsArray,
         $tag_name
     ) {
         $this->logOutput = '';
 
 //        get all datasets to update
-        $datasets = $this->get_dms_public_datasets($termsArray);
+        $datasets = $this->getDmsPublicDatasets($termsArray);
 
         $count = sizeof($datasets);
 
@@ -1705,7 +1705,7 @@ class CkanManager
                 }
 
                 try {
-                    $this->try_package_update($dataset);
+                    $this->tryPackageUpdate($dataset);
                     $this->say(str_pad('OK', 7, ' '));
                 } catch (\Exception $ex) {
                     $this->say(str_pad('ERROR', 7, ' '));
@@ -1727,7 +1727,7 @@ class CkanManager
      *
      * @return array
      */
-    private function get_dms_public_datasets(
+    private function getDmsPublicDatasets(
         $terms = null,
         $options = 0
     ) {
@@ -1784,7 +1784,7 @@ class CkanManager
      *
      * @param $termsArray
      */
-    public function export_organizations(
+    public function exportOrganizations(
         $termsArray
     ) {
 
@@ -1812,12 +1812,12 @@ class CkanManager
      * @param $organization
      * @param int $options
      */
-    public function full_organization_export($organization, $options = 0)
+    public function fullOrganizationExport($organization, $options = 0)
     {
         if (($options & self::EXPORT_PUBLIC_ONLY) && ($options & self::EXPORT_DMS_ONLY)) {
-            $members = $this->get_dms_public_datasets([$organization => $organization], self::IDS_ONLY);
+            $members = $this->getDmsPublicDatasets([$organization => $organization], self::IDS_ONLY);
         } else {
-            $members = $this->try_member_list($organization);
+            $members = $this->tryMemberList($organization);
         }
 
         if (!$members || !is_array($members) || !sizeof($members)) {
@@ -1900,7 +1900,7 @@ class CkanManager
      *
      * @return bool|mixed
      */
-    private function try_member_list(
+    private function tryMemberList(
         $id,
         $try = 3
     ) {
@@ -2056,7 +2056,7 @@ class CkanManager
 
 //                $this->say(sprintf("[%0{$digits_count}d/%0{$digits_count}d] %s", $i, $total, $org_slug));
 
-                $member_list = $this->try_member_list($org_slug);
+                $member_list = $this->tryMemberList($org_slug);
 //                $private_count = 'na';
                 $private = $public = $noExtraModifiedPublic = $noExtraModifiedPrivate = 0;
                 $total_count = 'na';
@@ -2225,7 +2225,7 @@ class CkanManager
      *
 
      */
-    public function active_users()
+    public function activeUsers()
     {
         /**
          * curl --data '{"all_fields":true}' "https://catalog.data.gov/api/action/organization_list" > organizations.json
@@ -2351,7 +2351,7 @@ class CkanManager
             return;
         }
 
-        $result = $this->try_package_delete($datasetName);
+        $result = $this->tryPackageDelete($datasetName);
         if ($result) {
             $this->say([$datasetName, $organizationName, 'DELETED']);
 
@@ -2367,7 +2367,7 @@ class CkanManager
      *
      * @return bool
      */
-    private function try_package_delete($datasetId, $try = 3)
+    private function tryPackageDelete($datasetId, $try = 3)
     {
         while ($try) {
             try {
@@ -2429,7 +2429,7 @@ class CkanManager
 
         $resource['package_id'] = $dataset['id'];
 
-        $result = $this->try_resource_create($resource);
+        $result = $this->tryResourceCreate($resource);
 
         $this->say([$dataset_name_or_id, $resource['url'], 'SUCCESS', $result['id']]);
 
@@ -2443,7 +2443,7 @@ class CkanManager
      *
      * @return bool|mixed
      */
-    private function try_resource_create(
+    private function tryResourceCreate(
         $resource_json,
         $try = 3
     ) {
@@ -2516,7 +2516,7 @@ class CkanManager
         $dataset['name'] = $newDatasetName;
 
         try {
-            $this->try_package_update($dataset);
+            $this->tryPackageUpdate($dataset);
             $this->say(str_pad('OK', 7, ' '));
         } catch (\Exception $ex) {
             $this->say(str_pad('ERROR', 7, ' '));
@@ -2534,7 +2534,7 @@ class CkanManager
      * @param $termsArray
      * @param $backup_dir
      */
-    public function reorganize_datasets(
+    public function reorganizeDatasets(
         $organization,
         $termsArray,
         $backup_dir
@@ -2603,7 +2603,7 @@ class CkanManager
 
                         $dataset['owner_org'] = $department_id;
 
-                        $this->try_package_update($dataset);
+                        $this->tryPackageUpdate($dataset);
 
                         $output = 'Moved ' . $current_record;
                         $this->say($output);
@@ -2628,7 +2628,7 @@ class CkanManager
         $stagingDataset
     ) {
         try {
-            $freshDataset = $this->get_dataset($datasetName);
+            $freshDataset = $this->getDataset($datasetName);
 //            no exception, cool
             $this->say(str_pad('Prod OK', 15, ' . '));
 
@@ -2650,7 +2650,7 @@ class CkanManager
 
             $freshDataset['extras'] = array_merge($freshDataset['extras'], $diff);
 
-            $this->try_package_update($freshDataset);
+            $this->tryPackageUpdate($freshDataset);
 
         } catch (NotFoundHttpException $ex) {
             $this->say(str_pad('Prod 404: ' . $ex->getMessage(), 15, ' . '));
@@ -2665,7 +2665,7 @@ class CkanManager
      * @return mixed
      * @throws \Exception
      */
-    public function get_dataset(
+    public function getDataset(
         $datasetName
     ) {
         $dataset = $this->Ckan->package_show($datasetName);
@@ -2685,7 +2685,7 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function export_datasets_with_tags_by_group(
+    public function exportDatasetsWithTagsByGroup(
         $group
     ) {
         $this->logOutput = '';
@@ -2761,7 +2761,7 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function export_datasets_by_search(
+    public function exportDatasetsBySearch(
         $search
     ) {
         $this->logOutput = '';
@@ -2844,7 +2844,7 @@ class CkanManager
      * @param $topicTitle
      */
 
-    public function cleanup_tags_by_topic(
+    public function cleanUpTagsByTopic(
         $topicTitle
     ) {
         $start = 0;
@@ -2864,7 +2864,7 @@ class CkanManager
                 $groups = $dataset['groups'];
                 foreach ($groups as $group) {
                     $this->
-                    remove_tags_and_groups_to_datasets(
+                    removeTagsAndGroupsFromDatasets(
                         [$dataset['name']], $group['name'], 'non-existing-tag&&', $topicTitle);
                 }
             }
@@ -2889,7 +2889,7 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function remove_tags_and_groups_to_datasets(
+    public function removeTagsAndGroupsFromDatasets(
         $datasetNames,
         $group_to_remove,
         $tags_to_remove,
@@ -3003,7 +3003,7 @@ class CkanManager
                 ];
             }
 
-            $this->try_package_update($dataset);
+            $this->tryPackageUpdate($dataset);
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
 
@@ -3038,7 +3038,7 @@ class CkanManager
      * @param $newValue
      * @param $basename
      */
-    public function update_extra_fields($datasetNames, $extraField, $oldValue, $newValue, $basename)
+    public function updateExtraFields($datasetNames, $extraField, $oldValue, $newValue, $basename)
     {
         static $counter = 0;
         $this->logOutput = '';
@@ -3091,7 +3091,7 @@ class CkanManager
             }
 
             try {
-                $this->try_package_update($dataset);
+                $this->tryPackageUpdate($dataset);
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
                 $this->say('ERROR: CHECK LOG');
@@ -3114,7 +3114,7 @@ class CkanManager
      *
      * @throws \Exception
      */
-    public function assign_groups_and_categories_to_datasets(
+    public function assignGroupsAndCategoriesToDatasets(
         $datasetNames,
         $group,
         $categories = null,
@@ -3199,7 +3199,7 @@ class CkanManager
             }
 
             try {
-                $this->try_package_update($dataset);
+                $this->tryPackageUpdate($dataset);
 //                $this->say(str_pad('SUCCESS', 15, ' . ', STR_PAD_LEFT));
                 $this->say('SUCCESS');
             } catch (\Exception $ex) {
@@ -3219,7 +3219,7 @@ class CkanManager
      * @param string|bool $start
      * @param int|bool $limit
      */
-    public function get_redirect_list(
+    public function getRedirectList(
         $tree,
         $start = false,
         $limit = 1
@@ -3233,13 +3233,13 @@ class CkanManager
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
                 echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
-                $this->get_redirect_list_by_organization($rootOrganization);
+                $this->getRedirectListByOrganization($rootOrganization);
             }
 
             if (isset($rootOrganization['children'])) {
                 foreach ($rootOrganization['children'] as $subAgency) {
                     if (!$start || $start == $subAgency['id']) {
-                        $this->get_redirect_list_by_organization($subAgency);
+                        $this->getRedirectListByOrganization($subAgency);
                         if ($start && (1 == $limit)) {
                             return;
                         }
@@ -3265,7 +3265,7 @@ class CkanManager
      * @param mixed $organization
      * @return bool
      */
-    private function get_redirect_list_by_organization(
+    private function getRedirectListByOrganization(
         $organization
     ) {
         $return = [];
@@ -3274,7 +3274,7 @@ class CkanManager
             echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
         }
 
-        $list = $this->try_member_list($organization['id']);
+        $list = $this->tryMemberList($organization['id']);
 
         if (!$list) {
             return;
@@ -3310,9 +3310,9 @@ class CkanManager
                 continue;
             }
 
-            $newDataset = $this->try_find_new_dataset_by_identifier($package[0]);
+            $newDataset = $this->tryFindNewDatasetByIdentifier($package[0]);
             if (!$newDataset) {
-                $newDataset = $this->try_find_new_dataset_by_title(trim($dataset['title']));
+                $newDataset = $this->tryFindNewDatasetByTitle(trim($dataset['title']));
             }
             if (!$newDataset) {
                 continue;
@@ -3357,7 +3357,7 @@ class CkanManager
      *
      * @return bool|mixed
      */
-    private function try_find_new_dataset_by_identifier(
+    private function tryFindNewDatasetByIdentifier(
         $identifier,
         $try = 3
     ) {
@@ -3407,7 +3407,7 @@ class CkanManager
      *
      * @return bool|mixed
      */
-    private function try_find_new_dataset_by_title(
+    private function tryFindNewDatasetByTitle(
         $title,
         $try = 3
     ) {
@@ -3461,7 +3461,7 @@ class CkanManager
      * @param string|bool $start
      * @param int|bool $limit
      */
-    public function get_private_list(
+    public function getPrivateList(
         $tree,
         $start = false,
         $limit = 1
@@ -3477,13 +3477,13 @@ class CkanManager
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
                 echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
-                $this->get_private_list_by_organization($rootOrganization);
+                $this->getPrivateListByOrganization($rootOrganization);
             }
 
             if (isset($rootOrganization['children'])) {
                 foreach ($rootOrganization['children'] as $subAgency) {
                     if (!$start || $start == $subAgency['id']) {
-                        $this->get_private_list_by_organization($subAgency);
+                        $this->getPrivateListByOrganization($subAgency);
                         if ($start && (1 == $limit)) {
                             return;
                         }
@@ -3509,14 +3509,14 @@ class CkanManager
      * @param mixed $organization
      * @return bool
      */
-    private function get_private_list_by_organization(
+    private function getPrivateListByOrganization(
         $organization
     ) {
         if (ERROR_REPORTING == E_ALL) {
             echo PHP_EOL . "Getting member list of: " . $organization['id'] . PHP_EOL;
         }
 
-        $list = $this->try_member_list($organization['id']);
+        $list = $this->tryMemberList($organization['id']);
 
         if (!$list) {
             return;
@@ -3550,7 +3550,7 @@ class CkanManager
     /**
      * @param $socrata_list
      */
-    public function get_socrata_pairs(
+    public function getSocrataPairs(
         $socrata_list
     ) {
         $socrata_redirects = ['from,to'];
@@ -3576,7 +3576,7 @@ class CkanManager
             $socrata_id = trim($socrata_id);
             $ckan_id = trim($ckan_id);
 
-            $socrataDatasetTitle = $this->try_find_socrata_title($SocrataApi, $socrata_id);
+            $socrataDatasetTitle = $this->tryFindSocrataTitle($SocrataApi, $socrata_id);
 
             if (!$socrataDatasetTitle) {
                 $socrataNotFound++;
@@ -3596,7 +3596,7 @@ class CkanManager
                  * Let's try to get original explore.data.gov dataset title
                  * and search public dataset with same title
                  */
-                $public_dataset = $this->try_find_new_dataset_by_title($socrataDatasetTitle);
+                $public_dataset = $this->tryFindNewDatasetByTitle($socrataDatasetTitle);
 
                 if ($public_dataset) {
                     $publicFound++;
@@ -3638,7 +3638,7 @@ class CkanManager
             /**
              * Dataset is private, let's try to find his public brother
              */
-            $publicDataset = $this->try_find_new_dataset_by_title($dataset['title']);
+            $publicDataset = $this->tryFindNewDatasetByTitle($dataset['title']);
 
             if (!$publicDataset) {
                 echo $dataset['title'] . ' :: not found' . PHP_EOL;
@@ -3647,7 +3647,7 @@ class CkanManager
                  * and search public dataset with same title
                  */
 
-                $public_dataset = $this->try_find_new_dataset_by_title($socrataDatasetTitle);
+                $public_dataset = $this->tryFindNewDatasetByTitle($socrataDatasetTitle);
 
                 if ($public_dataset) {
                     $publicFound++;
@@ -3751,7 +3751,7 @@ EOR;
      *
      * @return bool
      */
-    private function try_find_socrata_title(
+    private function tryFindSocrataTitle(
         ExploreApi $SocrataApi,
         $socrata_id,
         $try = 3
@@ -3792,7 +3792,7 @@ EOR;
      * @param Writer $csv_agencies
      * @param Writer $csv_categories
      */
-    public function breakdown_by_group(
+    public function breakdownByGroup(
         Writer $csv_agencies,
         Writer $csv_categories
     ) {
@@ -3868,7 +3868,7 @@ EOR;
      * @param $limit
      * @param $start
      */
-    public function orphaned_tags_seek(
+    public function orphanedTagsSeek(
         $limit,
         $start
     ) {
@@ -3877,7 +3877,7 @@ EOR;
         $finish = $start + $limit;
         $per_page = 50;
 
-        $groups = $this->try_get_groups_array();
+        $groups = $this->tryGetGroupsArray();
 
         while (true) {
             $datasets = $this->tryPackageSearch('(dataset_type:dataset)', $per_page, $offset);
@@ -3939,7 +3939,7 @@ EOR;
     /**
      * @return array
      */
-    private function try_get_groups_array()
+    private function tryGetGroupsArray()
     {
         $groups = json_decode($this->Ckan->group_list(true), true);
         if (!$groups || !$groups['success']) {
@@ -3956,16 +3956,16 @@ EOR;
     /**
      * @return array
      */
-    public function groups_array()
+    public function groupsArray()
     {
-        return $this->try_get_groups_array();
+        return $this->tryGetGroupsArray();
     }
 
     /**
      * @param             $category
      * @param CkanManager $CkanManagerProduction
      */
-    public function check_group_against_prod(
+    public function checkGroupAgainstProd(
         $category,
         self $CkanManagerProduction
     ) {

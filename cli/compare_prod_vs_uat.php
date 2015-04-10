@@ -38,7 +38,7 @@ if (!is_file($results_dir . '/prod.csv')) {
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
-    $prod_commerce = $ProdCkanManager->export_brief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR trade-gov' .
+    $prod_commerce = $ProdCkanManager->exportBrief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR trade-gov' .
         ' OR census-gov OR eda-doc-gov OR ntia-doc-gov OR ntis-gov OR nws-doc-gov OR bea-gov OR uspto-gov)' .
         ' AND -metadata_type:geospatial AND dataset_type:dataset');
     $prod->writeFromArray($prod_commerce);
@@ -63,7 +63,7 @@ if (!is_file($results_dir . '/uat.csv')) {
     $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_commerce = $UatCkanManager->export_brief('extras_harvest_source_title:Commerce JSON',
+    $uat_commerce = $UatCkanManager->exportBrief('extras_harvest_source_title:Commerce JSON',
         'http://uat-catalog-fe-data.reisys.com/dataset/');
     $uat->writeFromArray($uat_commerce);
 

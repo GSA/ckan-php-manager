@@ -50,7 +50,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->export_tracking_by_org_terms($termsArray);
+$CkanManager->exportTrackingByOrgTerms($termsArray);
 
 // show running time on finish
 timer();

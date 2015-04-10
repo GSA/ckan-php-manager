@@ -6,6 +6,8 @@ use EasyCSV;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
+$start = isset($argv[1]) ? trim($argv[1]) : 0;
+
 /**
  * Create results dir for logs
  */
@@ -30,7 +32,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/2assign*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -47,8 +49,14 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
         if (!$row) {
             break;
         }
+
 //        skip headers
         if (in_array(trim(strtolower($row['0'])), ['link', 'dataset', 'url', 'data.gov url'])) {
+            continue;
+        }
+
+        if ($start>0) {
+            $start--;
             continue;
         }
 
@@ -79,7 +87,7 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
             }
         }
 
-        $CkanManager->assign_groups_and_categories_to_datasets(
+        $CkanManager->assignGroupsAndCategoriesToDatasets(
             [$dataset],
             trim($row['1']),
             $categories,

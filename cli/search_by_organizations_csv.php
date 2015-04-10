@@ -40,7 +40,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->search_by_organizations($organizations_list);
+$CkanManager->searchByOrganizations($organizations_list);
 
 // show running time on finish
 timer();

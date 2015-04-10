@@ -48,7 +48,7 @@ $termsArray = $OrgList->getTreeArray();
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->get_private_list($termsArray, $start, $limit);
+$CkanManager->getPrivateList($termsArray, $start, $limit);
 
 // show running time on finish
 timer();

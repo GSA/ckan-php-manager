@@ -42,7 +42,7 @@ $csv_categories = new EasyCSV\Writer($results_dir . '/breakdown_' . GROUP_TO_EXP
         'Ymd-His'
     ) . '.csv');
 
-$CkanManager->breakdown_by_group($csv_agencies, $csv_categories);
+$CkanManager->breakdownByGroup($csv_agencies, $csv_categories);
 
 // show running time on finish
 timer();
