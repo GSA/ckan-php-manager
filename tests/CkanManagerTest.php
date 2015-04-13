@@ -140,7 +140,6 @@ class CkanManagerTest extends \BaseTestCase
     }
 
     /**
-     * @throws \Exception
      */
     public function testCheckDatasetConsistency()
     {
@@ -161,7 +160,6 @@ class CkanManagerTest extends \BaseTestCase
     }
 
     /**
-     * @throws \Exception
      */
 //    public function testCheckDatasetConsistencyFail()
 //    {
