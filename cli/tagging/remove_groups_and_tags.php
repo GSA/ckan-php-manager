@@ -13,8 +13,8 @@ $results_dir = RESULTS_DIR . date('/Ymd-His') . '_REMOVE_GROUPS';
 mkdir($results_dir);
 
 
-//$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+//$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
