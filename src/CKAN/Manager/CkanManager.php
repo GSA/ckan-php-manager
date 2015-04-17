@@ -418,7 +418,7 @@ class CkanManager
     /**
      *
      */
-    public function findMatches2()
+    public function findMatchesSeparateFiles()
     {
         $page = 0;
         $main_datasets_by_harvest = [];
@@ -447,9 +447,21 @@ class CkanManager
                 $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
 
                 if ($harvestSource == $main_harvest_title) {
+                    $groups = [];
+                    if (sizeof($dataset['groups'])) {
+                        foreach ($dataset['groups'] as $group) {
+                            $tags = $this->extra($dataset['extras'], '__category_tag_' . $group['id']);
+                            if ($tags) {
+                                $groups[] = $group['title'] . '{' . $tags . '}';
+                            } else {
+                                $groups[] = $group['title'];
+                            }
+                        }
+                    }
                     $main_datasets_by_harvest[] = [
                         'title' => $title,
-                        'basename' => $dataset['name']
+                        'basename' => $dataset['name'],
+                        'groups' => join(';', $groups),
                     ];
                     continue;
                 }
@@ -479,13 +491,18 @@ class CkanManager
 
         foreach ($other_harvests as $harvest) {
             $csv = new Writer($this->resultsDir . '/matches_' . $harvest . '.csv');
-            $csv->writeRow(['title', $main_harvest_title, $harvest]);
+            $csv->writeRow(['groups', 'title', $main_harvest_title, $harvest]);
             foreach ($main_datasets_by_harvest as $dataset) {
                 $matches = [];
                 if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
                     $matches = $datasets_by_harvest[$harvest][$dataset['title']];
                 }
-                $csv->writeRow(array_merge([$titles[$dataset['title']], $dataset['basename']], $matches));
+                $csv->writeRow(array_merge([
+                    $dataset['groups'],
+                    $titles[$dataset['title']],
+                    $dataset['basename']
+                ],
+                    $matches));
             }
         }
     }
@@ -529,10 +546,11 @@ class CkanManager
         return false;
     }
 
+
     /**
      *
      */
-    public function findMatches()
+    public function findMatchesOneFile()
     {
         $page = 0;
         $main_datasets_by_harvest = [];
@@ -563,9 +581,21 @@ class CkanManager
                 $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
 
                 if ($harvestSource == $main_harvest_title) {
+                    $groups = [];
+                    if (sizeof($dataset['groups'])) {
+                        foreach ($dataset['groups'] as $group) {
+                            $tags = $this->extra($dataset['extras'], '__category_tag_' . $group['id']);
+                            if ($tags) {
+                                $groups[] = $group['title'] . '{' . $tags . '}';
+                            } else {
+                                $groups[] = $group['title'];
+                            }
+                        }
+                    }
                     $main_datasets_by_harvest[] = [
                         'title' => $title,
-                        'basename' => $dataset['name']
+                        'basename' => $dataset['name'],
+                        'groups' => join(';', $groups),
                     ];
                     continue;
                 }
@@ -595,7 +625,7 @@ class CkanManager
 
 
         $other_harvests = array_keys($datasets_by_harvest);
-        $csv->writeRow(array_merge(['title', $main_harvest_title], array_keys($datasets_by_harvest)));
+        $csv->writeRow(array_merge(['groups', 'title', $main_harvest_title], array_keys($datasets_by_harvest)));
 
         foreach ($main_datasets_by_harvest as $dataset) {
             $matches = [];
@@ -606,7 +636,109 @@ class CkanManager
                     $matches[] = '';
                 }
             }
-            $csv->writeRow(array_merge([$titles[$dataset['title']], $dataset['basename']], $matches));
+            $csv->writeRow(array_merge([$dataset['groups'], $titles[$dataset['title']], $dataset['basename']],
+                $matches));
+        }
+    }
+
+    /**
+     *
+     */
+    public function findMatches()
+    {
+        $page = 0;
+        $main_datasets_by_harvest = [];
+        $main_harvest_title = 'Environmental Dataset Gateway';
+        $datasets_by_harvest = [];
+        $titles = [];
+
+        $csv = new Writer($this->resultsDir . '/matches.csv');
+        $rename_waf = new Writer($this->resultsDir . '/rename_waf.csv');
+        $rename_fgdc = new Writer($this->resultsDir . '/rename_fgdc.csv');
+        $rename_deleted = new Writer($this->resultsDir . '/rename_deleted.csv');
+
+        while (true) {
+            $start = $page++ * $this->packageSearchPerPage;
+            $ckanResults = $this->tryPackageSearch(
+                'organization:epa-gov', $this->packageSearchPerPage, $start);
+
+            if (!is_array($ckanResults)) {
+                die('Fatal');
+            }
+
+            /* csv for title, url, topic, and topic category */
+            foreach ($ckanResults as $dataset) {
+                if ($dataset['type'] !== 'dataset' || !isset($dataset['extras'])) {
+                    continue;
+                }
+
+                $title = $this->simplifyTitle($dataset['title']);
+                $titles[$title] = $dataset['title'];
+
+                $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
+
+                if ($harvestSource == $main_harvest_title) {
+                    $groups = [];
+                    if (sizeof($dataset['groups'])) {
+                        foreach ($dataset['groups'] as $group) {
+                            $tags = $this->extra($dataset['extras'], '__category_tag_' . $group['id']);
+                            if ($tags) {
+                                $groups[] = $group['title'] . '{' . $tags . '}';
+                            } else {
+                                $groups[] = $group['title'];
+                            }
+                        }
+                    }
+                    $main_datasets_by_harvest[] = [
+                        'title' => $title,
+                        'basename' => $dataset['name'],
+                        'groups' => join(';', $groups),
+                    ];
+                    continue;
+                }
+
+                if (!isset($datasets_by_harvest[$harvestSource])) {
+                    $datasets_by_harvest[$harvestSource] = [];
+                }
+
+                if (isset($datasets_by_harvest[$harvestSource][$title])) {
+                    $datasets_by_harvest[$harvestSource][$title][] = $dataset['name'];
+                } else {
+                    $datasets_by_harvest[$harvestSource][$title] = [$dataset['name']];
+                }
+            }
+
+            $count = $this->resultCount;
+            if ($start) {
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            }
+
+            if ($this->resultCount - $this->packageSearchPerPage < $start) {
+                break;
+            }
+        }
+
+        $other_harvests = array_keys($datasets_by_harvest);
+        $csv->writeRow(array_merge(['groups', 'title', $main_harvest_title], array_keys($datasets_by_harvest)));
+
+        foreach ($main_datasets_by_harvest as $dataset) {
+            $matches = [];
+            foreach ($other_harvests as $harvest) {
+                if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
+                    $matches[] = $match = array_shift($datasets_by_harvest[$harvest][$dataset['title']]);
+                    if (stripos($harvest, 'waf')) {
+                        $rename_deleted->writeRow([$dataset['basename'], $dataset['basename'] . '_epa_deleted']);
+                        $rename_waf->writeRow([$match, $dataset['basename']]);
+                    } elseif (stripos($harvest, 'fgdc')) {
+                        $rename_deleted->writeRow([$dataset['basename'], $dataset['basename'] . '_epa_deleted']);
+                        $rename_fgdc->writeRow([$match, $dataset['basename']]);
+                    }
+                } else {
+                    $matches[] = '';
+                }
+            }
+            $csv->writeRow(array_merge([$dataset['groups'], $titles[$dataset['title']], $dataset['basename']],
+                $matches));
         }
     }
 
