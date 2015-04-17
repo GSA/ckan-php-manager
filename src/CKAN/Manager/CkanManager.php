@@ -725,11 +725,13 @@ class CkanManager
             $matches = [];
             foreach ($other_harvests as $harvest) {
                 if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
-                    $matches[] = $match = array_shift($datasets_by_harvest[$harvest][$dataset['title']]);
-                    if (stripos($harvest, 'waf')) {
+                    $match = array_shift($datasets_by_harvest[$harvest][$dataset['title']]);
+                    $matches[] = $match;
+
+                    if ($match && stripos($harvest, 'waf')) {
                         $rename_deleted->writeRow([$dataset['basename'], $dataset['basename'] . '_epa_deleted']);
                         $rename_waf->writeRow([$match, $dataset['basename']]);
-                    } elseif (stripos($harvest, 'fgdc')) {
+                    } elseif ($match && stripos($harvest, 'fgdc')) {
                         $rename_deleted->writeRow([$dataset['basename'], $dataset['basename'] . '_epa_deleted']);
                         $rename_fgdc->writeRow([$match, $dataset['basename']]);
                     }
