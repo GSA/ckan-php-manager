@@ -241,8 +241,7 @@ class CkanManager
 
             return true;
         } catch (\Exception $ex) {
-            echo $ex->getMessage() . PHP_EOL;
-
+//            echo $ex->getMessage() . PHP_EOL;
             return false;
         }
     }
@@ -652,6 +651,7 @@ class CkanManager
         $datasets_by_harvest = [];
         $titles = [];
 
+        $newJson = new Writer($this->resultsDir . '/assign_new_json.csv');
         $csv = new Writer($this->resultsDir . '/matches.csv');
         $rename_waf = new Writer($this->resultsDir . '/rename_waf.csv');
         $rename_fgdc = new Writer($this->resultsDir . '/rename_fgdc.csv');
@@ -660,7 +660,7 @@ class CkanManager
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResults = $this->tryPackageSearch(
-                'organization:epa-gov', $this->packageSearchPerPage, $start);
+                'dataset_type:dataset AND organization:epa-gov', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -679,12 +679,22 @@ class CkanManager
 
                 if ($harvestSource == $main_harvest_title) {
                     $groups = [];
+                    $group_tags = [];
                     if (sizeof($dataset['groups'])) {
                         foreach ($dataset['groups'] as $group) {
                             $tags = $this->extra($dataset['extras'], '__category_tag_' . $group['id']);
                             if ($tags) {
                                 $groups[] = $group['title'] . '{' . $tags . '}';
+
+                                $tags = trim($tags, '[]');
+                                $tags = explode('","', $tags);
+                                foreach ($tags as &$tag) {
+                                    $tag = trim($tag, '" ');
+                                }
+
+                                $group_tags[$group['title']] = $tags;
                             } else {
+                                $group_tags[$group['title']] = '';
                                 $groups[] = $group['title'];
                             }
                         }
@@ -693,6 +703,7 @@ class CkanManager
                         'title' => $title,
                         'basename' => $dataset['name'],
                         'groups' => join(';', $groups),
+                        'tags' => $group_tags,
                     ];
                     continue;
                 }
@@ -734,6 +745,12 @@ class CkanManager
                     } elseif ($match && stripos($harvest, 'fgdc')) {
                         $rename_deleted->writeRow([$dataset['basename'], $dataset['basename'] . '_epa_deleted']);
                         $rename_fgdc->writeRow([$match, $dataset['basename']]);
+                    } elseif ($match && (false !== stripos($harvest, 'new epa data'))) {
+                        if (is_array($dataset['tags'])) {
+                            foreach ($dataset['tags'] as $group => $tags) {
+                                $newJson->writeRow([$match, $group, is_array($tags) ? join(';', $tags) : '']);
+                            }
+                        }
                     }
                 } else {
                     $matches[] = '';
@@ -1497,6 +1514,9 @@ class CkanManager
         $ckan_url = 'http://catalog.data.gov/';
 //        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
 
+        $csv_global = new Writer($this->resultsDir . '/combined.csv', 'w');
+        $csv_global->writeRow(['Title', 'Url', 'Topics', 'Topics categories',]);
+
         foreach ($terms as $term => $agency) {
             $page = 0;
             $count = 0;
@@ -1520,11 +1540,15 @@ class CkanManager
 
             while (true) {
                 $start = $page++ * $this->packageSearchPerPage;
-                $ckanResults = $this->tryPackageSearch('organization:' . $term, $this->packageSearchPerPage, $start);
+//                $ckanResults = $this->tryPackageSearch('extras_metadata-source:dms AND dataset_type:dataset AND organization:' . $term,
+//                  $this->packageSearchPerPage, $start);
+                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND organization:' . $term,
+                    $this->packageSearchPerPage, $start);
 //                $ckanResults = $this->tryPackageSearch('groups:*', $this->packageSearchPerPage, $start);
 
                 if (!is_array($ckanResults)) {
-                    die('Fatal');
+                    break;
+//                    die('Fatal');
                 }
 
                 $results = array_merge($results, $ckanResults);
@@ -1577,6 +1601,15 @@ class CkanManager
                     $categories = sizeof($categories) ? join(';', $categories) : false;
 
                     $csv->writeRow(
+                        [
+                            isset($dataset['title']) ? $dataset['title'] : '',
+                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
+                            $categories ? $categories : '',
+                            $categories_tags ? $categories_tags : ''
+                        ]
+                    );
+
+                    $csv_global->writeRow(
                         [
                             isset($dataset['title']) ? $dataset['title'] : '',
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
@@ -2631,12 +2664,14 @@ class CkanManager
     ) {
         $this->logOutput = '';
         $log_file = $basename . '_rename.log';
+        $log_csv = new Writer($this->resultsDir . '/' . $basename . '_rename.csv', 'a');
 
         $this->say(str_pad($datasetName, 100, ' . '), '');
 
         try {
             $ckanResult = $this->Ckan->package_show($datasetName);
         } catch (NotFoundHttpException $ex) {
+            $log_csv->writeRow([$datasetName, $newDatasetName, 'NOT FOUND']);
             $this->say(str_pad('NOT FOUND', 10, ' . ', STR_PAD_LEFT));
             file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);
             $this->logOutput = '';
@@ -2649,12 +2684,18 @@ class CkanManager
 
         $dataset['name'] = $newDatasetName;
 
+        $result = false;
         try {
-            $this->tryPackageUpdate($dataset);
-            $this->say(str_pad('OK', 7, ' '));
+            $result = $this->tryPackageUpdate($dataset);
         } catch (\Exception $ex) {
-            $this->say(str_pad('ERROR', 7, ' '));
             file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+        if ($result) {
+            $log_csv->writeRow([$datasetName, $newDatasetName, 'OK']);
+            $this->say(str_pad('OK', 7, ' '));
+        } else {
+            $log_csv->writeRow([$datasetName, $newDatasetName, 'FAIL']);
+            $this->say(str_pad('FAIL', 7, ' '));
         }
 
         file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);

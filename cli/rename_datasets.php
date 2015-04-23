@@ -17,20 +17,10 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_RENAME_DATASETS';
 mkdir($results_dir);
 
-/**
- * Production
- */
-$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
+//$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
+$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 /**
  * CSV

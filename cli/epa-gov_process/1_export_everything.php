@@ -38,7 +38,7 @@ mkdir($results_dir);
 /**
  * Production
  */
-$CkanManager = new CkanManager(CKAN_QA_API_URL);
+$CkanManager = new CkanManager(CKAN_API_URL);
 //$CkanManager = new CkanManager(CKAN_QA_API_URL);
 //$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 

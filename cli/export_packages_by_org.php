@@ -8,7 +8,7 @@ use CKAN\Core\OrganizationList;
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Environmental Protection Agency');
+define('ORGANIZATION_TO_EXPORT', 'Department of the Interior');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
