@@ -16,7 +16,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT';
+$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT_NRC';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -38,13 +38,12 @@ if (!is_file($results_dir . '/prod.csv')) {
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
-    $prod_commerce = $ProdCkanManager->exportBrief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR nist-gov OR trade-gov OR census-gov ' .
-        ' OR eda-doc-gov OR ntia-doc-gov OR ntis-gov OR nws-doc-gov OR bea-gov OR uspto-gov)' .
-        ' AND -metadata_type:geospatial AND dataset_type:dataset AND -harvest_source_id:[\'\' TO *]');
-    $prod->writeFromArray($prod_commerce);
+    $prod_nuclear = $ProdCkanManager->exportBrief('organization:(nrc-gov)' .
+        ' AND -metadata_type:geospatial AND dataset_type:dataset');
+    $prod->writeFromArray($prod_nuclear);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
-    $prod_commerce = $prod->getAll();
+    $prod_nuclear = $prod->getAll();
 }
 
 echo 'uat.csv' . PHP_EOL;
@@ -63,27 +62,27 @@ if (!is_file($results_dir . '/uat.csv')) {
     $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_commerce = $UatCkanManager->exportBrief('extras_harvest_source_title:Commerce JSON',
+    $uat_nuclear = $UatCkanManager->exportBrief('extras_harvest_source_title:NRC data.json',
         'http://uat-catalog-fe-data.reisys.com/dataset/');
-    $uat->writeFromArray($uat_commerce);
+    $uat->writeFromArray($uat_nuclear);
 
 } else {
     $uat = new Reader($results_dir . '/uat.csv');
-    $uat_commerce = $uat->getAll();
+    $uat_nuclear = $uat->getAll();
 }
 
-$uat_commerce_by_title = [];
+$uat_nuclear_by_title = [];
 
-foreach ($uat_commerce as $name => $dataset) {
+foreach ($uat_nuclear as $name => $dataset) {
     $title = $dataset['title_simple'];
 
-    $uat_commerce_by_title[$title] = isset($uat_commerce_by_title[$title]) ? $uat_commerce_by_title[$title] : [];
-    $uat_commerce_by_title[$title][] = $dataset;
+    $uat_nuclear_by_title[$title] = isset($uat_nuclear_by_title[$title]) ? $uat_nuclear_by_title[$title] : [];
+    $uat_nuclear_by_title[$title][] = $dataset;
 }
 
 echo 'prod_vs_uat.csv' . PHP_EOL;
-is_file($results_dir . '/prod_vs_uat_commerce.csv') && unlink($results_dir . '/prod_vs_uat_commerce.csv');
-$csv = new Writer($results_dir . '/prod_vs_uat_commerce.csv');
+is_file($results_dir . '/prod_vs_uat_nuclear_geospatial.csv') && unlink($results_dir . '/prod_vs_uat_nuclear_geospatial.csv');
+$csv = new Writer($results_dir . '/prod_vs_uat_nuclear_geospatial.csv');
 $csv->writeRow([
     'Prod Title',
     'Prod URL',
@@ -92,12 +91,11 @@ $csv->writeRow([
     'Matched',
     'UAT Title',
     'UAT URL',
-    'URL Match',
 ]);
 
-foreach ($prod_commerce as $name => $prod_dataset) {
-    if (isset($uat_commerce_by_title[$prod_dataset['title_simple']])) {
-        foreach ($uat_commerce_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
+foreach ($prod_nuclear as $name => $prod_dataset) {
+    if (isset($uat_nuclear_by_title[$prod_dataset['title_simple']])) {
+        foreach ($uat_nuclear_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
@@ -106,7 +104,6 @@ foreach ($prod_commerce as $name => $prod_dataset) {
                 true,
                 $uat_dataset['title'],
                 $uat_dataset['url'],
-                true,
             ]);
         }
         continue;
@@ -120,7 +117,6 @@ foreach ($prod_commerce as $name => $prod_dataset) {
         false,
         '',
         '',
-        false,
     ]);
 }
 

@@ -18,11 +18,11 @@ mkdir($results_dir);
  * Adding Legacy dms tag
  * Production
  */
-//$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 //$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
-$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
+//$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
 
 /**
  * Sample csv

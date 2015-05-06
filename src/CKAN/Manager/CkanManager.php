@@ -641,6 +641,46 @@ class CkanManager
     }
 
     /**
+     * @param int $limit
+     */
+    public function exportResourceList($limit = 500)
+    {
+        $page = 0;
+        $list = [];
+        while (true) {
+            $start = $page++ * $this->packageSearchPerPage;
+            echo $start.PHP_EOL;
+            $ckanResults = $this->tryPackageSearch(
+                'dataset_type:dataset', $this->packageSearchPerPage, $start);
+
+            if (!is_array($ckanResults)) {
+                die('Fatal');
+            }
+
+            foreach ($ckanResults as $dataset) {
+                if(!isset($dataset['resources'])){
+                    continue;
+                }
+                foreach($dataset['resources'] as $resource) {
+                    if (!isset($resource['url'])){
+                        continue;
+                    }
+                    $list[] = trim($resource['url']);
+                }
+            }
+            if($start > $limit){
+                break;
+            }
+        }
+        $list = array_unique($list);
+        $list_csv = new Writer($this->resultsDir . '/resources.csv');
+        foreach($list as $url) {
+            $list_csv->writeRow([$url]);
+        }
+        return;
+    }
+
+    /**
      *
      */
     public function findMatches()
@@ -1422,9 +1462,10 @@ class CkanManager
     /**
      * @param $ckan_query
      * @param string $ckan_url
+     * @param bool $short
      * @return array
      */
-    public function exportBrief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/')
+    public function exportBrief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
     {
         $this->logOutput = '';
 
@@ -1480,7 +1521,7 @@ class CkanManager
                         }
                     }
 
-                    $return[$dataset['name']] = [
+                    $line = [
                         'title' => $dataset['title'],
                         'title_simple' => $this->simplifyTitle($dataset['title']),
                         'name' => $dataset['name'],
@@ -1489,6 +1530,12 @@ class CkanManager
                         'topics' => join(';', $groups),
                         'categories' => join(';', $categories),
                     ];
+
+                    if ($short) {
+                        unset($line['title_simple']);
+                        unset($line['guid']);
+                    }
+                    $return[$dataset['name']] = $line;
                 }
             } else {
                 echo 'no results: ' . $ckan_query . PHP_EOL;
@@ -1500,6 +1547,17 @@ class CkanManager
         }
 
         return $return;
+    }
+
+    /**
+     * @param $ckan_query
+     * @param string $ckan_url
+     * @param bool $short
+     * @return array
+     */
+    public function exportShort($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
+    {
+        return $this->exportBrief($ckan_query, $ckan_url, $short);
     }
 
     /**
@@ -1544,6 +1602,8 @@ class CkanManager
 //                  $this->packageSearchPerPage, $start);
                 $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND organization:' . $term,
                     $this->packageSearchPerPage, $start);
+//                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND name:national-flood-hazard-layer-nfhl',
+//                    $this->packageSearchPerPage, $start);
 //                $ckanResults = $this->tryPackageSearch('groups:*', $this->packageSearchPerPage, $start);
 
                 if (!is_array($ckanResults)) {
@@ -2181,7 +2241,7 @@ class CkanManager
 
         fputcsv($fp_log, $csv_header);
 
-        $total = $filter ? sizeof($filter) : sizeof($orgs);
+//        $total = $filter ? sizeof($filter) : sizeof($orgs);
         $i = 0;
         $skip = (bool)START;
         foreach ($orgs as $org) {
@@ -2529,6 +2589,43 @@ class CkanManager
     }
 
     /**
+     * @param $datasetName
+     */
+    public function undeleteDataset($datasetName)
+    {
+        $dataset = $this->tryPackageShow($datasetName);
+        if (!$dataset) {
+            $this->say([$datasetName, '404 Not Found']);
+
+            return;
+        }
+
+        if ('deleted' !== $dataset['state']) {
+            $this->say([$datasetName, 'Already undeleted']);
+
+            return;
+        }
+
+        $dataset['state'] = 'active';
+        $result = $this->tryPackageUpdate($dataset);
+
+//        if (!isset($dataset['private']) || !$dataset['private']) {
+//            $this->say([$datasetName, $organizationName, 'Not private']);
+//
+//            return;
+//        }
+//
+//        $result = $this->tryPackageDelete($datasetName);
+        if ($result) {
+            $this->say([$datasetName, 'UNDELETED']);
+
+            return;
+        }
+
+        $this->say([$datasetName, 'ERROR']);
+    }
+
+    /**
      * @param $datasetId
      * @param int $try
      *
@@ -2679,6 +2776,15 @@ class CkanManager
             return;
         }
 
+        $occupied = $this->tryPackageShow($newDatasetName);
+        if ($occupied) {
+            $private = $occupied['private'] ? '(private)' : '(public)';
+            $log_csv->writeRow([$datasetName, $newDatasetName, 'OCCUPIED ' . $private]);
+            $this->say(str_pad('OCCUPIED ' . $private, 18, ' . ', STR_PAD_LEFT));
+
+            return;
+        }
+
         $ckanResult = json_decode($ckanResult, true);
         $dataset = $ckanResult['result'];
 
@@ -2688,6 +2794,7 @@ class CkanManager
         try {
             $result = $this->tryPackageUpdate($dataset);
         } catch (\Exception $ex) {
+            echo 'Exception';
             file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
         }
         if ($result) {
