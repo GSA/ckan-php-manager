@@ -14,21 +14,19 @@ http://docs.ckan.org/en/latest/api/index.html
 
 ## Installation
 
-Clone repository
-git clone https://github.com/GSA/ckan-php-manager.git
-
-Use [composer](#composer) to install/update dependencies
+###Clone repository
+    $ git clone https://github.com/GSA/ckan-php-manager.git
 
 ### Composer
-
+Use [composer](#composer) to install/update dependencies
 If you don't have Composer [install](https://getcomposer.org/download/) it:
 
     $ curl -sS https://getcomposer.org/installer | php
 
-Run composer self-udpate
-composer self-update
+###Run composer self-udpate
+    $ composer self-update
 
-Refresh your dependencies:
+###Refresh your dependencies:
 
     $ php composer.phar update
 
