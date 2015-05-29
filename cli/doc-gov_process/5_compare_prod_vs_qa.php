@@ -11,12 +11,12 @@ namespace CKAN\Manager;
 use EasyCSV\Reader;
 use EasyCSV\Writer;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT';
+$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_QA';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -40,18 +40,18 @@ if (!is_file($results_dir . '/prod.csv')) {
 
     $prod_commerce = $ProdCkanManager->exportBrief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR trade-gov OR census-gov ' .
         ' OR eda-doc-gov OR ntia-doc-gov OR ntis-gov OR nws-doc-gov OR bea-gov OR uspto-gov)' .
-        ' AND -metadata_type:geospatial AND dataset_type:dataset AND -harvest_source_id:[\'\' TO *]');
+        ' AND -metadata_type:geospatial AND dataset_type:dataset');
     $prod->writeFromArray($prod_commerce);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
     $prod_commerce = $prod->getAll();
 }
 
-echo 'uat.csv' . PHP_EOL;
-if (!is_file($results_dir . '/uat.csv')) {
-    $uat = new Writer($results_dir . '/uat.csv');
+echo 'qa.csv' . PHP_EOL;
+if (!is_file($results_dir . '/qa.csv')) {
+    $qa = new Writer($results_dir . '/qa.csv');
 
-    $uat->writeRow([
+    $qa->writeRow([
         'title',
         'title_simple',
         'name',
@@ -60,52 +60,54 @@ if (!is_file($results_dir . '/uat.csv')) {
         'categories',
     ]);
 
-    $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
+    $UatCkanManager = new CkanManager(CKAN_QA_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_commerce = $UatCkanManager->exportBrief('extras_harvest_source_title:Commerce JSON',
-        'http://uat-catalog-fe-data.reisys.com/dataset/');
-    $uat->writeFromArray($uat_commerce);
+    $qa_commerce = $UatCkanManager->exportBrief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR trade-gov OR census-gov ' .
+        ' OR eda-doc-gov OR ntia-doc-gov OR ntis-gov OR nws-doc-gov OR bea-gov OR uspto-gov)' .
+        ' AND -metadata_type:geospatial AND dataset_type:dataset',
+        'http://qa-catalog-fe-data.reisys.com/dataset/');
+    $qa->writeFromArray($qa_commerce);
 
 } else {
-    $uat = new Reader($results_dir . '/uat.csv');
-    $uat_commerce = $uat->getAll();
+    $qa = new Reader($results_dir . '/qa.csv');
+    $qa_commerce = $qa->getAll();
 }
 
-$uat_commerce_by_title = [];
+$qa_commerce_by_title = [];
 
-foreach ($uat_commerce as $name => $dataset) {
+foreach ($qa_commerce as $name => $dataset) {
     $title = $dataset['title_simple'];
 
-    $uat_commerce_by_title[$title] = isset($uat_commerce_by_title[$title]) ? $uat_commerce_by_title[$title] : [];
-    $uat_commerce_by_title[$title][] = $dataset;
+    $qa_commerce_by_title[$title] = isset($qa_commerce_by_title[$title]) ? $qa_commerce_by_title[$title] : [];
+    $qa_commerce_by_title[$title][] = $dataset;
 }
 
-echo 'prod_vs_uat.csv' . PHP_EOL;
-is_file($results_dir . '/prod_vs_uat_commerce.csv') && unlink($results_dir . '/prod_vs_uat_commerce.csv');
-$csv = new Writer($results_dir . '/prod_vs_uat_commerce.csv');
+echo 'prod_vs_qa.csv' . PHP_EOL;
+is_file($results_dir . '/prod_vs_qa_commerce.csv') && unlink($results_dir . '/prod_vs_qa_commerce.csv');
+$csv = new Writer($results_dir . '/prod_vs_qa_commerce.csv');
 $csv->writeRow([
     'Prod Title',
     'Prod URL',
     'Prod Topics',
     'Prod Categories',
     'Matched',
-    'UAT Title',
-    'UAT URL',
+    'QA Title',
+    'QA URL',
     'URL Match',
 ]);
 
 foreach ($prod_commerce as $name => $prod_dataset) {
-    if (isset($uat_commerce_by_title[$prod_dataset['title_simple']])) {
-        foreach ($uat_commerce_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
+    if (isset($qa_commerce_by_title[$prod_dataset['title_simple']])) {
+        foreach ($qa_commerce_by_title[$prod_dataset['title_simple']] as $qa_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
                 $prod_dataset['topics'],
                 $prod_dataset['categories'],
                 true,
-                $uat_dataset['title'],
-                $uat_dataset['url'],
+                $qa_dataset['title'],
+                $qa_dataset['url'],
                 true,
             ]);
         }

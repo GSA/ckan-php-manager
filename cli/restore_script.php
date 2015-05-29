@@ -14,20 +14,8 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_RESTORE_DATASETS';
 mkdir($results_dir);
 
-/**
- * Adding Legacy dms tag
- * Production
- */
 $ProductionClient = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
 $StagingClient = new CkanManager(CKAN_UAT_API_URL);
-
-/**
- * Dev
- */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 /**

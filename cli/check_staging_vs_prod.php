@@ -16,15 +16,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_CHECK_STAGING_VS_PROD';
 mkdir($results_dir);
 
-/**
- * Adding Legacy dms tag
- * Production
- */
 $CkanManagerProduction = new CkanManager(CKAN_API_URL);
-
-/**
- * Staging
- */
 $CkanManagerStaging = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManagerStaging->resultsDir = $results_dir;

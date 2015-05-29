@@ -11,12 +11,12 @@ namespace CKAN\Manager;
 use EasyCSV\Reader;
 use EasyCSV\Writer;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT';
+$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_PROD';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -47,11 +47,11 @@ if (!is_file($results_dir . '/prod.csv')) {
     $prod_commerce = $prod->getAll();
 }
 
-echo 'uat.csv' . PHP_EOL;
-if (!is_file($results_dir . '/uat.csv')) {
-    $uat = new Writer($results_dir . '/uat.csv');
+echo 'new.csv' . PHP_EOL;
+if (!is_file($results_dir . '/new.csv')) {
+    $new = new Writer($results_dir . '/new.csv');
 
-    $uat->writeRow([
+    $new->writeRow([
         'title',
         'title_simple',
         'name',
@@ -60,52 +60,51 @@ if (!is_file($results_dir . '/uat.csv')) {
         'categories',
     ]);
 
-    $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
+    $UatCkanManager = new CkanManager(CKAN_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_commerce = $UatCkanManager->exportBrief('extras_harvest_source_title:Commerce JSON',
-        'http://uat-catalog-fe-data.reisys.com/dataset/');
-    $uat->writeFromArray($uat_commerce);
+    $new_commerce = $UatCkanManager->exportBrief('extras_harvest_source_title:Commerce Non Spatial Data.json Harvest Source');
+    $new->writeFromArray($new_commerce);
 
 } else {
-    $uat = new Reader($results_dir . '/uat.csv');
-    $uat_commerce = $uat->getAll();
+    $new = new Reader($results_dir . '/new.csv');
+    $new_commerce = $new->getAll();
 }
 
-$uat_commerce_by_title = [];
+$new_commerce_by_title = [];
 
-foreach ($uat_commerce as $name => $dataset) {
+foreach ($new_commerce as $name => $dataset) {
     $title = $dataset['title_simple'];
 
-    $uat_commerce_by_title[$title] = isset($uat_commerce_by_title[$title]) ? $uat_commerce_by_title[$title] : [];
-    $uat_commerce_by_title[$title][] = $dataset;
+    $new_commerce_by_title[$title] = isset($new_commerce_by_title[$title]) ? $new_commerce_by_title[$title] : [];
+    $new_commerce_by_title[$title][] = $dataset;
 }
 
-echo 'prod_vs_uat.csv' . PHP_EOL;
-is_file($results_dir . '/prod_vs_uat_commerce.csv') && unlink($results_dir . '/prod_vs_uat_commerce.csv');
-$csv = new Writer($results_dir . '/prod_vs_uat_commerce.csv');
+echo 'prod_vs_new.csv' . PHP_EOL;
+is_file($results_dir . '/prod_vs_prod_commerce.csv') && unlink($results_dir . '/prod_vs_prod_commerce.csv');
+$csv = new Writer($results_dir . '/prod_vs_prod_commerce.csv');
 $csv->writeRow([
     'Prod Title',
     'Prod URL',
     'Prod Topics',
     'Prod Categories',
     'Matched',
-    'UAT Title',
-    'UAT URL',
+    'NEW Title',
+    'NEW URL',
     'URL Match',
 ]);
 
 foreach ($prod_commerce as $name => $prod_dataset) {
-    if (isset($uat_commerce_by_title[$prod_dataset['title_simple']])) {
-        foreach ($uat_commerce_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
+    if (isset($new_commerce_by_title[$prod_dataset['title_simple']])) {
+        foreach ($new_commerce_by_title[$prod_dataset['title_simple']] as $new_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
                 $prod_dataset['topics'],
                 $prod_dataset['categories'],
                 true,
-                $uat_dataset['title'],
-                $uat_dataset['url'],
+                $new_dataset['title'],
+                $new_dataset['url'],
                 true,
             ]);
         }

@@ -9,7 +9,7 @@ use CKAN\Core\OrganizationList;
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Nuclear Regulatory Commission');
+define('ORGANIZATION_TO_TAG', 'Department of Commerce');
 
 /**
  * Just list those datasets, no need to edit anything
@@ -30,7 +30,7 @@ define('RENAME_TO_LEGACY', true);
 
 echo "Tagging " . ORGANIZATION_TO_TAG . PHP_EOL;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Get organization terms, including all children, as Array
@@ -58,6 +58,13 @@ $CkanManager = new CkanManager(CKAN_API_URL, LIST_ONLY ? null : CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
+
+/**
+ * We are skipping noaa-gov and nist-gov within current process
+ */
+unset($termsArray['noaa-gov']);
+unset($termsArray['nist-gov']);
+
 $CkanManager->tagLegacyDms($termsArray, 'metadata_from_legacy_dms');
 
 // show running time on finish

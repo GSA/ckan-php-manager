@@ -11,12 +11,12 @@ namespace CKAN\Manager;
 use EasyCSV\Reader;
 use EasyCSV\Writer;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_QA_VS_PROD_EPA';
+$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_QA_VS_PROD';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -39,11 +39,11 @@ if (!is_file($results_dir . '/prod.csv')) {
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
-    $prod_epa = $ProdCkanManager->exportBrief('organization:epa-gov');
-    $prod->writeFromArray($prod_epa);
+    $prod_noaa = $ProdCkanManager->exportBrief('organization:noaa-gov AND metadata_type:geospatial AND dataset_type:dataset');
+    $prod->writeFromArray($prod_noaa);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
-    $prod_epa = $prod->getAll();
+    $prod_noaa = $prod->getAll();
 }
 
 echo 'qa.csv' . PHP_EOL;
@@ -63,32 +63,32 @@ if (!is_file($results_dir . '/qa.csv')) {
     $QaCkanManager = new CkanManager(CKAN_QA_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
-    $qa_epa = $QaCkanManager->exportBrief('organization:epa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
-    $qa->writeFromArray($qa_epa);
+    $qa_noaa = $QaCkanManager->exportBrief('organization:noaa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
+    $qa->writeFromArray($qa_noaa);
 
 } else {
     $qa = new Reader($results_dir . '/qa.csv');
-    $qa_epa = $qa->getAll();
+    $qa_noaa = $qa->getAll();
 }
 
-$qa_epa_by_title = $qa_epa_by_guid = [];
+$qa_noaa_by_title = $qa_noaa_by_guid = [];
 
-foreach ($qa_epa as $name => $dataset) {
+foreach ($qa_noaa as $name => $dataset) {
     $title = $dataset['title_simple'];
 
-    $qa_epa_by_title[$title] = isset($qa_epa_by_title[$title]) ? $qa_epa_by_title[$title] : [];
-    $qa_epa_by_title[$title][] = $dataset;
+    $qa_noaa_by_title[$title] = isset($qa_noaa_by_title[$title]) ? $qa_noaa_by_title[$title] : [];
+    $qa_noaa_by_title[$title][] = $dataset;
 
     $guid = trim($dataset['guid']);
     if ($guid) {
-        $qa_epa_by_guid[$guid] = isset($qa_epa_by_guid[$guid]) ? $qa_epa_by_guid[$guid] : [];
-        $qa_epa_by_guid[$guid][] = $dataset;
+        $qa_noaa_by_guid[$guid] = isset($qa_noaa_by_guid[$guid]) ? $qa_noaa_by_guid[$guid] : [];
+        $qa_noaa_by_guid[$guid][] = $dataset;
     }
 }
 
 echo 'prod_vs_qa.csv' . PHP_EOL;
-is_file($results_dir . '/prod_vs_qa_epa.csv') && unlink($results_dir . '/prod_vs_qa_epa.csv');
-$csv = new Writer($results_dir . '/prod_vs_qa_epa.csv');
+is_file($results_dir . '/prod_vs_qa_noaa_geospatial.csv') && unlink($results_dir . '/prod_vs_qa_noaa_geospatial.csv');
+$csv = new Writer($results_dir . '/prod_vs_qa_noaa_geospatial.csv');
 $csv->writeRow([
     'Prod Title',
     'Prod URL',
@@ -103,9 +103,9 @@ $csv->writeRow([
     'GUID Match',
 ]);
 
-foreach ($prod_epa as $name => $prod_dataset) {
-    if (isset($qa_epa_by_guid[$prod_dataset['guid']])) {
-        foreach ($qa_epa_by_guid[$prod_dataset['guid']] as $qa_dataset) {
+foreach ($prod_noaa as $name => $prod_dataset) {
+    if (isset($qa_noaa_by_guid[$prod_dataset['guid']])) {
+        foreach ($qa_noaa_by_guid[$prod_dataset['guid']] as $qa_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
@@ -123,8 +123,8 @@ foreach ($prod_epa as $name => $prod_dataset) {
         continue;
     }
 
-    if (isset($qa_epa_by_title[$prod_dataset['title_simple']])) {
-        foreach ($qa_epa_by_title[$prod_dataset['title_simple']] as $qa_dataset) {
+    if (isset($qa_noaa_by_title[$prod_dataset['title_simple']])) {
+        foreach ($qa_noaa_by_title[$prod_dataset['title_simple']] as $qa_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],

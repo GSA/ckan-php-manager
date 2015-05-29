@@ -2,30 +2,29 @@
 
 namespace CKAN\Manager;
 
-use EasyCSV;
+
+use EasyCSV\Reader;
+use EasyCSV\Writer;
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
 /**
- * Create results dir for logs
+ * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_UPDATE_EXTRA';
+$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT';
 mkdir($results_dir);
 
-$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-//$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-//$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
-//$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
+$start = isset($argv[1]) ? trim($argv[1]) : 0;
 
-/**
- * Sample csv
- * dataset,group,categories
- * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
- * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
- */
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+//$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
+//$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
+
+
+$tags_csv = new Writer($results_dir . '/assign_tags.csv');
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(DATA_DIR . '/extra*.csv') as $csv_file) {
+foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -34,16 +33,21 @@ foreach (glob(DATA_DIR . '/extra*.csv') as $csv_file) {
 //    fix wrong END-OF-LINE
     file_put_contents($csv_file, preg_replace('/[\\r\\n]+/', "\n", file_get_contents($csv_file)));
 
-//    file_put_contents($resultsDir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
-    $csv = new EasyCSV\Reader($csv_file, 'r+', false);
+    $csv = new Reader($csv_file, 'r+', false);
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
             break;
         }
+
 //        skip headers
         if (in_array(trim(strtolower($row['0'])), ['link', 'dataset', 'url', 'data.gov url'])) {
+            continue;
+        }
+
+        if ($start > 0) {
+            $start--;
             continue;
         }
 
@@ -58,7 +62,7 @@ foreach (glob(DATA_DIR . '/extra*.csv') as $csv_file) {
         if (strpos($row['0'], '://')) {
             if (!strpos($row['0'], '/dataset/')) {
                 file_put_contents(
-                    $results_dir . '/' . $basename . '_tags.log.csv',
+                    $results_dir . '/' . $basename . '_export.log.csv',
                     $row['0'] . ',WRONG URL' . PHP_EOL,
                     FILE_APPEND | LOCK_EX
                 );
@@ -66,15 +70,17 @@ foreach (glob(DATA_DIR . '/extra*.csv') as $csv_file) {
             }
         }
 
-        $CkanManager->updateExtraFields(
-            [$dataset],
-            'catalog_@context',
-            'https://project-open-data.cio.gov/v1.1/schema/data.jsonld',
-            'https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld',
-            $basename
-        );
+        $lines = $CkanManager->exportPackage($dataset);
+
+        foreach ($lines as $line) {
+            $tags_csv->writeRow($line);
+        }
     }
 }
+
+
+//$brief = $CkanManager->exportShort('extras_harvest_source_title:Test ISO WAF AND (dataset_type:dataset)');
+//$csv->writeFromArray($brief);
 
 // show running time on finish
 timer();

@@ -22,20 +22,8 @@ $limit = isset($argv[2]) ? intval($argv[2]) : 1;
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_PRIVATE_DATASETS_' . $start ?: '';
 mkdir($results_dir);
 
-/**
- * Adding Legacy dms tag
- * Production
- */
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-
-/**
- * Dev
- */
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
 
 define('ERROR_REPORTING', E_ALL);

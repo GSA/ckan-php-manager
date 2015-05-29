@@ -11,7 +11,7 @@ namespace CKAN\Manager;
 use EasyCSV\Reader;
 use EasyCSV\Writer;
 
-require_once dirname(__DIR__) . '/inc/common.php';
+require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Create results dir for logs

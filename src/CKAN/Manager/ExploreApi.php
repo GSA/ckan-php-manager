@@ -69,7 +69,7 @@ class ExploreApi
      */
     private function set_headers()
     {
-        $date             = new \DateTime(null, new \DateTimeZone('UTC'));
+        $date = new \DateTime(null, new \DateTimeZone('UTC'));
         $this->ch_headers = [
             'Date: ' . $date->format('D, d M Y H:i:s') . ' GMT', // RFC 1123
             'Accept: application/json',
@@ -93,8 +93,8 @@ class ExploreApi
 
     /**
      * @param string $method // HTTP method (GET, POST)
-     * @param string $uri    // URI fragment to CKAN resource
-     * @param string $data   // Optional. String in JSON-format that will be in request body
+     * @param string $uri // URI fragment to CKAN resource
+     * @param string $data // Optional. String in JSON-format that will be in request body
      *
      * @return mixed    // If success, either an array or object. Otherwise FALSE.
      * @throws \Exception
@@ -122,7 +122,7 @@ class ExploreApi
         curl_setopt($this->ch, CURLOPT_HTTPHEADER, $this->ch_headers);
         // Execute request and get response headers.
         $response = curl_exec($this->ch);
-        $info     = curl_getinfo($this->ch);
+        $info = curl_getinfo($this->ch);
         // Check HTTP response code
         if ($info['http_code'] !== 200) {
             switch ($info['http_code']) {
@@ -152,4 +152,4 @@ class ExploreApi
             unset($this->ch);
         }
     }
-} 
+}

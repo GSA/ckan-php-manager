@@ -35,15 +35,7 @@ if (!defined('PARENT_TERM')) {
 $results_dir = RESULTS_DIR . date('/Ymd-His') . '_LEGACY_' . PARENT_TERM;
 mkdir($results_dir);
 
-/**
- * Adding Legacy dms tag
- * Production
- */
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
-
-/**
- * Staging
- */
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;

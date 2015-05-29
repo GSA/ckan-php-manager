@@ -649,7 +649,7 @@ class CkanManager
         $list = [];
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
-            echo $start.PHP_EOL;
+            echo $start . PHP_EOL;
             $ckanResults = $this->tryPackageSearch(
                 'dataset_type:dataset', $this->packageSearchPerPage, $start);
 
@@ -658,25 +658,26 @@ class CkanManager
             }
 
             foreach ($ckanResults as $dataset) {
-                if(!isset($dataset['resources'])){
+                if (!isset($dataset['resources'])) {
                     continue;
                 }
-                foreach($dataset['resources'] as $resource) {
-                    if (!isset($resource['url'])){
+                foreach ($dataset['resources'] as $resource) {
+                    if (!isset($resource['url'])) {
                         continue;
                     }
                     $list[] = trim($resource['url']);
                 }
             }
-            if($start > $limit){
+            if ($start > $limit) {
                 break;
             }
         }
         $list = array_unique($list);
         $list_csv = new Writer($this->resultsDir . '/resources.csv');
-        foreach($list as $url) {
+        foreach ($list as $url) {
             $list_csv->writeRow([$url]);
         }
+
         return;
     }
 
@@ -791,6 +792,140 @@ class CkanManager
                                 $newJson->writeRow([$match, $group, is_array($tags) ? join(';', $tags) : '']);
                             }
                         }
+                    }
+                } else {
+                    $matches[] = '';
+                }
+            }
+            $csv->writeRow(array_merge([$dataset['groups'], $titles[$dataset['title']], $dataset['basename']],
+                $matches));
+        }
+    }
+
+    /**
+     * @param string $agency
+     */
+    public function findMatchesByAgency($agency = 'nrc')
+    {
+        $page = 0;
+        $main_datasets_by_harvest = [];
+        $main_harvest_title = false;
+        $datasets_by_harvest = [];
+        $titles = [];
+
+        $csv = new Writer($this->resultsDir . '/matches.csv');
+        $rename_json = new Writer($this->resultsDir . '/rename_json.csv');
+        $rename_deleted = new Writer($this->resultsDir . '/rename_deleted.csv');
+
+        $search = $agency . '-gov';
+        if ('doc' == $agency) {
+            $search = join(' OR ', [
+                'doc-gov',
+                'mbda-doc-gov',
+                'trade-gov',
+                'ntia-doc-gov',
+                'ntis-gov',
+                'nws-doc-gov',
+                'census-gov',
+                'eda-doc-gov',
+                'uspto-gov',
+                'bea-gov',
+                'doc-gov',
+                'bis-doc-gov',
+            ]);
+        }
+
+//        echo 'dataset_type:dataset AND organization:('.$search.')'.PHP_EOL;die();
+
+        while (true) {
+            $start = $page++ * $this->packageSearchPerPage;
+            $ckanResults = $this->tryPackageSearch(
+                'organization:(' . $search . ') AND dataset_type:dataset AND -metadata_type:geospatial',
+                $this->packageSearchPerPage, $start);
+
+            if (!is_array($ckanResults)) {
+                die('Fatal');
+            }
+
+            /* csv for title, url, topic, and topic category */
+            foreach ($ckanResults as $dataset) {
+                if ($dataset['type'] !== 'dataset') {
+                    continue;
+                }
+
+                $title = $this->simplifyTitle($dataset['title']);
+                $titles[$title] = $dataset['title'];
+
+                $harvestSource = $this->extra($dataset['extras'], 'harvest_source_title');
+
+                if ($harvestSource == $main_harvest_title) {
+                    $groups = [];
+                    $group_tags = [];
+                    if (sizeof($dataset['groups'])) {
+                        foreach ($dataset['groups'] as $group) {
+                            $tags = $this->extra($dataset['extras'], '__category_tag_' . $group['id']);
+                            if ($tags) {
+                                $groups[] = $group['title'] . '{' . $tags . '}';
+
+                                $tags = trim($tags, '[]');
+                                $tags = explode('","', $tags);
+                                foreach ($tags as &$tag) {
+                                    $tag = trim($tag, '" ');
+                                }
+
+                                $group_tags[$group['title']] = $tags;
+                            } else {
+                                $group_tags[$group['title']] = '';
+                                $groups[] = $group['title'];
+                            }
+                        }
+                    }
+                    $main_datasets_by_harvest[] = [
+                        'title' => $title,
+                        'basename' => $dataset['name'],
+                        'groups' => join(';', $groups),
+                        'tags' => $group_tags,
+                    ];
+                    continue;
+                }
+
+                if (!isset($datasets_by_harvest[$harvestSource])) {
+                    $datasets_by_harvest[$harvestSource] = [];
+                }
+
+                if (isset($datasets_by_harvest[$harvestSource][$title])) {
+                    $datasets_by_harvest[$harvestSource][$title][] = $dataset['name'];
+                } else {
+                    $datasets_by_harvest[$harvestSource][$title] = [$dataset['name']];
+                }
+            }
+
+            $count = $this->resultCount;
+            if ($start) {
+                echo "start from $start / " . $count . ' total ' . PHP_EOL;
+            }
+
+            if ($this->resultCount - $this->packageSearchPerPage < $start) {
+                break;
+            }
+        }
+
+        $other_harvests = array_keys($datasets_by_harvest);
+        $csv->writeRow(array_merge(['groups', 'title', $main_harvest_title], array_keys($datasets_by_harvest)));
+
+        foreach ($main_datasets_by_harvest as $dataset) {
+            $matches = [];
+            foreach ($other_harvests as $harvest) {
+                if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
+                    $match = array_shift($datasets_by_harvest[$harvest][$dataset['title']]);
+                    $matches[] = $match;
+
+                    if ($match && stripos($harvest, 'json')) {
+                        $rename_deleted->writeRow([
+                            $dataset['basename'],
+                            $dataset['basename'] . '_' . $agency . '_deleted'
+                        ]);
+                        $rename_json->writeRow([$match, $dataset['basename']]);
                     }
                 } else {
                     $matches[] = '';
@@ -1465,6 +1600,55 @@ class CkanManager
      * @param bool $short
      * @return array
      */
+    public function exportShort($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
+    {
+        return $this->exportBrief($ckan_query, $ckan_url, $short);
+    }
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public function exportPackage($id)
+    {
+        $dataset = $this->tryPackageShow($id);
+        if (false === $dataset) {
+            die('FATAL');
+        }
+        $return = [];
+
+        $extras = $dataset['extras'];
+        $category_id_tags = [];
+        foreach ($extras as $extra) {
+            if (false !== strpos($extra['key'], '__category_tag_')) {
+                $category_id = str_replace('__category_tag_', '', $extra['key']);
+                $tags = trim($extra['value'], '[]');
+                $tags = explode('","', $tags);
+                foreach ($tags as &$tag) {
+                    $tag = trim($tag, '" ');
+                }
+                $category_id_tags[$category_id] = $tags;
+            }
+        }
+
+        if (sizeof($dataset['groups'])) {
+            foreach ($dataset['groups'] as $group) {
+                $categories[] = $group['title'];
+                $tags = isset($category_id_tags[$group['id']]) ?
+                    join(';', $category_id_tags[$group['id']]) : '';
+                $return[] = [$dataset['name'], $group['title'], $tags];
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $ckan_query
+     * @param string $ckan_url
+     * @param bool $short
+     * @return array
+     */
     public function exportBrief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
     {
         $this->logOutput = '';
@@ -1499,6 +1683,7 @@ class CkanManager
             if ($count) {
                 foreach ($datasets as $dataset) {
                     $guid = $this->extra($dataset['extras'], 'guid');
+                    $identifier = $this->extra($dataset['extras'], 'identifier');
                     $groups = [];
                     if (isset($dataset['groups'])) {
                         foreach ($dataset['groups'] as $group) {
@@ -1526,6 +1711,7 @@ class CkanManager
                         'title_simple' => $this->simplifyTitle($dataset['title']),
                         'name' => $dataset['name'],
                         'url' => $ckan_url . $dataset['name'],
+                        'identifier' => $identifier,
                         'guid' => $guid,
                         'topics' => join(';', $groups),
                         'categories' => join(';', $categories),
@@ -1550,17 +1736,6 @@ class CkanManager
     }
 
     /**
-     * @param $ckan_query
-     * @param string $ckan_url
-     * @param bool $short
-     * @return array
-     */
-    public function exportShort($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
-    {
-        return $this->exportBrief($ckan_query, $ckan_url, $short);
-    }
-
-    /**
      * Export all packages by organization term
      *
      * @param $terms
@@ -1572,8 +1747,8 @@ class CkanManager
         $ckan_url = 'http://catalog.data.gov/';
 //        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
 
-        $csv_global = new Writer($this->resultsDir . '/combined.csv', 'w');
-        $csv_global->writeRow(['Title', 'Url', 'Topics', 'Topics categories',]);
+        $csv_global = new Writer($this->resultsDir . '/_combined.csv', 'w');
+        $csv_global->writeRow(['Title', 'Url', 'Organization', 'Topics', 'Topics categories',]);
 
         foreach ($terms as $term => $agency) {
             $page = 0;
@@ -1600,7 +1775,8 @@ class CkanManager
                 $start = $page++ * $this->packageSearchPerPage;
 //                $ckanResults = $this->tryPackageSearch('extras_metadata-source:dms AND dataset_type:dataset AND organization:' . $term,
 //                  $this->packageSearchPerPage, $start);
-                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND organization:' . $term,
+                $ckanResults = $this->tryPackageSearch('organization:' . $term .
+                    ' AND -metadata_type:geospatial AND dataset_type:dataset',
                     $this->packageSearchPerPage, $start);
 //                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND name:national-flood-hazard-layer-nfhl',
 //                    $this->packageSearchPerPage, $start);
@@ -1673,6 +1849,7 @@ class CkanManager
                         [
                             isset($dataset['title']) ? $dataset['title'] : '',
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
+                            isset($dataset['organization']) ? $dataset['organization']['title'] : '',
                             $categories ? $categories : '',
                             $categories_tags ? $categories_tags : ''
                         ]
@@ -1681,7 +1858,7 @@ class CkanManager
 
                 $count = $this->resultCount;
                 if ($start) {
-                    echo "start from $start / " . $count . ' total ' . PHP_EOL;
+                    echo "start from $start / " . $count . ' total [' . $term . ']' . PHP_EOL;
                 }
 
                 if ($this->resultCount - $this->packageSearchPerPage < $start) {
@@ -1909,7 +2086,7 @@ class CkanManager
 
 //        update dataset tags list
         foreach ($datasets as $key => $dataset) {
-            echo str_pad("$key / $count ", 10, ' ');
+            echo str_pad(($key + 1) . " / $count ", 10, ' ');
 
             $csv->writeRow(
                 [$dataset['name'], $newDatasetName = $dataset['name'] . '_legacy',]);
@@ -2589,43 +2766,6 @@ class CkanManager
     }
 
     /**
-     * @param $datasetName
-     */
-    public function undeleteDataset($datasetName)
-    {
-        $dataset = $this->tryPackageShow($datasetName);
-        if (!$dataset) {
-            $this->say([$datasetName, '404 Not Found']);
-
-            return;
-        }
-
-        if ('deleted' !== $dataset['state']) {
-            $this->say([$datasetName, 'Already undeleted']);
-
-            return;
-        }
-
-        $dataset['state'] = 'active';
-        $result = $this->tryPackageUpdate($dataset);
-
-//        if (!isset($dataset['private']) || !$dataset['private']) {
-//            $this->say([$datasetName, $organizationName, 'Not private']);
-//
-//            return;
-//        }
-//
-//        $result = $this->tryPackageDelete($datasetName);
-        if ($result) {
-            $this->say([$datasetName, 'UNDELETED']);
-
-            return;
-        }
-
-        $this->say([$datasetName, 'ERROR']);
-    }
-
-    /**
      * @param $datasetId
      * @param int $try
      *
@@ -2660,6 +2800,43 @@ class CkanManager
         }
 
         return false;
+    }
+
+    /**
+     * @param $datasetName
+     */
+    public function undeleteDataset($datasetName)
+    {
+        $dataset = $this->tryPackageShow($datasetName);
+        if (!$dataset) {
+            $this->say([$datasetName, '404 Not Found']);
+
+            return;
+        }
+
+        if ('deleted' !== $dataset['state']) {
+            $this->say([$datasetName, 'Already undeleted']);
+
+            return;
+        }
+
+        $dataset['state'] = 'active';
+        $result = $this->tryPackageUpdate($dataset);
+
+//        if (!isset($dataset['private']) || !$dataset['private']) {
+//            $this->say([$datasetName, $organizationName, 'Not private']);
+//
+//            return;
+//        }
+//
+//        $result = $this->tryPackageDelete($datasetName);
+        if ($result) {
+            $this->say([$datasetName, 'UNDELETED']);
+
+            return;
+        }
+
+        $this->say([$datasetName, 'ERROR']);
     }
 
     /**
@@ -2789,6 +2966,7 @@ class CkanManager
         $dataset = $ckanResult['result'];
 
         $dataset['name'] = $newDatasetName;
+//        $dataset['private'] = true;
 
         $result = false;
         try {
@@ -3064,12 +3242,12 @@ class CkanManager
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
-//        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
+        $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
 //        $ckan_query = "'data.jsonld'";
 //        $ckan_query = $search;
 //        $ckan_query = '(organization:"epa-gov") AND (dataset_type:dataset)';
 //        $ckan_query = 'metadata-source:dms';
-        $ckan_query = 'organization_type:"State Government" AND (dataset_type:dataset)';
+//        $ckan_query = 'organization_type:"State Government" AND (dataset_type:dataset)';
 
         echo $ckan_query . PHP_EOL;
 
