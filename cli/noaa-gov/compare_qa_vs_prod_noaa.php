@@ -31,6 +31,7 @@ if (!is_file($results_dir . '/prod.csv')) {
         'title_simple',
         'name',
         'url',
+        'identifier',
         'guid',
         'topics',
         'categories',
@@ -43,6 +44,7 @@ if (!is_file($results_dir . '/prod.csv')) {
     $prod->writeFromArray($prod_noaa);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
+    $prod->getHeaders();
     $prod_noaa = $prod->getAll();
 }
 
@@ -55,6 +57,7 @@ if (!is_file($results_dir . '/qa.csv')) {
         'title_simple',
         'name',
         'url',
+        'identifier',
         'guid',
         'topics',
         'categories',
