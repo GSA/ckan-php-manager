@@ -62,7 +62,7 @@ if (!is_file($results_dir . '/uat.csv')) {
     $UatCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $UatCkanManager->resultsDir = $results_dir;
 
-    $uat_nuclear = $UatCkanManager->exportBrief('extras_harvest_source_title:NRC data.json',
+    $uat_nuclear = $UatCkanManager->exportBrief('extras_harvest_source_title:NRC data.json', '',
         'http://uat-catalog-fe-data.reisys.com/dataset/');
     $uat->writeFromArray($uat_nuclear);
 

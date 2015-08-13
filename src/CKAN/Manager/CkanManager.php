@@ -93,7 +93,7 @@ class CkanManager
      */
     public function test_dev()
     {
-        $datasets = $this->tryPackageSearch('u');
+        $datasets = $this->tryPackageSearch('u', '');
 
         $i = 0;
         foreach ($datasets as $dataset) {
@@ -110,25 +110,25 @@ class CkanManager
     }
 
     /**
-     * @param        $search
+     * @param        $q
+     * @param        $fq
      * @param int $rows
      * @param int $start
-     * @param string $q
      * @param int $try
      *
      * @return bool|mixed
      */
     public function tryPackageSearch(
-        $search,
+        $q,
+        $fq,
         $rows = 100,
         $start = 0,
-        $q = 'q',
         $try = 3
     ) {
         $datasets = false;
         while ($try) {
             try {
-                $datasets = $this->Ckan->package_search($search, $rows, $start, $q);
+                $datasets = $this->Ckan->package_search($q, $fq, $rows, $start);
                 $datasets = json_decode($datasets, true);   /* as array */
 
                 if (!$datasets['success'] || !isset($datasets['result'])) {
@@ -428,7 +428,7 @@ class CkanManager
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResults = $this->tryPackageSearch(
-                'organization:epa-gov', $this->packageSearchPerPage, $start);
+                'organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -562,7 +562,7 @@ class CkanManager
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResults = $this->tryPackageSearch(
-                'organization:epa-gov', $this->packageSearchPerPage, $start);
+                'organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -651,7 +651,7 @@ class CkanManager
             $start = $page++ * $this->packageSearchPerPage;
             echo $start . PHP_EOL;
             $ckanResults = $this->tryPackageSearch(
-                'dataset_type:dataset', $this->packageSearchPerPage, $start);
+                'dataset_type:dataset', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -701,7 +701,7 @@ class CkanManager
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResults = $this->tryPackageSearch(
-                'dataset_type:dataset AND organization:epa-gov', $this->packageSearchPerPage, $start);
+                'dataset_type:dataset AND organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -744,7 +744,7 @@ class CkanManager
                         'title' => $title,
                         'basename' => $dataset['name'],
                         'groups' => join(';', $groups),
-                        'tags' => $group_tags,
+                        'tags'  => $group_tags,
                     ];
                     continue;
                 }
@@ -841,7 +841,7 @@ class CkanManager
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResults = $this->tryPackageSearch(
                 'organization:(' . $search . ') AND dataset_type:dataset AND -metadata_type:geospatial',
-                $this->packageSearchPerPage, $start);
+                '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
                 die('Fatal');
@@ -884,7 +884,7 @@ class CkanManager
                         'title' => $title,
                         'basename' => $dataset['name'],
                         'groups' => join(';', $groups),
-                        'tags' => $group_tags,
+                        'tags'  => $group_tags,
                     ];
                     continue;
                 }
@@ -1035,7 +1035,7 @@ class CkanManager
         Writer $csv_writer
     ) {
         $solr_title = $this->escapeSolrValue($title);
-        $datasets = $this->tryPackageSearch("($solr_title)", 3);
+        $datasets = $this->tryPackageSearch("($solr_title)", '', 3);
         if ($datasets && isset($datasets[0]) && isset($datasets[0]['name'])) {
             $found_title = $this->escapeSolrValue($datasets[0]['title']);
             $exact = ($solr_title == $found_title);
@@ -1114,7 +1114,7 @@ class CkanManager
             $per_page = 20;
             while (!$done) {
                 // relevance
-                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, '', $per_page, $start);
                 $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
                 $ckanResultRelevance = $ckanResultRelevance['result'];
 
@@ -1160,7 +1160,7 @@ class CkanManager
             while (!$done) {
                 // popularity
                 $ckanResultPopularity = $this->Ckan->package_search(
-                    $ckan_query, $per_page, $start, 'q', 'views_recent desc,name asc');
+                    $ckan_query, '', $per_page, $start, 'views_recent desc,name asc');
                 $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
                 $ckanResultPopularity = $ckanResultPopularity['result'];
 
@@ -1292,7 +1292,7 @@ class CkanManager
             $per_page = 20;
             while (!$done) {
                 // relevance
-                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, '', $per_page, $start);
                 $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
                 $ckanResultRelevance = $ckanResultRelevance['result'];
 
@@ -1338,7 +1338,7 @@ class CkanManager
             while (!$done) {
                 // popularity
                 $ckanResultPopularity = $this->Ckan->package_search(
-                    $ckan_query, $per_page, $start, 'q', 'views_recent desc,name asc');
+                    $ckan_query, '', $per_page, $start, 'views_recent desc,name asc');
                 $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
                 $ckanResultPopularity = $ckanResultPopularity['result'];
 
@@ -1487,7 +1487,7 @@ class CkanManager
             $per_page = 20;
             while (!$done) {
                 // relevance
-                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, $per_page, $start);
+                $ckanResultRelevance = $this->Ckan->package_search($ckan_query, '', $per_page, $start);
                 $ckanResultRelevance = json_decode($ckanResultRelevance, true); //  decode json as array
                 $ckanResultRelevance = $ckanResultRelevance['result'];
 
@@ -1531,7 +1531,7 @@ class CkanManager
             while (!$done) {
                 // popularity
                 $ckanResultPopularity = $this->Ckan->package_search(
-                    $ckan_query, $per_page, $start, 'q', 'views_recent desc,name asc');
+                    $ckan_query, '', $per_page, $start, 'views_recent desc,name asc');
                 $ckanResultPopularity = json_decode($ckanResultPopularity, true); //  decode json as array
                 $ckanResultPopularity = $ckanResultPopularity['result'];
 
@@ -1595,61 +1595,25 @@ class CkanManager
     }
 
     /**
-     * @param $ckan_query
+     * @param $q
+     * @param $fq
      * @param string $ckan_url
      * @param bool $short
      * @return array
      */
-    public function exportShort($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
+    public function exportShort($q, $fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
     {
-        return $this->exportBrief($ckan_query, $ckan_url, $short);
+        return $this->exportBrief($q, $fq, $ckan_url, $short);
     }
 
     /**
-     * @param $id
-     * @return array
-     */
-    public function exportPackage($id)
-    {
-        $dataset = $this->tryPackageShow($id);
-        if (false === $dataset) {
-            die('FATAL');
-        }
-        $return = [];
-
-        $extras = $dataset['extras'];
-        $category_id_tags = [];
-        foreach ($extras as $extra) {
-            if (false !== strpos($extra['key'], '__category_tag_')) {
-                $category_id = str_replace('__category_tag_', '', $extra['key']);
-                $tags = trim($extra['value'], '[]');
-                $tags = explode('","', $tags);
-                foreach ($tags as &$tag) {
-                    $tag = trim($tag, '" ');
-                }
-                $category_id_tags[$category_id] = $tags;
-            }
-        }
-
-        if (sizeof($dataset['groups'])) {
-            foreach ($dataset['groups'] as $group) {
-                $categories[] = $group['title'];
-                $tags = isset($category_id_tags[$group['id']]) ?
-                    join(';', $category_id_tags[$group['id']]) : '';
-                $return[] = [$dataset['name'], $group['title'], $tags];
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param $ckan_query
+     * @param $q
+     * @param $fq
      * @param string $ckan_url
      * @param bool $short
      * @return array
      */
-    public function exportBrief($ckan_query, $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
+    public function exportBrief($q = '', $fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
     {
         $this->logOutput = '';
 
@@ -1658,10 +1622,10 @@ class CkanManager
         $done = false;
         $start = 0;
         $per_page = 250;
-        echo $ckan_query . PHP_EOL;
+        echo $q . PHP_EOL;
 
         while (!$done) {
-            $datasets = $this->tryPackageSearch($ckan_query, $per_page, $start);
+            $datasets = $this->tryPackageSearch($q, $fq, $per_page, $start);
             if (false === $datasets) {
                 die('FATAL');
             }
@@ -1707,12 +1671,12 @@ class CkanManager
                     }
 
                     $line = [
-                        'title' => $dataset['title'],
+                        'title'  => $dataset['title'],
                         'title_simple' => $this->simplifyTitle($dataset['title']),
-                        'name' => $dataset['name'],
-                        'url' => $ckan_url . $dataset['name'],
+                        'name'   => $dataset['name'],
+                        'url'    => $ckan_url . $dataset['name'],
                         'identifier' => $identifier,
-                        'guid' => $guid,
+                        'guid'   => $guid,
                         'topics' => join(';', $groups),
                         'categories' => join(';', $categories),
                     ];
@@ -1724,11 +1688,49 @@ class CkanManager
                     $return[$dataset['name']] = $line;
                 }
             } else {
-                echo 'no results: ' . $ckan_query . PHP_EOL;
+                echo 'no results: ' . $q . PHP_EOL;
                 continue;
             }
             if ($start > $totalCount) {
                 $done = true;
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param $id
+     * @return array
+     */
+    public function exportPackage($id)
+    {
+        $dataset = $this->tryPackageShow($id);
+        if (false === $dataset) {
+            die('FATAL');
+        }
+        $return = [];
+
+        $extras = $dataset['extras'];
+        $category_id_tags = [];
+        foreach ($extras as $extra) {
+            if (false !== strpos($extra['key'], '__category_tag_')) {
+                $category_id = str_replace('__category_tag_', '', $extra['key']);
+                $tags = trim($extra['value'], '[]');
+                $tags = explode('","', $tags);
+                foreach ($tags as &$tag) {
+                    $tag = trim($tag, '" ');
+                }
+                $category_id_tags[$category_id] = $tags;
+            }
+        }
+
+        if (sizeof($dataset['groups'])) {
+            foreach ($dataset['groups'] as $group) {
+                $categories[] = $group['title'];
+                $tags = isset($category_id_tags[$group['id']]) ?
+                    join(';', $category_id_tags[$group['id']]) : '';
+                $return[] = [$dataset['name'], $group['title'], $tags];
             }
         }
 
@@ -1774,13 +1776,13 @@ class CkanManager
             while (true) {
                 $start = $page++ * $this->packageSearchPerPage;
 //                $ckanResults = $this->tryPackageSearch('extras_metadata-source:dms AND dataset_type:dataset AND organization:' . $term,
-//                  $this->packageSearchPerPage, $start);
+//                   '', $this->packageSearchPerPage, $start);
                 $ckanResults = $this->tryPackageSearch('organization:' . $term .
                     ' AND -metadata_type:geospatial AND dataset_type:dataset',
-                    $this->packageSearchPerPage, $start);
+                    '', $this->packageSearchPerPage, $start);
 //                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND name:national-flood-hazard-layer-nfhl',
-//                    $this->packageSearchPerPage, $start);
-//                $ckanResults = $this->tryPackageSearch('groups:*', $this->packageSearchPerPage, $start);
+//                     '', $this->packageSearchPerPage, $start);
+//                $ckanResults = $this->tryPackageSearch('groups:*', '', $this->packageSearchPerPage, $start);
 
                 if (!is_array($ckanResults)) {
                     break;
@@ -1910,7 +1912,7 @@ class CkanManager
             while (true) {
                 $start = $page++ * $this->packageSearchPerPage;
                 $ckanResult = $this->Ckan->package_search(
-                    'organization:' . $term, $this->packageSearchPerPage, $start);
+                    'organization:' . $term, '', $this->packageSearchPerPage, $start);
                 $ckanResult = json_decode($ckanResult, true); //  decode json as array
                 $ckanResult = $ckanResult['result'];
 
@@ -1973,7 +1975,7 @@ class CkanManager
 
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
-            $ckanResult = $this->Ckan->package_search('identifier:*', $this->packageSearchPerPage, $start);
+            $ckanResult = $this->Ckan->package_search('identifier:*', '', $this->packageSearchPerPage, $start);
             $ckanResult = json_decode($ckanResult, true); //  decode json as array
             $ckanResult = $ckanResult['result'];
 
@@ -2154,7 +2156,7 @@ class CkanManager
         while (true) {
             $start = $page++ * $this->packageSearchPerPage;
             $ckanResult = $this->Ckan->package_search(
-                'dms' . $organizationFilter, $this->packageSearchPerPage, $start);
+                'dms' . $organizationFilter, '', $this->packageSearchPerPage, $start);
             $ckanResult = json_decode($ckanResult, true); //  decode json as array
             $ckanResult = $ckanResult['result'];
             foreach ($ckanResult['results'] as $dataset) {
@@ -3178,7 +3180,7 @@ class CkanManager
         echo $ckan_query . PHP_EOL;
 
         while (true) {
-            $datasets = $this->tryPackageSearch($ckan_query, $per_page, $start, 'fq', 5);
+            $datasets = $this->tryPackageSearch($ckan_query, '', $per_page, $start, 5);
             if (!is_array($datasets) || !sizeof($datasets)) {
                 break;
             }
@@ -3256,7 +3258,7 @@ class CkanManager
         $per_page = 100;
         while (!$done) {
             echo $ckan_query . PHP_EOL;
-            $datasets = $this->tryPackageSearch($ckan_query, $per_page, $start, 'q');
+            $datasets = $this->tryPackageSearch($ckan_query, '', $per_page, $start);
 
             $totalCount = $this->resultCount;
             $count = sizeof($datasets);
@@ -3310,7 +3312,7 @@ class CkanManager
         $start = 0;
         $limit = 100;
         while (true) {
-            $datasets = $this->tryPackageSearch('(groups:' . $topicTitle . ')', $limit, $start);
+            $datasets = $this->tryPackageSearch('(groups:' . $topicTitle . ')', '', $limit, $start);
 
 //            Finish
             if (!$datasets) {
@@ -3825,7 +3827,7 @@ class CkanManager
         while ($try) {
             try {
                 $dataset = $this->Ckan->package_search(
-                    'identifier:' . $identifier, 1, 0, 'fq');
+                    '', 'identifier:' . $identifier, 1, 0);
                 $dataset = json_decode($dataset, true); // as array
 
                 if (!$dataset['success']) {
@@ -3876,7 +3878,7 @@ class CkanManager
         while ($try) {
             try {
                 $ckanResult = $this->Ckan->package_search(
-                    'title:' . $title, 50, 0, 'fq');
+                    '', 'title:' . $title, 50, 0);
                 $ckanResult = json_decode($ckanResult, true); // as array
 
                 if (!$ckanResult['success']) {
@@ -4267,7 +4269,7 @@ EOR;
 //        $group = $this->findGroup(GROUP_TO_EXPORT);
 
         while (true) {
-            $datasets = $this->tryPackageSearch($search_query, $per_page, $offset);
+            $datasets = $this->tryPackageSearch($search_query, '', $per_page, $offset);
 
 //            Finish
             if (!$datasets) {
@@ -4340,7 +4342,7 @@ EOR;
         $groups = $this->tryGetGroupsArray();
 
         while (true) {
-            $datasets = $this->tryPackageSearch('(dataset_type:dataset)', $per_page, $offset);
+            $datasets = $this->tryPackageSearch('(dataset_type:dataset)', '', $per_page, $offset);
 
 //            Finish
             if (!$datasets) {
@@ -4437,7 +4439,7 @@ EOR;
         $start = 0;
         $per_page = 20;
         while (true) {
-            $packages = $this->tryPackageSearch($ckan_query, $per_page, $start);
+            $packages = $this->tryPackageSearch($ckan_query, '', $per_page, $start);
             if (!$packages) {
                 echo "$start / $per_page :: finish" . PHP_EOL;
                 break;

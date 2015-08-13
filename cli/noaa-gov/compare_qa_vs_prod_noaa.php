@@ -66,7 +66,8 @@ if (!is_file($results_dir . '/qa.csv')) {
     $QaCkanManager = new CkanManager(CKAN_QA_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
-    $qa_noaa = $QaCkanManager->exportBrief('organization:noaa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
+    $qa_noaa = $QaCkanManager->exportBrief('organization:noaa-gov', '',
+        'http://qa-catalog-fe-data.reisys.com/dataset/');
     $qa->writeFromArray($qa_noaa);
 
 } else {

@@ -63,7 +63,7 @@ if (!is_file($results_dir . '/qa.csv')) {
     $QaCkanManager = new CkanManager(CKAN_QA_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
-    $qa_epa = $QaCkanManager->exportBrief('organization:epa-gov', 'http://qa-catalog-fe-data.reisys.com/dataset/');
+    $qa_epa = $QaCkanManager->exportBrief('organization:epa-gov', '', 'http://qa-catalog-fe-data.reisys.com/dataset/');
     $qa->writeFromArray($qa_epa);
 
 } else {

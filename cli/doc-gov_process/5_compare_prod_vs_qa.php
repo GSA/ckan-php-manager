@@ -65,7 +65,7 @@ if (!is_file($results_dir . '/qa.csv')) {
 
     $qa_commerce = $UatCkanManager->exportBrief('organization:(doc-gov OR bis-doc-gov OR mbda-doc-gov OR trade-gov OR census-gov ' .
         ' OR eda-doc-gov OR ntia-doc-gov OR ntis-gov OR nws-doc-gov OR bea-gov OR uspto-gov)' .
-        ' AND -metadata_type:geospatial AND dataset_type:dataset',
+        ' AND -metadata_type:geospatial AND dataset_type:dataset', '',
         'http://qa-catalog-fe-data.reisys.com/dataset/');
     $qa->writeFromArray($qa_commerce);
 

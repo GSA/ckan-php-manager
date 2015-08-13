@@ -20,7 +20,7 @@ $logFile = $results_dir . '/_log.csv';
 $CkanManager->resourceCreate([
     'package_id' => 'department-of-the-interior-enterprise-data-inventory',
 //    'package_id' => 'u-s-widget-manufacturing-statistics-92174',
-    'url' => 'http://data.doi.gov/WAF/edi.json',
+    'url'  => 'http://data.doi.gov/WAF/edi.json',
     'name' => 'EDI Json',
     'format' => 'application/json'
 ]);

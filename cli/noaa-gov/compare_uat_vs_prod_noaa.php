@@ -31,6 +31,7 @@ if (!is_file($results_dir . '/prod.csv')) {
         'title_simple',
         'name',
         'url',
+        'identifier',
         'guid',
         'topics',
         'categories',
@@ -55,6 +56,7 @@ if (!is_file($results_dir . '/uat.csv')) {
         'title_simple',
         'name',
         'url',
+        'identifier',
         'guid',
         'topics',
         'categories',
@@ -64,7 +66,7 @@ if (!is_file($results_dir . '/uat.csv')) {
     $uatCkanManager->resultsDir = $results_dir;
 
     $uat_noaa = $uatCkanManager->exportBrief('organization:noaa-gov AND extras_harvest_source_title:NOAA New CSW AND dataset_type:dataset',
-        'http://uat-catalog-fe-data.reisys.com/dataset/');
+        '', 'http://uat-catalog-fe-data.reisys.com/dataset/');
     $uat->writeFromArray($uat_noaa);
 
 } else {
