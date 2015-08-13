@@ -1,6 +1,6 @@
 <?php
 
-abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
+abstract class BaseTestCase extends PHPUnit_Framework_TestCase
 {
     protected $testClass;
 
@@ -31,7 +31,8 @@ abstract class BaseTestCase extends \PHPUnit_Framework_TestCase
     {
         $property = $this->reflection->getProperty($property);
         $property->setAccessible(true);
+        $property->setValue($this->testClass, $value);
 
-        return $property->setValue($this->testClass, $value);
+        return;
     }
 }

@@ -119,8 +119,8 @@ class CkanManager
      * @return bool|mixed
      */
     public function tryPackageSearch(
-        $q,
-        $fq,
+        $q = '',
+        $fq = '',
         $rows = 100,
         $start = 0,
         $try = 3
@@ -383,7 +383,7 @@ class CkanManager
         }
 
         $dataset['extras'][] = [
-            'key' => 'modified',
+            'key'   => 'modified',
             'value' => $modified,
         ];
 
@@ -458,9 +458,9 @@ class CkanManager
                         }
                     }
                     $main_datasets_by_harvest[] = [
-                        'title' => $title,
+                        'title'    => $title,
                         'basename' => $dataset['name'],
-                        'groups' => join(';', $groups),
+                        'groups'   => join(';', $groups),
                     ];
                     continue;
                 }
@@ -592,9 +592,9 @@ class CkanManager
                         }
                     }
                     $main_datasets_by_harvest[] = [
-                        'title' => $title,
+                        'title'    => $title,
                         'basename' => $dataset['name'],
-                        'groups' => join(';', $groups),
+                        'groups'   => join(';', $groups),
                     ];
                     continue;
                 }
@@ -741,10 +741,10 @@ class CkanManager
                         }
                     }
                     $main_datasets_by_harvest[] = [
-                        'title' => $title,
+                        'title'    => $title,
                         'basename' => $dataset['name'],
-                        'groups' => join(';', $groups),
-                        'tags'  => $group_tags,
+                        'groups'   => join(';', $groups),
+                        'tags'     => $group_tags,
                     ];
                     continue;
                 }
@@ -881,10 +881,10 @@ class CkanManager
                         }
                     }
                     $main_datasets_by_harvest[] = [
-                        'title' => $title,
+                        'title'    => $title,
                         'basename' => $dataset['name'],
-                        'groups' => join(';', $groups),
-                        'tags'  => $group_tags,
+                        'groups'   => join(';', $groups),
+                        'tags'     => $group_tags,
                     ];
                     continue;
                 }
@@ -1671,14 +1671,14 @@ class CkanManager
                     }
 
                     $line = [
-                        'title'  => $dataset['title'],
+                        'title'        => $dataset['title'],
                         'title_simple' => $this->simplifyTitle($dataset['title']),
-                        'name'   => $dataset['name'],
-                        'url'    => $ckan_url . $dataset['name'],
-                        'identifier' => $identifier,
-                        'guid'   => $guid,
-                        'topics' => join(';', $groups),
-                        'categories' => join(';', $categories),
+                        'name'         => $dataset['name'],
+                        'url'          => $ckan_url . $dataset['name'],
+                        'identifier'   => $identifier,
+                        'guid'         => $guid,
+                        'topics'       => join(';', $groups),
+                        'categories'   => join(';', $categories),
                     ];
 
                     if ($short) {
@@ -1966,7 +1966,7 @@ class CkanManager
         $page = 0;
         $processed = 0;
         $tag_template = [
-            'key' => $tag_name,
+            'key'   => $tag_name,
             'value' => true,
         ];
 
@@ -3059,7 +3059,7 @@ class CkanManager
 
                         // note the legacy organization as an extra field
                         $dataset['extras'][] = [
-                            'key' => 'dms_publisher_organization',
+                            'key'   => 'dms_publisher_organization',
                             'value' => $org_slug
                         ];
 
@@ -3455,12 +3455,12 @@ class CkanManager
             if ($newTags) {
                 $formattedTags = '["' . join('","', $newTags) . '"]';
                 $dataset['extras'][] = [
-                    'key' => $category_tag,
+                    'key'   => $category_tag,
                     'value' => $formattedTags,
                 ];
             } else {
                 $dataset['extras'][] = [
-                    'key' => $category_tag,
+                    'key'   => $category_tag,
                     'value' => null,
                 ];
             }
@@ -3654,7 +3654,7 @@ class CkanManager
                 if ($categories) {
                     $formattedCategories = '["' . join('","', $categories) . '"]';
                     $dataset['extras'][] = [
-                        'key' => '__category_tag_' . $group_obj['id'],
+                        'key'   => '__category_tag_' . $group_obj['id'],
                         'value' => $formattedCategories,
                     ];
                 }

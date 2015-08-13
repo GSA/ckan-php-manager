@@ -36,10 +36,10 @@ class CkanManagerTest extends \BaseTestCase
     {
         $this->CkanManager = new CkanManager('mock://dummy_api_url.gov/');
         $this->mockDataset = [
-            'id' => 'dataset-mock-id',
-            'name' => 'dataset-mock-name',
-            'type' => 'dataset',
-            'title' => 'Some Interesting Mock Dataset 2015',
+            'id'        => 'dataset-mock-id',
+            'name'      => 'dataset-mock-name',
+            'type'      => 'dataset',
+            'title'     => 'Some Interesting Mock Dataset 2015',
             'resources' => [1, 2, 3, 5, 4],
         ];
     }
@@ -50,12 +50,12 @@ class CkanManagerTest extends \BaseTestCase
     public function testTryPackageSearchWithResults()
     {
         $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
-        $CkanClient->package_search('testorg', 100, 0, 'q')->willReturn(
+        $CkanClient->package_search('testorg', '', 100, 0)->willReturn(
             json_encode([
-                'help' => 'some text',
+                'help'    => 'some text',
                 'success' => true,
-                'result' => [
-                    'count' => 5,
+                'result'  => [
+                    'count'   => 5,
                     'results' => [1, 2, 3, 5, 4]
                 ]
             ])
@@ -73,7 +73,7 @@ class CkanManagerTest extends \BaseTestCase
     public function testTryPackageSearchWithNoResults()
     {
         $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
-        $CkanClient->package_search('notfound', 100, 0, 'q')->willThrow(new NotFoundHttpException());
+        $CkanClient->package_search('notfound', '', 100, 0)->willThrow(new NotFoundHttpException());
 
         $this->CkanManager->setCkan($CkanClient->reveal());
 
@@ -91,9 +91,9 @@ class CkanManagerTest extends \BaseTestCase
         $CkanClient = $this->prophesize('CKAN\Core\CkanClient');
         $CkanClient->package_show($this->mockDataset['name'])->willReturn(
             json_encode([
-                'help' => 'some text',
+                'help'    => 'some text',
                 'success' => true,
-                'result' => $this->mockDataset
+                'result'  => $this->mockDataset
             ])
         );
 
@@ -127,9 +127,9 @@ class CkanManagerTest extends \BaseTestCase
         $CkanClient->package_update($this->mockDataset)->willReturn(true);
         $CkanClient->package_show($this->mockDataset['name'])->willReturn(
             json_encode([
-                'help' => 'some text',
+                'help'    => 'some text',
                 'success' => true,
-                'result' => $this->mockDataset,
+                'result'  => $this->mockDataset,
             ])
         );
 
@@ -147,9 +147,9 @@ class CkanManagerTest extends \BaseTestCase
         $CkanClient->package_update($this->mockDataset)->willReturn(true);
         $CkanClient->package_show($this->mockDataset['name'])->willReturn(
             json_encode([
-                'help' => 'some text',
+                'help'    => 'some text',
                 'success' => true,
-                'result' => $this->mockDataset,
+                'result'  => $this->mockDataset,
             ])
         );
 
