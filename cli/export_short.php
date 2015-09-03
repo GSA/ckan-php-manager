@@ -31,7 +31,10 @@ $csv->writeRow([
 
 $CkanManager->resultsDir = $results_dir;
 
-$brief = $CkanManager->exportShort('organization:wake-county AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('extras_license:"https\://creativecommons.org/publicdomain/zero/1.0/" AND (dataset_type:dataset)');
+$brief = $CkanManager->exportShort('','((collection_package_id:* OR *:*) AND license_id:"cc-by-sa" AND license:"https\://creativecommons.org/publicdomain/zero/1.0/") AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('%28%28collection_package_id:*%20OR%20*:*%29+AND+license_id:"cc-by-sa"+AND+license:"https://creativecommons.org/publicdomain/zero/1.0/"%29');
+//$brief = $CkanManager->exportShort('organization:wake-county AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND harvest_source_title:Open* AND (dataset_type:dataset)',
 //    'http://uat-catalog-fe-data.reisys.com/dataset/');
 //$brief = $CkanManager->exportShort('(extra_harvest_source_title:Open+*) AND (dataset_type:dataset)');

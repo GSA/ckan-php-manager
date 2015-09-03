@@ -2806,6 +2806,32 @@ class CkanManager
 
     /**
      * @param $datasetName
+     * @param $licenseId
+     */
+    public function updateLicenseId($datasetName, $licenseId){
+        $dataset = $this->tryPackageShow($datasetName);
+        if (!$dataset) {
+            $this->say([$datasetName, '404 Not Found']);
+
+            return;
+        }
+        $dataset['license_id'] = $licenseId;
+        try {
+            $result = $this->tryPackageUpdate($dataset);
+        } catch (\Exception $ex) {
+            echo 'Exception';
+            file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+        }
+        if ($result) {
+            //$this->say($result);
+            $this->say([$datasetName, 'UPDATED']);
+            return;
+        }
+        $this->say([$datasetName, 'ERROR']);
+    }
+
+    /**
+     * @param $datasetName
      */
     public function undeleteDataset($datasetName)
     {
