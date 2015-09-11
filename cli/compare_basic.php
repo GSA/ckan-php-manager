@@ -40,8 +40,8 @@ if (!is_file($results_dir . '/cmp1.csv')) {
     $CkanManager = new CkanManager(CKAN_API_URL);
     $CkanManager->resultsDir = $results_dir;
 
-    $cmp1 = $CkanManager->exportBrief('organization:((eop-gov) OR (omb-eop-gov) OR (ondcp-eop-gov) OR (ceq-eop-gov)' .
-        ' OR (ostp-eop-gov) OR (ustr-eop-gov) OR (wh-eop-gov))');
+    $cmp1 = $CkanManager->exportBrief('organization:((eop-gov) OR (omb-eop-gov) OR (ondcp-eop-gov) OR (ceq-eop-gov) ' .
+        'OR (ostp-eop-gov) OR (ustr-eop-gov) OR (wh-eop-gov)) DMS  AND dataset_type:dataset');
     $cmp1_csv->writeFromArray($cmp1);
 } else {
     $cmp1_csv = new Reader($results_dir . '/cmp1.csv');
@@ -67,7 +67,8 @@ if (!is_file($results_dir . '/cmp2.csv')) {
     $CkanManager = new CkanManager(CKAN_API_URL);
     $CkanManager->resultsDir = $results_dir;
 
-    $cmp2 = $CkanManager->exportBrief('organization:eop-gov', 'harvest_source_title:open-white-house');
+    $cmp2 = $CkanManager->exportBrief('organization:((eop-gov) OR (omb-eop-gov) OR (ondcp-eop-gov) OR (ceq-eop-gov) ' .
+        'OR (ostp-eop-gov) OR (ustr-eop-gov) OR (wh-eop-gov)) -DMS AND dataset_type:dataset');
     $cmp2_csv->writeFromArray($cmp2);
 
 } else {
@@ -93,8 +94,8 @@ foreach ($cmp2 as $name => $dataset) {
 echo 'comparison.csv' . PHP_EOL;
 is_file($results_dir . '/comparison.csv') && unlink($results_dir . '/comparison.csv');
 $csv = new Writer($results_dir . '/comparison.csv');
-$cmp1_header = "HARVESTED";
-$cmp2_header = "WH JSON";
+$cmp1_header = "DMS";
+$cmp2_header = "NON-DMS";
 $csv->writeRow([
     $cmp1_header . ' Title',
     $cmp1_header . ' URL',

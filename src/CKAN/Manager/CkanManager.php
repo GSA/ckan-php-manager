@@ -2036,6 +2036,7 @@ class CkanManager
         $basename
     ) {
         $this->logOutput = '';
+        $log_file = $basename . '_private.log';
 
         $this->say(str_pad($dataset_id, 105, ' . '), '');
 
@@ -2046,6 +2047,10 @@ class CkanManager
         } else {
 
             $dataset['private'] = true;
+            $dataset['name'] .= '_legacy';
+            $dataset['tags'][] = [
+                'name' => 'metadata_from_legacy_dms',
+            ];
 
             try {
                 $this->tryPackageUpdate($dataset);
@@ -2056,7 +2061,8 @@ class CkanManager
                 file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
             }
         }
-        file_put_contents($this->resultsDir . '/_' . $basename . '.log', $this->logOutput, FILE_APPEND);
+        file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);
+        $this->logOutput = '';
     }
 
     /**
@@ -2736,7 +2742,7 @@ class CkanManager
      * @param $datasetName
      * @param $organizationName
      */
-    public function deleteDataset($datasetName, $organizationName)
+    public function deleteDataset($datasetName, $organizationName = '')
     {
         $dataset = $this->tryPackageShow($datasetName);
         if (!$dataset) {

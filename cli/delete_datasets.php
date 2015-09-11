@@ -61,10 +61,10 @@ foreach (glob(DATA_DIR . '/delete*.csv') as $csv_file) {
         }
 
         $datasetName = basename($row['0']);
-        $organizationName = basename($row['1']);
+        // $organizationName = basename($row['1']);
 
         printf('[%04d] ', $i++);
-        $CkanManager->deleteDataset($datasetName, $organizationName);
+        $CkanManager->deleteDataset($datasetName);//, $organizationName
         file_put_contents($logFile, $CkanManager->logOutput, FILE_APPEND | LOCK_EX);
         $CkanManager->logOutput = '';
     }

@@ -14,6 +14,7 @@ $results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL);
 //$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 //$CkanManager = new CkanManager(CKAN_UAT_API_URL);
@@ -36,6 +37,7 @@ $brief = $CkanManager->exportShort('','((collection_package_id:* OR *:*) AND lic
 //$brief = $CkanManager->exportShort('%28%28collection_package_id:*%20OR%20*:*%29+AND+license_id:"cc-by-sa"+AND+license:"https://creativecommons.org/publicdomain/zero/1.0/"%29');
 //$brief = $CkanManager->exportShort('organization:wake-county AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND harvest_source_title:Open* AND (dataset_type:dataset)',
+$brief = $CkanManager->exportShort('organization:doe-gov AND (dataset_type:dataset)');
 //    'http://uat-catalog-fe-data.reisys.com/dataset/');
 //$brief = $CkanManager->exportShort('(extra_harvest_source_title:Open+*) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND (dataset_type:dataset)');

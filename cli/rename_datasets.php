@@ -51,7 +51,7 @@ foreach (glob(DATA_DIR . '/rename*.csv') as $csv_file) {
             continue;
         }
 
-        $datasetName = basename($row['0']);
+        $datasetName = trim(basename($row['0']));
         $newDatasetName = basename($row['1']);
 
         printf('[%04d] ', $i++);

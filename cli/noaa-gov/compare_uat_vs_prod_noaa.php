@@ -42,9 +42,11 @@ if (!is_file($results_dir . '/prod.csv')) {
 
     $prod_noaa = $ProdCkanManager->exportBrief('organization:noaa-gov AND metadata_type:geospatial AND dataset_type:dataset');
     $prod->writeFromArray($prod_noaa);
+    echo PHP_EOL.'datasets from prod: '.sizeof($prod_noaa).PHP_EOL.PHP_EOL;
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
     $prod_noaa = $prod->getAll();
+    echo PHP_EOL.'datasets from prod: '.sizeof($prod_noaa).PHP_EOL.PHP_EOL;
 }
 
 echo 'uat.csv' . PHP_EOL;
@@ -68,10 +70,11 @@ if (!is_file($results_dir . '/uat.csv')) {
     $uat_noaa = $uatCkanManager->exportBrief('organization:noaa-gov AND extras_harvest_source_title:NOAA New CSW AND dataset_type:dataset',
         '', 'http://uat-catalog-fe-data.reisys.com/dataset/');
     $uat->writeFromArray($uat_noaa);
-
+    echo PHP_EOL.'datasets from uat: '.sizeof($uat_noaa).PHP_EOL.PHP_EOL;
 } else {
     $uat = new Reader($results_dir . '/uat.csv');
     $uat_noaa = $uat->getAll();
+    echo PHP_EOL.'datasets from uat: '.sizeof($uat_noaa).PHP_EOL.PHP_EOL;
 }
 
 $uat_noaa_by_title = $uat_noaa_by_guid = [];
