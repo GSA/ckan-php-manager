@@ -416,6 +416,9 @@ class CkanManager
         if (is_array($output)) {
             $output = join(',', $output);
         }
+
+        $this->logOutput .= $output . $eol;
+
         switch($output){
             case 'NOT FOUND':
                 $output = $this->c->red($output);
@@ -425,7 +428,6 @@ class CkanManager
                 break;
         }
         echo $output . $eol;
-        $this->logOutput .= $output . $eol;
     }
 
     /**
