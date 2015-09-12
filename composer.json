@@ -1,6 +1,6 @@
 {
-  "name": "CKAN/ckan-manager",
-  "description": "CKAN php manager",
+  "name": "gsa/ckan-php-manager",
+  "description": "CKAN php manager by GSA",
   "minimum-stability": "dev",
   "license": "GPL-3.0+",
   "authors": [
@@ -13,22 +13,21 @@
   "autoload": {
     "psr-0": {
       "CKAN\\Manager\\": "src/"
-    },
-    "classmap": [
-    ]
+    }
   },
   "repositories": [
     {
       "type": "git",
-      "url": "git@github.com:GSA/ckan-php-client.git"
+      "url": "git@github.com:gsa/ckan-php-client.git"
     }
   ],
   "prefer-stable": true,
   "require": {
     "php": ">=5.4.17",
     "ext-json": "*",
-    "CKAN/php-client": "dev-master",
-    "jwage/easy-csv": "*",
-    "phpunit/phpunit": "*"
+    "kevinlebrun/colors.php": "0.*",
+    "gsa/ckan-php-client": "0.*",
+    "jwage/easy-csv": "0.*",
+    "phpunit/phpunit": "~4.0"
   }
 }

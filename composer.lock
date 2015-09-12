@@ -4,43 +4,8 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "0ff5a9a6c420c6fd6a72d6ebb32e81d0",
+    "hash": "fa796b7b26756bf68c128bc6b435b626",
     "packages": [
-        {
-            "name": "CKAN/php-client",
-            "version": "dev-master",
-            "source": {
-                "type": "git",
-                "url": "git@github.com:GSA/ckan-php-client.git",
-                "reference": "2d712e7a324b45f0eca8104a7fde0f7237aaa3e4"
-            },
-            "require": {
-                "ext-curl": "*",
-                "ext-json": "*",
-                "php": ">=5.4.17",
-                "phpunit/phpunit": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "CKAN\\Core\\": "src/",
-                    "CKAN\\Exceptions\\": "src/"
-                },
-                "classmap": []
-            },
-            "license": [
-                "GPL-3.0+"
-            ],
-            "authors": [
-                {
-                    "name": "Alex Perfilov",
-                    "email": "alexandr.perfilov@reisystems.com",
-                    "role": "Developer"
-                }
-            ],
-            "description": "CKAN php client",
-            "time": "2015-08-13 19:41:07"
-        },
         {
             "name": "doctrine/instantiator",
             "version": "1.0.5",
@@ -96,6 +61,39 @@
             "time": "2015-06-14 21:17:01"
         },
         {
+            "name": "gsa/ckan-php-client",
+            "version": "0.0.1",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:gsa/ckan-php-client.git",
+                "reference": "4085db5f762980d30ab9504c806446e5bfcae801"
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*",
+                "php": ">=5.4.17",
+                "phpunit/phpunit": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "CKAN": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0+"
+            ],
+            "authors": [
+                {
+                    "name": "Alex Perfilov",
+                    "email": "alexandr.perfilov@reisystems.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "CKAN php client by GSA",
+            "time": "2015-09-12 03:40:04"
+        },
+        {
             "name": "jwage/easy-csv",
             "version": "0.0.3",
             "source": {
@@ -141,6 +139,57 @@
                 "write"
             ],
             "time": "2015-07-16 20:24:42"
+        },
+        {
+            "name": "kevinlebrun/colors.php",
+            "version": "0.4.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/kevinlebrun/colors.php.git",
+                "reference": "d132f36d06e48ea080855af19b4bcb1fb615224a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/kevinlebrun/colors.php/zipball/d132f36d06e48ea080855af19b4bcb1fb615224a",
+                "reference": "d132f36d06e48ea080855af19b4bcb1fb615224a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "3.7.*",
+                "satooshi/php-coveralls": "dev-master",
+                "squizlabs/php_codesniffer": "1.*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Colors": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Kevin Le Brun",
+                    "email": "lebrun.k@gmail.com",
+                    "homepage": "http://kevinlebrun.fr",
+                    "role": "developer"
+                }
+            ],
+            "description": "Colors for PHP CLI scripts",
+            "homepage": "https://github.com/kevinlebrun/colors.php",
+            "keywords": [
+                "cli",
+                "color",
+                "colors",
+                "console",
+                "shell"
+            ],
+            "time": "2014-12-23 01:23:37"
         },
         {
             "name": "phpdocumentor/reflection-docblock",
@@ -1043,9 +1092,7 @@
     "packages-dev": [],
     "aliases": [],
     "minimum-stability": "dev",
-    "stability-flags": {
-        "ckan/php-client": 20
-    },
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {

@@ -29,8 +29,8 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
 foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
-    $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
-    echo $status;
+    $csv_source = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
+    echo $CkanManager->c->green($csv_source);
 
     $basename = str_replace('.csv', '', basename($csv_file));
 

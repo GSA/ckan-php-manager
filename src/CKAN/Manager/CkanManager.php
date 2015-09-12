@@ -2,9 +2,10 @@
 
 namespace CKAN\Manager;
 
-use CKAN\Core\CkanClient;
-use CKAN\Core\OrganizationList;
-use CKAN\Exceptions\NotFoundHttpException;
+use CKAN\CkanClient;
+use CKAN\OrganizationList;
+use CKAN\NotFoundHttpException;
+use Colors\Color;
 use EasyCSV\Writer;
 
 /**
@@ -38,7 +39,11 @@ class CkanManager
      */
     public $resultsDir;
     /**
-     * @var \CKAN\Core\CkanClient
+     * @var Color
+     */
+    public $c;
+    /**
+     * @var \CKAN\CkanClient
      */
     private $Ckan;
     /**
@@ -58,7 +63,6 @@ class CkanManager
      * @var string
      */
     private $apiUrl = '';
-
     /**
      * @var int
      */
@@ -70,11 +74,13 @@ class CkanManager
      */
     public function __construct($apiUrl, $apiKey = null)
     {
+        $this->c = new Color();
         $this->apiUrl = $apiUrl;
         // skip while unit tests
         if (defined('RESULTS_DIR')) {
             $this->resultsDir = RESULTS_DIR;
-            echo "api url: " . $apiUrl . PHP_EOL . PHP_EOL;
+            echo $this->c->magenta("API URL:") . ' ' . $this->c->bold($apiUrl) . PHP_EOL . PHP_EOL;
+//            letting user cancel (Ctrl+C) script if noticed wrong api url
             sleep(3);
         }
         $this->setCkan(new CkanClient($apiUrl, $apiKey));
@@ -409,6 +415,14 @@ class CkanManager
     ) {
         if (is_array($output)) {
             $output = join(',', $output);
+        }
+        switch($output){
+            case 'NOT FOUND':
+                $output = $this->c->red($output);
+                $output = $this->c->bold($output);
+                break;
+            default:
+                break;
         }
         echo $output . $eol;
         $this->logOutput .= $output . $eol;
@@ -2814,7 +2828,8 @@ class CkanManager
      * @param $datasetName
      * @param $licenseId
      */
-    public function updateLicenseId($datasetName, $licenseId){
+    public function updateLicenseId($datasetName, $licenseId)
+    {
         $dataset = $this->tryPackageShow($datasetName);
         if (!$dataset) {
             $this->say([$datasetName, '404 Not Found']);
@@ -2831,6 +2846,7 @@ class CkanManager
         if ($result) {
             //$this->say($result);
             $this->say([$datasetName, 'UPDATED']);
+
             return;
         }
         $this->say([$datasetName, 'ERROR']);
