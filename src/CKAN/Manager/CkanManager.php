@@ -3,8 +3,8 @@
 namespace CKAN\Manager;
 
 use CKAN\CkanClient;
-use CKAN\OrganizationList;
 use CKAN\NotFoundHttpException;
+use CKAN\OrganizationList;
 use Colors\Color;
 use EasyCSV\Writer;
 
@@ -419,7 +419,7 @@ class CkanManager
 
         $this->logOutput .= $output . $eol;
 
-        switch($output){
+        switch ($output) {
             case 'NOT FOUND':
                 $output = $this->c->red($output);
                 $output = $this->c->bold($output);
@@ -1793,8 +1793,7 @@ class CkanManager
                 $start = $page++ * $this->packageSearchPerPage;
 //                $ckanResults = $this->tryPackageSearch('extras_metadata-source:dms AND dataset_type:dataset AND organization:' . $term,
 //                   '', $this->packageSearchPerPage, $start);
-                $ckanResults = $this->tryPackageSearch('organization:' . $term .
-                    ' AND -metadata_type:geospatial AND dataset_type:dataset',
+                $ckanResults = $this->tryPackageSearch('organization:' . $term . ' AND dataset_type:dataset',
                     '', $this->packageSearchPerPage, $start);
 //                $ckanResults = $this->tryPackageSearch('dataset_type:dataset AND name:national-flood-hazard-layer-nfhl',
 //                     '', $this->packageSearchPerPage, $start);

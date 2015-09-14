@@ -3,20 +3,22 @@
 namespace CKAN\Manager;
 
 
-use CKAN\OrganizationList;
+//use CKAN\OrganizationList;
 
 /**
  * http://idm.data.gov/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Nuclear Regulatory Commission');
+define('ORGANIZATION_TO_EXPORT', 'National Oceanic and Atmospheric Administration');
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
 /**
  * Get organization terms, including all children, as Array
  */
-$OrgList = new OrganizationList(AGENCIES_LIST_URL);
-$termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
+//$OrgList = new OrganizationList(AGENCIES_LIST_URL);
+//$termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
+
+$termsArray = ['noaa-gov' => 'National Oceanic and Atmospheric Administration'];
 
 /**
  * sometimes there is no parent term (ex. Department of Labor)
