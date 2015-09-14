@@ -3,7 +3,7 @@
 namespace CKAN\Manager;
 
 
-use CKAN\Exceptions;
+use CKAN;
 use EasyCSV;
 
 require_once dirname(__DIR__) . '/inc/common.php';

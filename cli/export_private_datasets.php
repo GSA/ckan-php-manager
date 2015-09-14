@@ -3,7 +3,7 @@
 namespace CKAN\Manager;
 
 
-use CKAN\Core\OrganizationList;
+use CKAN\OrganizationList;
 
 /**
  * @author Alex Perfilov
