@@ -1771,7 +1771,6 @@ class CkanManager
         foreach ($terms as $term => $agency) {
             $page = 0;
             $count = 0;
-            $results = [];
 
             $csv_tag_writer = new Writer($this->resultsDir . '/' . $term . '_tagging.csv', 'w');
             $csv_tag_writer->writeRow(['dataset', 'topic', 'tags']);
@@ -1789,6 +1788,9 @@ class CkanManager
             $csv = new Writer($this->resultsDir . '/' . $term . '.csv', 'w');
             $csv->writeRow(['Title', 'Url', 'Topics', 'Topics categories',]);
 
+            file_put_contents($this->resultsDir . '/' . $term . '.json', '[' . PHP_EOL, FILE_APPEND);
+            $comma_needed = false;
+
             while (true) {
                 $start = $page++ * $this->packageSearchPerPage;
 //                $ckanResults = $this->tryPackageSearch('extras_metadata-source:dms AND dataset_type:dataset AND organization:' . $term,
@@ -1804,11 +1806,13 @@ class CkanManager
 //                    die('Fatal');
                 }
 
-//                $results = array_merge($results, $ckanResults);
-
 //                csv for title, url, topic, and topic category
                 foreach ($ckanResults as $dataset) {
-                    $results[] = json_encode($dataset, JSON_PRETTY_PRINT);
+                    file_put_contents($this->resultsDir . '/' . $term . '.json',
+                        ($comma_needed ? ',' . PHP_EOL : '') . json_encode($dataset, JSON_PRETTY_PRINT),
+                        FILE_APPEND);
+                    $comma_needed = true;
+
                     $extras = $dataset['extras'];
                     $category_id_tags = [];
                     $categories_tags = [];
@@ -1890,12 +1894,14 @@ class CkanManager
                     $offset . $agency, 50, ' .') . "[$count]"
             );
 
-            if (sizeof($results)) {
-                $json = "[" . PHP_EOL . join(',' . PHP_EOL, $results) . PHP_EOL . ']';
-                file_put_contents($this->resultsDir . '/' . $term . '.json', $json);
-            } else {
-                unlink($this->resultsDir . '/' . $term . '.csv');
-            }
+            file_put_contents($this->resultsDir . '/' . $term . '.json', PHP_EOL . ']', FILE_APPEND);
+
+//            if (sizeof($results)) {
+////                $json = "[" . PHP_EOL . join(',' . PHP_EOL, $results) . PHP_EOL . ']';
+////                file_put_contents($this->resultsDir . '/' . $term . '.json', $json, FILE_APPEND);
+//            } else {
+//                unlink($this->resultsDir . '/' . $term . '.csv');
+//            }
         }
         file_put_contents($this->resultsDir . '/_' . PARENT_TERM . '.log', $this->logOutput);
     }
