@@ -1,8 +1,8 @@
-[![Build Status](https://travis-ci.org/GSA/ckan-php-manager.svg?branch=master)](https://travis-ci.org/GSA/ckan-php-manager)
-
 ckan-php-manager
 ================
 
+[![Build Status](https://travis-ci.org/GSA/ckan-php-manager.svg?branch=master)](https://travis-ci.org/GSA/ckan-php-manager)
+[![Codacy Badge](https://api.codacy.com/project/badge/a07828e07ef9416583a88beedf6ff072)](https://www.codacy.com/app/alexandr-perfilov/ckan-php-manager)
 [![Join the chat at https://gitter.im/GSA/ckan-php-manager](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/GSA/ckan-php-manager?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## API DOCs
