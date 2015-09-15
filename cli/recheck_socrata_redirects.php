@@ -1,9 +1,4 @@
 <?php
-/**
- * @author Alex Perfilov
- * @date   5/23/14
- *
- */
 
 namespace CKAN\Manager;
 
@@ -102,10 +97,10 @@ foreach (glob(DATA_DIR . '/redirects_*.csv') as $csv_file) {
  */
 function url_compare($url1, $url2)
 {
-    $u1 = trim(str_replace(['http:', 'https:'], '', $url1), '/ ');
-    $u2 = trim(str_replace(['http:', 'https:'], '', $url2), '/ ');
+    $url1_strip = trim(str_replace(['http:', 'https:'], '', $url1), '/ ');
+    $url2_strip = trim(str_replace(['http:', 'https:'], '', $url2), '/ ');
 
-    return ($u1 === $u2);
+    return ($url1_strip === $url2_strip);
 }
 
 /**

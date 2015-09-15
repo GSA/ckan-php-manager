@@ -41,7 +41,7 @@ class CkanManager
     /**
      * @var Color
      */
-    public $c;
+    public $color;
     /**
      * @var \CKAN\CkanClient
      */
@@ -74,12 +74,12 @@ class CkanManager
      */
     public function __construct($apiUrl, $apiKey = null)
     {
-        $this->c = new Color();
+        $this->color = new Color();
         $this->apiUrl = $apiUrl;
         // skip while unit tests
         if (defined('RESULTS_DIR')) {
             $this->resultsDir = RESULTS_DIR;
-            echo $this->c->magenta("API URL:") . ' ' . $this->c->bold($apiUrl) . PHP_EOL . PHP_EOL;
+            echo $this->color->magenta("API URL:") . ' ' . $this->color->bold($apiUrl) . PHP_EOL . PHP_EOL;
 //            letting user cancel (Ctrl+C) script if noticed wrong api url
             sleep(3);
         }
@@ -101,11 +101,11 @@ class CkanManager
     {
         $datasets = $this->tryPackageSearch('u', '');
 
-        $i = 0;
+        $counter = 0;
         foreach ($datasets as $dataset) {
             $dataset = $this->tryPackageShow($dataset['name']);
 
-            echo ++$i . ' ' . $dataset['name'] . PHP_EOL;
+            echo ++$counter . ' ' . $dataset['name'] . PHP_EOL;
 
             $this->tryPackageUpdate($dataset);
 
@@ -116,8 +116,8 @@ class CkanManager
     }
 
     /**
-     * @param        $q
-     * @param        $fq
+     * @param        $search_q
+     * @param        $search_fq
      * @param int $rows
      * @param int $start
      * @param int $try
@@ -125,8 +125,8 @@ class CkanManager
      * @return bool|mixed
      */
     public function tryPackageSearch(
-        $q = '',
-        $fq = '',
+        $search_q = '',
+        $search_fq = '',
         $rows = 100,
         $start = 0,
         $try = 3
@@ -134,7 +134,7 @@ class CkanManager
         $datasets = false;
         while ($try) {
             try {
-                $datasets = $this->Ckan->package_search($q, $fq, $rows, $start);
+                $datasets = $this->Ckan->package_search($search_q, $search_fq, $rows, $start);
                 $datasets = json_decode($datasets, true);   /* as array */
 
                 if (!$datasets['success'] || !isset($datasets['result'])) {
@@ -288,7 +288,8 @@ class CkanManager
                 $this->resultsDir . '/dump-before__' . $package_id . '.json', json_encode($dataset, JSON_PRETTY_PRINT)
             );
             file_put_contents(
-                $this->resultsDir . '/dump-after__' . $package_id . '.json', json_encode($updated_dataset, JSON_PRETTY_PRINT)
+                $this->resultsDir . '/dump-after__' . $package_id . '.json',
+                json_encode($updated_dataset, JSON_PRETTY_PRINT)
             );
             throw $ex;
         }
@@ -421,8 +422,8 @@ class CkanManager
 
         switch ($output) {
             case 'NOT FOUND':
-                $output = $this->c->red($output);
-                $output = $this->c->bold($output);
+                $output = $this->color->red($output);
+                $output = $this->color->bold($output);
                 break;
             default:
                 break;
@@ -959,7 +960,7 @@ class CkanManager
     public function getInteractiveResources()
     {
         $log_file = $this->resultsDir . '/resources.csv';
-        $fp = fopen($log_file, 'w');
+        $log_fp = fopen($log_file, 'w');
 
         /*        Title of Dataset in Socrata | dataset URL in Socrata | dataset URL in Catalog */
         $csv_header = [
@@ -968,7 +969,7 @@ class CkanManager
             'Dataset URL in Catalog',
         ];
 
-        fputcsv($fp, $csv_header);
+        fputcsv($log_fp, $csv_header);
 
         /* http://catalog.data.gov/api/search/resource?url=explore.data.gov&all_fields=1&limit=100 */
         $resources = $this->tryApiPackageSearch(['url' => 'explore.data.gov']);
@@ -1109,14 +1110,14 @@ class CkanManager
         fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
-        $i = 1;
+        $counter = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
 //        most popular:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
         foreach ($search_list as $term) {
-            echo $i++ . '/' . sizeof($search_list) . ' : ' . $term . PHP_EOL;
+            echo $counter++ . '/' . sizeof($search_list) . ' : ' . $term . PHP_EOL;
             if (!sizeof($term = trim($term))) {
                 continue;
             }
@@ -1613,26 +1614,26 @@ class CkanManager
     }
 
     /**
-     * @param $q
-     * @param $fq
+     * @param $search_q
+     * @param $search_fq
      * @param string $ckan_url
      * @param bool $short
      * @return array
      */
-    public function exportShort($q, $fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
+    public function exportShort($search_q, $search_fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
     {
-        return $this->exportBrief($q, $fq, $ckan_url, $short);
+        return $this->exportBrief($search_q, $search_fq, $ckan_url, $short);
     }
 
     /**
-     * @param string $q
-     * @param string $fq
+     * @param string $search_q
+     * @param string $search_fq
      * @param string $ckan_url
      * @param bool|false $short
      * @return array
      * @throws \Exception
      */
-    public function exportBrief($q = '', $fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
+    public function exportBrief($search_q = '', $search_fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
     {
         $this->logOutput = '';
 
@@ -1641,10 +1642,10 @@ class CkanManager
         $done = false;
         $start = 0;
         $per_page = 250;
-        echo $q . PHP_EOL;
+        echo $search_q . PHP_EOL;
 
         while (!$done) {
-            $datasets = $this->tryPackageSearch($q, $fq, $per_page, $start);
+            $datasets = $this->tryPackageSearch($search_q, $search_fq, $per_page, $start);
             if (false === $datasets) {
                 throw new \Exception('No results found');
             }
@@ -1707,7 +1708,7 @@ class CkanManager
                     $return[$dataset['name']] = $line;
                 }
             } else {
-                echo 'no results: ' . $q . PHP_EOL;
+                echo 'no results: ' . $search_q . PHP_EOL;
                 continue;
             }
             if ($start > $totalCount) {
@@ -1747,7 +1748,6 @@ class CkanManager
 
         if (sizeof($dataset['groups'])) {
             foreach ($dataset['groups'] as $group) {
-                $categories[] = $group['title'];
                 $tags = isset($category_id_tags[$group['id']]) ?
                     join(';', $category_id_tags[$group['id']]) : '';
                 $return[] = [$dataset['name'], $group['title'], $tags];
@@ -2224,8 +2224,11 @@ class CkanManager
     public function exportOrganizations(
         $termsArray
     ) {
-
-        foreach ($termsArray as $org_slug => $org_name) {
+        if (!sizeof($termsArray)) {
+            return;
+        }
+        $termsArrayKeys = array_keys($termsArray);
+        foreach ($termsArrayKeys as $org_slug) {
 
             try {
                 $results = $this->Ckan->organization_show($org_slug);
@@ -2240,9 +2243,7 @@ class CkanManager
                 $json = (json_encode($results, JSON_PRETTY_PRINT));
                 file_put_contents($this->resultsDir . '/' . $org_slug . '.json', $json);
             }
-
         }
-
     }
 
     /**

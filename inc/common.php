@@ -28,9 +28,9 @@ require 'config.php';
 function timer()
 {
     $finish = time();
-    $c = new \Colors\Color();
+    $clr = new \Colors\Color();
     $minutes_spent = floor((($finish - TIMER_START) / 60));
     $seconds_spent = (($finish - TIMER_START) % 60);
-    echo PHP_EOL . $c('Time spent: ')->bold
-        . $c($minutes_spent . ' minutes ' . $seconds_spent . ' seconds ')->green->bold . PHP_EOL;
+    echo PHP_EOL . $clr('Time spent: ')->bold
+        . $clr($minutes_spent . ' minutes ' . $seconds_spent . ' seconds ')->green->bold . PHP_EOL;
 }
