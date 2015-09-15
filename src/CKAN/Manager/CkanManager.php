@@ -1804,10 +1804,11 @@ class CkanManager
 //                    die('Fatal');
                 }
 
-                $results = array_merge($results, $ckanResults);
+//                $results = array_merge($results, $ckanResults);
 
 //                csv for title, url, topic, and topic category
                 foreach ($ckanResults as $dataset) {
+                    $results[] = json_encode($dataset, JSON_PRETTY_PRINT);
                     $extras = $dataset['extras'];
                     $category_id_tags = [];
                     $categories_tags = [];
@@ -1890,7 +1891,7 @@ class CkanManager
             );
 
             if (sizeof($results)) {
-                $json = (json_encode($results, JSON_PRETTY_PRINT));
+                $json = "[" . PHP_EOL . join(',' . PHP_EOL, $results) . PHP_EOL . ']';
                 file_put_contents($this->resultsDir . '/' . $term . '.json', $json);
             } else {
                 unlink($this->resultsDir . '/' . $term . '.csv');
