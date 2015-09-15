@@ -110,7 +110,7 @@ class CkanManager
             $this->tryPackageUpdate($dataset);
 
             if (defined('QUIT')) {
-                die();
+                return;
             }
         }
     }
@@ -447,7 +447,7 @@ class CkanManager
                 'organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                die('Fatal');
+                throw new \Exception('No results from CKAN - FATAL');
             }
 
 //                csv for title, url, topic, and topic category
@@ -971,7 +971,7 @@ class CkanManager
         /* http://catalog.data.gov/api/search/resource?url=explore.data.gov&all_fields=1&limit=100 */
         $resources = $this->tryApiPackageSearch(['url' => 'explore.data.gov']);
         if (!$resources) {
-            die('error' . PHP_EOL);
+            throw new \Exception('No resources found');
         }
 
         foreach ($resources as $resource) {
@@ -1623,11 +1623,12 @@ class CkanManager
     }
 
     /**
-     * @param $q
-     * @param $fq
+     * @param string $q
+     * @param string $fq
      * @param string $ckan_url
-     * @param bool $short
+     * @param bool|false $short
      * @return array
+     * @throws \Exception
      */
     public function exportBrief($q = '', $fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
     {
@@ -1643,7 +1644,7 @@ class CkanManager
         while (!$done) {
             $datasets = $this->tryPackageSearch($q, $fq, $per_page, $start);
             if (false === $datasets) {
-                die('FATAL');
+                throw new \Exception('No results found');
             }
 
             $totalCount = $this->resultCount;
@@ -2838,6 +2839,7 @@ class CkanManager
      */
     public function updateLicenseId($datasetName, $licenseId)
     {
+        $result = false;
         $dataset = $this->tryPackageShow($datasetName);
         if (!$dataset) {
             $this->say([$datasetName, '404 Not Found']);

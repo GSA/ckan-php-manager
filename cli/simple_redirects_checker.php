@@ -136,8 +136,8 @@ function url_compare($url1, $url2)
 /**
  * @param $curl_ch
  * @param $url
- *
  * @return bool
+ * @throws \Exception
  */
 function try_get_page($curl_ch, $url)
 {
@@ -166,7 +166,7 @@ function try_get_page($curl_ch, $url)
     } catch (\Exception $ex) {
         $try--;
         if (!$try) {
-            die($ex->getMessage());
+            throw new \Exception($ex->getMessage());
         }
     }
 
