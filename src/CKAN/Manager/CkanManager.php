@@ -181,29 +181,29 @@ class CkanManager
     }
 
     /**
-     * @param string $id
+     * @param string $package_id
      * @param int $try
      *
      * @return bool|mixed
      */
     public function tryPackageShow(
-        $id,
+        $package_id,
         $try = 3
     ) {
         $dataset = false;
         while ($try) {
             try {
-                $dataset = $this->Ckan->package_show($id);
+                $dataset = $this->Ckan->package_show($package_id);
                 $dataset = json_decode($dataset, true); /* as array */
 
                 if (!$dataset['success']) {
-                    echo 'No success: ' . $id . PHP_EOL;
+                    echo 'No success: ' . $package_id . PHP_EOL;
                     echo ' :( ';
 
                     return false;
                 }
                 if (!isset($dataset['result']) || !sizeof($dataset['result'])) {
-                    echo 'No result: ' . $id . PHP_EOL;
+                    echo 'No result: ' . $package_id . PHP_EOL;
                     echo ' :( ';
 
                     return false;
@@ -215,9 +215,9 @@ class CkanManager
             } catch (\Exception $ex) {
                 $try--;
                 sleep(3);
-                echo '      zzz   ' . $id . PHP_EOL;
+                echo '      zzz   ' . $package_id . PHP_EOL;
                 if (!$try) {
-                    echo 'Too many attempts: ' . $id . PHP_EOL;
+                    echo 'Too many attempts: ' . $package_id . PHP_EOL;
 
                     return false;
                 }
@@ -260,12 +260,12 @@ class CkanManager
      */
     public function checkDatasetConsistency($dataset)
     {
-        $id = $dataset['name'];
-        $updated_dataset = $this->tryPackageShow($id);
+        $package_id = $dataset['name'];
+        $updated_dataset = $this->tryPackageShow($package_id);
 
         try {
             if (sizeof($dataset['resources']) != sizeof($updated_dataset['resources'])) {
-                throw new \Exception('Number of resources does not match after update (check dumps): ' . $id);
+                throw new \Exception('Number of resources does not match after update (check dumps): ' . $package_id);
             }
 
 
@@ -278,17 +278,17 @@ class CkanManager
 
             if (sizeof($diff)) {
                 file_put_contents(
-                    $this->resultsDir . '/dump-diff__' . $id . '.json', json_encode($diff, JSON_PRETTY_PRINT)
+                    $this->resultsDir . '/dump-diff__' . $package_id . '.json', json_encode($diff, JSON_PRETTY_PRINT)
                 );
-                throw new \Exception('Consistency check failed (check diff): ' . $id);
+                throw new \Exception('Consistency check failed (check diff): ' . $package_id);
             }
 
         } catch (\Exception $ex) {
             file_put_contents(
-                $this->resultsDir . '/dump-before__' . $id . '.json', json_encode($dataset, JSON_PRETTY_PRINT)
+                $this->resultsDir . '/dump-before__' . $package_id . '.json', json_encode($dataset, JSON_PRETTY_PRINT)
             );
             file_put_contents(
-                $this->resultsDir . '/dump-after__' . $id . '.json', json_encode($updated_dataset, JSON_PRETTY_PRINT)
+                $this->resultsDir . '/dump-after__' . $package_id . '.json', json_encode($updated_dataset, JSON_PRETTY_PRINT)
             );
             throw $ex;
         }
@@ -563,7 +563,7 @@ class CkanManager
 
 
     /**
-     *
+     * @throws \Exception
      */
     public function findMatchesOneFile()
     {
@@ -581,7 +581,7 @@ class CkanManager
                 'organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                die('Fatal');
+                throw new \Exception('No results from CKAN. Exiting...');
             }
 
             /* csv for title, url, topic, and topic category */
@@ -658,6 +658,7 @@ class CkanManager
 
     /**
      * @param int $limit
+     * @throws \Exception
      */
     public function exportResourceList($limit = 500)
     {
@@ -670,7 +671,7 @@ class CkanManager
                 'dataset_type:dataset', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                die('Fatal');
+                throw new \Exception('No results from CKAN. Exiting...');
             }
 
             foreach ($ckanResults as $dataset) {
@@ -698,7 +699,7 @@ class CkanManager
     }
 
     /**
-     *
+     * @throws \Exception
      */
     public function findMatches()
     {
@@ -720,7 +721,7 @@ class CkanManager
                 'dataset_type:dataset AND organization:epa-gov', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                die('Fatal');
+                throw new \Exception('No results from CKAN. Exiting...');
             }
 
             /* csv for title, url, topic, and topic category */
@@ -820,6 +821,7 @@ class CkanManager
 
     /**
      * @param string $agency
+     * @throws \Exception
      */
     public function findMatchesByAgency($agency = 'nrc')
     {
@@ -860,7 +862,7 @@ class CkanManager
                 '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                die('Fatal');
+                throw new \Exception('No results from CKAN. Exiting...');
             }
 
             /* csv for title, url, topic, and topic category */
@@ -1717,14 +1719,15 @@ class CkanManager
     }
 
     /**
-     * @param $id
+     * @param $package_id
      * @return array
+     * @throws \Exception
      */
-    public function exportPackage($id)
+    public function exportPackage($package_id)
     {
-        $dataset = $this->tryPackageShow($id);
+        $dataset = $this->tryPackageShow($package_id);
         if (false === $dataset) {
-            die('FATAL');
+            throw new \Exception('Dataset not found. Exiting...');
         }
         $return = [];
 
@@ -1804,7 +1807,6 @@ class CkanManager
 
                 if (!is_array($ckanResults)) {
                     break;
-//                    die('Fatal');
                 }
 
 //                csv for title, url, topic, and topic category
@@ -2266,40 +2268,40 @@ class CkanManager
         $exportIds = [];
         foreach ($members as $package) {
             //  member_list returns weird array
-            $id = is_array($package) ? $package[0] : $package;
-            $dataset = $this->tryPackageShow($id);
+            $package_id = is_array($package) ? $package[0] : $package;
+            $dataset = $this->tryPackageShow($package_id);
 
             if ('dataset' != $dataset['type']) {
-                echo $id . ' :: NOT A DATASET' . PHP_EOL;
+                echo $package_id . ' :: NOT A DATASET' . PHP_EOL;
                 continue;
             }
 
             if ('deleted' == $dataset['state']) {
-                echo $id . ' :: DELETED' . PHP_EOL;
+                echo $package_id . ' :: DELETED' . PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PRIVATE_ONLY && !$dataset['private']) {
-                echo $id . ' :: IS PUBLIC' . PHP_EOL;
+                echo $package_id . ' :: IS PUBLIC' . PHP_EOL;
                 continue;
             }
 
             if ($options & self::EXPORT_PUBLIC_ONLY && $dataset['private']) {
-                echo $id . ' :: IS PRIVATE' . PHP_EOL;
+                echo $package_id . ' :: IS PRIVATE' . PHP_EOL;
                 continue;
             }
 
-            $id = $dataset['name'];
+            $package_id = $dataset['name'];
             $dataset = json_encode($dataset, JSON_PRETTY_PRINT);
 
             if ($options & self::EXPORT_DMS_ONLY && !(strstr($dataset, '"dms"') && strstr($dataset,
                         '"metadata-source"'))
             ) {
-                echo $id . ' :: IS DMS' . PHP_EOL;
+                echo $package_id . ' :: IS DMS' . PHP_EOL;
                 continue;
             }
 
-            $exportIds[] = $id;
+            $exportIds[] = $package_id;
             $export[] = $dataset;
         }
 
@@ -2330,30 +2332,26 @@ class CkanManager
     }
 
     /**
-     * @param string $id
+     * @param string $member_id
      * @param int $try
      *
      * @return bool|mixed
      */
     private function tryMemberList(
-        $id,
+        $member_id,
         $try = 3
     ) {
         $list = false;
         while ($try) {
             try {
-                $list = $this->Ckan->member_list($id);
+                $list = $this->Ckan->member_list($member_id);
                 $list = json_decode($list, true); // as array
 
                 if (!$list['success']) {
-//                    echo 'No success: ' . $id . PHP_EOL;
-
                     return false;
                 }
 
                 if (!isset($list['result']) || !sizeof($list['result'])) {
-//                    echo 'No result: ' . $id . PHP_EOL;
-
                     return false;
                 }
 
@@ -2361,15 +2359,15 @@ class CkanManager
 
                 $try = 0;
             } catch (NotFoundHttpException $ex) {
-                echo "Organization not found: " . $id . PHP_EOL;
+                echo "Organization not found: " . $member_id . PHP_EOL;
 
                 return false;
             } catch (\Exception $ex) {
                 sleep(3);
-                echo '      zzz   ' . $id . PHP_EOL;
+                echo '      zzz   ' . $member_id . PHP_EOL;
                 $try--;
                 if (!$try) {
-                    echo 'Too many attempts: ' . $id . PHP_EOL;
+                    echo 'Too many attempts: ' . $member_id . PHP_EOL;
 
                     return false;
                 }
@@ -2509,13 +2507,11 @@ class CkanManager
                             printf("   [%0{$member_digits_count}d/%0{$member_digits_count}d] members of: %s" . PHP_EOL,
                                 $j, $total_count, $org_slug);
                         }
-                        $id = $member[0];
-                        $package = $this->tryPackageShow($id);
+                        $package_id = $member[0];
+                        $package = $this->tryPackageShow($package_id);
                         if ('dataset' !== $package['type']) {
                             continue;
                         }
-//                        file_put_contents($resultsDir.'/'.$id.'.json',//                            json_encode($package, JSON_PRETTY_PRINT));
-//                        die();
 
                         $state = $package['state'];
                         if (!isset($package_states[$state])) {
