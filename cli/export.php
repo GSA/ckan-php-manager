@@ -4,7 +4,7 @@ namespace CKAN\Manager;
 
 
 /**
- * http://idm.data.gov/fed_agency.json
+ * http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json
  */
 
 $search = isset($argv[1]) ? trim($argv[1]) : false;

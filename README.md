@@ -22,20 +22,20 @@ http://docs.ckan.org/en/latest/api/index.html
 ### Composer
 Use [composer](#composer) to install/update dependencies
 If you don't have Composer [install](https://getcomposer.org/download/) it:
-    
+
     $ curl -sS https://getcomposer.org/installer | php
 
 #### Run composer self-udpate
-    
+
     $ composer self-update
 
 #### Refresh your dependencies:
-    
+
     $ php composer.phar update
 
 ### Configuration
 Copy config.sample.php to config.php. Update it with your custom values, if needed.
-    
+
     $ cp inc/config.sample.php inc/config.php
 
 ## Usage
@@ -49,7 +49,7 @@ Copy config.sample.php to config.php. Update it with your custom values, if need
     $ php cli/export_packages_by_org.php
 ```
 
-Script is taking all terms, including sub-agencies from http://idm.data.gov/fed_agency.json and makes CKAN requests,
+Script is taking all terms, including sub-agencies from http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json and makes CKAN requests,
 looking for packages by these organization list.
 
 Results can be found in /results/{timestamp} dir after script finished its work, including `_{term}.log` with package counts for each agency.

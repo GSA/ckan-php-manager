@@ -17,19 +17,19 @@ class CkanManager
     /**
      *
      */
-    const EXPORT_DMS_ONLY = 0b00000001;
+    const EXPORT_DMS_ONLY = 0b1;
     /**
      *
      */
-    const EXPORT_PUBLIC_ONLY = 0b00000010;
+    const EXPORT_PUBLIC_ONLY = 0b10;
     /**
      *
      */
-    const EXPORT_PRIVATE_ONLY = 0b00000100;
+    const EXPORT_PRIVATE_ONLY = 0b100;
     /**
      *
      */
-    const IDS_ONLY = 0b00001000;
+    const IDS_ONLY = 0b1000;
     /**
      * @var string
      */
@@ -421,7 +421,12 @@ class CkanManager
         $this->logOutput .= $output . $eol;
 
         switch ($output) {
+            case 'SUCCESS':
+                $output = $this->color->green($output);
+                $output = $this->color->bold($output);
+                break;
             case 'NOT FOUND':
+            case 'INVALID URL':
                 $output = $this->color->red($output);
                 $output = $this->color->bold($output);
                 break;
@@ -1620,8 +1625,12 @@ class CkanManager
      * @param bool $short
      * @return array
      */
-    public function exportShort($search_q, $search_fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = true)
-    {
+    public function exportShort(
+        $search_q,
+        $search_fq = '',
+        $ckan_url = 'https://catalog.data.gov/dataset/',
+        $short = true
+    ) {
         return $this->exportBrief($search_q, $search_fq, $ckan_url, $short);
     }
 
@@ -1633,8 +1642,12 @@ class CkanManager
      * @return array
      * @throws \Exception
      */
-    public function exportBrief($search_q = '', $search_fq = '', $ckan_url = 'https://catalog.data.gov/dataset/', $short = false)
-    {
+    public function exportBrief(
+        $search_q = '',
+        $search_fq = '',
+        $ckan_url = 'https://catalog.data.gov/dataset/',
+        $short = false
+    ) {
         $this->logOutput = '';
 
         $return = [];

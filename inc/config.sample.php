@@ -4,7 +4,7 @@
  * Agencies list info, including sub-agencies and terms
  * used to get terms tree for agency before each CKAN import
  */
-define('AGENCIES_LIST_URL', 'http://idm.data.gov/fed_agency.json');
+define('AGENCIES_LIST_URL', 'http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json');
 
 /**
  * CKAN API URL

@@ -74,9 +74,10 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 //        double trouble check
         if (strpos($row['0'], '://')) {
             if (!strpos($row['0'], '/dataset/')) {
+                echo "\t" . $row['0'] . ',WRONG URL' . PHP_EOL;
                 file_put_contents(
                     $results_dir . '/' . $basename . '_tags.log.csv',
-                    $row['0'] . ',WRONG URL' . PHP_EOL,
+                    $row['0'] . ',INVALID URL' . PHP_EOL,
                     FILE_APPEND | LOCK_EX
                 );
                 continue;

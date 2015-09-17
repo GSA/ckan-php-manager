@@ -7,7 +7,7 @@ use CKAN\OrganizationList;
 
 
 /**
- * http://idm.data.gov/fed_agency.json
+ * http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json
  */
 define('ORGANIZATION_TO_TAG', 'Nuclear Regulatory Commission');
 

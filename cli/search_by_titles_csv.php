@@ -5,7 +5,7 @@ namespace CKAN\Manager;
 use EasyCSV;
 
 /**
- * http://idm.data.gov/fed_agency.json
+ * http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json
  */
 
 define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
