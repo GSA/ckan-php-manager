@@ -442,7 +442,7 @@ class CkanManager
     public function findMatchesSeparateFiles()
     {
         $page = 0;
-        $main_datasets_by_harvest = [];
+        $datasets_by_harvest1 = [];
         $main_harvest_title = 'Environmental Dataset Gateway';
         $datasets_by_harvest = [];
         $titles = [];
@@ -479,7 +479,7 @@ class CkanManager
                             }
                         }
                     }
-                    $main_datasets_by_harvest[] = [
+                    $datasets_by_harvest1[] = [
                         'title'    => $title,
                         'basename' => $dataset['name'],
                         'groups'   => join(';', $groups),
@@ -513,7 +513,7 @@ class CkanManager
         foreach ($other_harvests as $harvest) {
             $csv = new Writer($this->resultsDir . '/matches_' . $harvest . '.csv');
             $csv->writeRow(['groups', 'title', $main_harvest_title, $harvest]);
-            foreach ($main_datasets_by_harvest as $dataset) {
+            foreach ($datasets_by_harvest1 as $dataset) {
                 $matches = [];
                 if (isset($datasets_by_harvest[$harvest][$dataset['title']])) {
                     $matches = $datasets_by_harvest[$harvest][$dataset['title']];
@@ -1253,14 +1253,14 @@ class CkanManager
         fputcsv($fp_relevance, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
-        $i = 1;
+        $counter = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
 //        most popular:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
         foreach ($groups_list as $topic) {
-            $this->say(PHP_EOL . $i++ . '/' . sizeof($groups_list) . ' : ' . $topic);
+            $this->say(PHP_EOL . $counter++ . '/' . sizeof($groups_list) . ' : ' . $topic);
             if (!sizeof($topic = trim($topic))) {
                 continue;
             }
@@ -1470,14 +1470,14 @@ class CkanManager
 
         $ckan_url = 'http://catalog.data.gov/dataset/';
 
-        $i = 1;
+        $counter = 1;
 
 //        most relevant:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=score+desc
 //        most popular:
 //        http://catalog.data.gov/api/3/action/package_search?q=Asian+AND+dataset_type:dataset&sort=views_recent+desc
         foreach ($organizations_list as $organization) {
-            $this->say(PHP_EOL . $i++ . '/' . sizeof($organizations_list) . ' : ' . $organization);
+            $this->say(PHP_EOL . $counter++ . '/' . sizeof($organizations_list) . ' : ' . $organization);
             if (!sizeof($organization = trim($organization))) {
                 continue;
             }
@@ -2505,7 +2505,7 @@ class CkanManager
 
                 $member_list = $this->tryMemberList($org_slug);
 //                $private_count = 'na';
-                $private = $public = $noExtraModifiedPublic = $noExtraModifiedPrivate = 0;
+                $private = $public = $notModifiedPublic = $notModifiedPrivate = 0;
                 $total_count = 'na';
                 $package_states = [];
                 $dms_public = $dms_private = $non_dms_public = 0;
@@ -2570,26 +2570,26 @@ class CkanManager
                                                 $org_slug,
                                                 'private'
                                             ]);
-                                            $noExtraModifiedPrivate++;
+                                            $notModifiedPrivate++;
                                         } else {
                                             $this->say([
                                                 'https://inventory.data.gov/dataset/' . $package['name'],
                                                 $org_slug,
                                                 'public'
                                             ]);
-                                            $noExtraModifiedPublic++;
+                                            $notModifiedPublic++;
                                         }
                                     }
                                 } else {
                                     if ($package['private']) {
-                                        $noExtraModifiedPrivate++;
+                                        $notModifiedPrivate++;
                                         $this->say([
                                             'https://inventory.data.gov/dataset/' . $package['name'],
                                             $org_slug,
                                             'private'
                                         ]);
                                     } else {
-                                        $noExtraModifiedPublic++;
+                                        $notModifiedPublic++;
                                         $this->say([
                                             'https://inventory.data.gov/dataset/' . $package['name'],
                                             $org_slug,
@@ -2622,8 +2622,8 @@ class CkanManager
                     $organization_row[] = $dms_public;
                     $organization_row[] = $non_dms_public;
                 } else {
-                    $organization_row[] = $noExtraModifiedPublic;
-                    $organization_row[] = $noExtraModifiedPrivate;
+                    $organization_row[] = $notModifiedPublic;
+                    $organization_row[] = $notModifiedPrivate;
                 }
 
                 fputcsv($fp_log, $organization_row);
