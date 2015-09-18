@@ -1934,7 +1934,7 @@ class CkanManager
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         foreach ($terms as $term => $agency) {
 
-            $fp = fopen($this->resultsDir . '/' . $term . '.csv', 'w');
+            $csv_log_file = fopen($this->resultsDir . '/' . $term . '.csv', 'w');
 
             $csv_header = [
                 'Organization',
@@ -1943,7 +1943,7 @@ class CkanManager
                 'Total Visits',
             ];
 
-            fputcsv($fp, $csv_header);
+            fputcsv($csv_log_file, $csv_header);
 
             $page = 0;
             $count = 0;
@@ -1957,7 +1957,7 @@ class CkanManager
                 if (sizeof($ckanResult['results'])) {
                     foreach ($ckanResult['results'] as $dataset) {
                         fputcsv(
-                            $fp, [
+                            $csv_log_file, [
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
                                 isset($dataset['title']) ? $dataset['title'] : '---',
@@ -1979,7 +1979,7 @@ class CkanManager
                 }
             }
 
-            fclose($fp);
+            fclose($csv_log_file);
 
             $offset = ($term == PARENT_TERM) ? '' : '  ';
             $this->say(
@@ -2462,7 +2462,7 @@ class CkanManager
         fputcsv($fp_log, $csv_header);
 
 //        $total = $filter ? sizeof($filter) : sizeof($orgs);
-        $i = 0;
+        $counter = 0;
         $skip = (bool)START;
         foreach ($orgs as $org) {
             $org_slug = is_object($org) ? $org->name : $org;
@@ -2476,7 +2476,7 @@ class CkanManager
                 continue;
             }
 
-            $i++;
+            $counter++;
 
             if (START && START == $org_slug) {
                 $skip = false;
@@ -3225,7 +3225,7 @@ class CkanManager
         }
 
         $log_file = $this->resultsDir . '/export_group_' . $group['name'] . '_with_tags.csv';
-        $fp = fopen($log_file, 'w');
+        $csv_log_file = fopen($log_file, 'w');
 
         $csv_header = [
             'Name of Dataset',
@@ -3234,7 +3234,7 @@ class CkanManager
             'Topic Categories',
         ];
 
-        fputcsv($fp, $csv_header);
+        fputcsv($csv_log_file, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
@@ -3273,7 +3273,7 @@ class CkanManager
                 }
 
                 fputcsv(
-                    $fp, [
+                    $csv_log_file, [
                         isset($dataset['title']) ? $dataset['title'] : '---',
                         isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
                         $group['title'],
@@ -3283,7 +3283,7 @@ class CkanManager
             }
         }
 
-        fclose($fp);
+        fclose($csv_log_file);
     }
 
     /**
@@ -3299,7 +3299,7 @@ class CkanManager
         $date = date('Ymd-His');
         $filename_strip_search = preg_replace("/[^a-zA-Z0-9\\ ]+/i", '', $search);
         $log_file = $this->resultsDir . '/export_' . $filename_strip_search . '_' . $date . '.csv';
-        $fp = fopen($log_file, 'w');
+        $csv_log_file = fopen($log_file, 'w');
 
         $csv_header = [
             'data.gov url',
@@ -3308,7 +3308,7 @@ class CkanManager
 
         echo $search;
 
-        fputcsv($fp, $csv_header);
+        fputcsv($csv_log_file, $csv_header);
 
         $ckan_url = 'https://catalog.data.gov/dataset/';
 
@@ -3351,7 +3351,7 @@ class CkanManager
             if (sizeof($datasets)) {
                 foreach ($datasets as $dataset) {
                     fputcsv(
-                        $fp, [
+                        $csv_log_file, [
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
                             'Local'
 //                            $dataset['title'],
@@ -3367,7 +3367,7 @@ class CkanManager
             }
         }
 
-        fclose($fp);
+        fclose($csv_log_file);
     }
 
     /**
@@ -3755,14 +3755,14 @@ class CkanManager
         $limit = 1
     ) {
         $countOfRootOrganizations = sizeof($tree);
-        $i = 0;
+        $counter = 0;
         $processed = 0;
         foreach ($tree as $rootOrganization) {
-            $i++;
+            $counter++;
 
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
-                echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
+                echo "::Processing Root Organization #$counter of $countOfRootOrganizations::" . PHP_EOL;
                 $this->getRedirectListByOrganization($rootOrganization);
             }
 
@@ -3810,11 +3810,11 @@ class CkanManager
             return;
         }
 
-        $i = 0;
+        $counter = 0;
         $size = sizeof($list);
         foreach ($list as $package) {
-            if (!(++$i % 500)) {
-                echo str_pad($i, 7, ' ', STR_PAD_LEFT) . ' / ' . $size . PHP_EOL;
+            if (!(++$counter % 500)) {
+                echo str_pad($counter, 7, ' ', STR_PAD_LEFT) . ' / ' . $size . PHP_EOL;
             }
             $dataset = $this->tryPackageShow($package[0]);
             if (!$dataset) {
@@ -3999,14 +3999,14 @@ class CkanManager
         $this->return = [];
 
         $countOfRootOrganizations = sizeof($tree);
-        $i = 0;
+        $counter = 0;
         $processed = 0;
         foreach ($tree as $rootOrganization) {
-            $i++;
+            $counter++;
 
             if (!$start || $start == $rootOrganization['id']) {
                 $start = false;
-                echo "::Processing Root Organization #$i of $countOfRootOrganizations::" . PHP_EOL;
+                echo "::Processing Root Organization #$counter of $countOfRootOrganizations::" . PHP_EOL;
                 $this->getPrivateListByOrganization($rootOrganization);
             }
 
@@ -4096,9 +4096,9 @@ class CkanManager
         $SocrataApi = new ExploreApi('http://explore.data.gov/api/');
 
         $size = sizeof($socrata_list);
-        $i = 0;
+        $counter = 0;
         foreach ($socrata_list as $socrata_line) {
-            echo ++$i . " / $size $socrata_line" . PHP_EOL;
+            echo ++$counter . " / $size $socrata_line" . PHP_EOL;
             if (!strlen($socrata_line = trim($socrata_line))) {
                 continue;
             }

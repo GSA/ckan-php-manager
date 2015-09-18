@@ -2,6 +2,7 @@
 
 namespace CKAN\Manager;
 
+use CKAN\OrganizationList;
 use EasyCSV;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
@@ -74,12 +75,51 @@ foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
 //        double trouble check
         if (strpos($row['0'], '://')) {
             if (!strpos($row['0'], '/dataset/')) {
-                echo "\t" . $row['0'] . ',WRONG URL' . PHP_EOL;
-                file_put_contents(
-                    $results_dir . '/' . $basename . '_tags.log.csv',
-                    $row['0'] . ',INVALID URL' . PHP_EOL,
-                    FILE_APPEND | LOCK_EX
-                );
+                if (strpos($row['0'], 'dataset?q=')) {
+                    parse_str(parse_url($row['0'], PHP_URL_QUERY), $query_array);
+                    if (isset($query_array['q'])) {
+                        $query = $query_array['q'];
+                        if (isset($query_array['organization'])) {
+                            $org = $query_array['organization'];
+                            $organizationList = new OrganizationList();
+                            $org = $organizationList->getTreeArrayFor($organizationList->getNameFor($org));
+                            if (!is_array($org) || !sizeof($org)) {
+                                continue;
+                            }
+                            $org = join(' OR ', array_keys($org));
+//                            var_dump($organizationList->getTreeArrayFor($organizationList->getNameFor($org)));
+//                            continue;
+                            $query = "$query AND organization:($org)";
+
+
+//                            echo $query.PHP_EOL;
+                        }
+                        $packages = $CkanManager->tryPackageSearch($query, '', 200);
+                        $CkanManager->say(sizeof($packages) . " found searching: $query,API SEARCH");
+                        file_put_contents(
+                            $results_dir . '/' . $basename . '_tags.log.csv',
+                            sizeof($packages) . " found searching: $query,API SEARCH" . PHP_EOL,
+                            FILE_APPEND | LOCK_EX
+                        );
+//                        print $query_array['q'];
+                        if (!sizeof($packages)) {
+                            continue;
+                        }
+
+                        foreach ($packages as $package) {
+                            $CkanManager->assignGroupsAndCategoriesToDatasets(
+                                [$package['name']],
+                                trim($row['1']),
+                                $categories,
+                                $basename
+                            );
+                            continue;
+                        }
+                    }
+                    continue;
+                }
+
+
                 continue;
             }
         }
