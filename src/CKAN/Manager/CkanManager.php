@@ -1803,10 +1803,13 @@ class CkanManager
 //            ]);
 
             $csv = new Writer($this->resultsDir . '/' . $term . '.csv', 'w');
-            $csv->writeRow(['Title', 'Url', 'Topics', 'Topics categories','Metadata Type']);
+            $csv->writeRow(['Title', 'Url', 'Topics', 'Topics categories', 'Metadata Type']);
 
             file_put_contents($this->resultsDir . '/' . $term . '.json', '[' . PHP_EOL, FILE_APPEND);
+            file_put_contents($this->resultsDir . '/' . $term . '_geospatial_with_tags.json', '[' . PHP_EOL,
+                FILE_APPEND);
             $comma_needed = false;
+            $with_tags_comma_needed = false;
 
             while (true) {
                 $start = $page++ * $this->packageSearchPerPage;
@@ -1824,11 +1827,6 @@ class CkanManager
 
 //                csv for title, url, topic, and topic category
                 foreach ($ckanResults as $dataset) {
-                    file_put_contents($this->resultsDir . '/' . $term . '.json',
-                        ($comma_needed ? ',' . PHP_EOL : '') . json_encode($dataset, JSON_PRETTY_PRINT),
-                        FILE_APPEND);
-                    $comma_needed = true;
-
                     $extras = $dataset['extras'];
                     $metadata_type = '';
                     $category_id_tags = [];
@@ -1899,6 +1897,18 @@ class CkanManager
                             $metadata_type
                         ]
                     );
+
+                    if ('geospatial' == $metadata_type && $categories) {
+                        file_put_contents($this->resultsDir . '/' . $term . '_geospatial_with_tags.json',
+                            ($with_tags_comma_needed ? ',' . PHP_EOL : '') . json_encode($dataset, JSON_PRETTY_PRINT),
+                            FILE_APPEND);
+                        $with_tags_comma_needed = true;
+                    }
+
+                    file_put_contents($this->resultsDir . '/' . $term . '.json',
+                        ($comma_needed ? ',' . PHP_EOL : '') . json_encode($dataset, JSON_PRETTY_PRINT),
+                        FILE_APPEND);
+                    $comma_needed = true;
                 }
 
                 $count = $this->resultCount;
@@ -1918,6 +1928,8 @@ class CkanManager
             );
 
             file_put_contents($this->resultsDir . '/' . $term . '.json', PHP_EOL . ']', FILE_APPEND);
+            file_put_contents($this->resultsDir . '/' . $term . '_geospatial_with_tags.json', PHP_EOL . ']',
+                FILE_APPEND);
 
 //            if (sizeof($results)) {
 ////                $json = "[" . PHP_EOL . join(',' . PHP_EOL, $results) . PHP_EOL . ']';
