@@ -1790,7 +1790,7 @@ class CkanManager
             $count = 0;
 
             $csv_tag_writer = new Writer($this->resultsDir . '/' . $term . '_tagging.csv', 'w');
-            $csv_tag_writer->writeRow(['dataset', 'topic', 'tags']);
+            $csv_tag_writer->writeRow(['dataset', 'topic', 'tags', 'metadata_type']);
 //            $csv_tag_writer->writeRow([
 //                'Dataset Title',
 //                'Dataset URL',
@@ -1803,7 +1803,7 @@ class CkanManager
 //            ]);
 
             $csv = new Writer($this->resultsDir . '/' . $term . '.csv', 'w');
-            $csv->writeRow(['Title', 'Url', 'Topics', 'Topics categories',]);
+            $csv->writeRow(['Title', 'Url', 'Topics', 'Topics categories','Metadata Type']);
 
             file_put_contents($this->resultsDir . '/' . $term . '.json', '[' . PHP_EOL, FILE_APPEND);
             $comma_needed = false;
@@ -1830,9 +1830,14 @@ class CkanManager
                     $comma_needed = true;
 
                     $extras = $dataset['extras'];
+                    $metadata_type = '';
                     $category_id_tags = [];
                     $categories_tags = [];
                     foreach ($extras as $extra) {
+                        if ('metadata_type' == $extra['key']) {
+                            $metadata_type = $extra['value'];
+                            continue;
+                        }
                         if (false !== strpos($extra['key'], '__category_tag_')) {
                             $category_id = str_replace('__category_tag_', '', $extra['key']);
                             $tags = trim($extra['value'], '[]');
@@ -1879,7 +1884,8 @@ class CkanManager
                             isset($dataset['title']) ? $dataset['title'] : '',
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
                             $categories ? $categories : '',
-                            $categories_tags ? $categories_tags : ''
+                            $categories_tags ? $categories_tags : '',
+                            $metadata_type,
                         ]
                     );
 
@@ -1889,7 +1895,8 @@ class CkanManager
                             isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
                             isset($dataset['organization']) ? $dataset['organization']['title'] : '',
                             $categories ? $categories : '',
-                            $categories_tags ? $categories_tags : ''
+                            $categories_tags ? $categories_tags : '',
+                            $metadata_type
                         ]
                     );
                 }
