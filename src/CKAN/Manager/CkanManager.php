@@ -1783,7 +1783,7 @@ class CkanManager
 //        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
 
         $csv_global = new Writer($this->resultsDir . '/_combined.csv', 'w');
-        $csv_global->writeRow(['Title', 'Url', 'Organization', 'Topics', 'Topics categories',]);
+        $csv_global->writeRow(['Title', 'Url', 'Organization', 'Topics', 'Topics categories','Metadata Type']);
 
         foreach ($terms as $term => $agency) {
             $page = 0;
@@ -1854,7 +1854,7 @@ class CkanManager
                             $categories[] = $group['title'];
                             $tags = isset($category_id_tags[$group['id']]) ?
                                 join(';', $category_id_tags[$group['id']]) : '';
-                            $csv_tag_writer->writeRow([$dataset['name'], $group['title'], $tags]);
+                            $csv_tag_writer->writeRow([$dataset['name'], $group['title'], $tags, $metadata_type]);
 
 //                            $harvest_title = self::extra($dataset['extras'], 'harvest_source_title');
 //                            $harvest_title = $harvest_title ?: '';
