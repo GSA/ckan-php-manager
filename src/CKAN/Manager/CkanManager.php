@@ -8,10 +8,6 @@ use CKAN\OrganizationList;
 use Colors\Color;
 use EasyCSV\Writer;
 
-/**
- * @author Alex Perfilov
- * @date   2/24/14
- */
 class CkanManager
 {
     /**
@@ -1632,6 +1628,74 @@ class CkanManager
         $short = true
     ) {
         return $this->exportBrief($search_q, $search_fq, $ckan_url, $short);
+    }
+
+    /**
+     * @param string $path
+     * @param string $ckan_url
+     * @param bool|false $short
+     * @return array
+     * @throws \Exception
+     */
+    public function exportBriefFromJson(
+        $path ='',
+        $ckan_url = 'https://catalog.data.gov/dataset/',
+        $short = false
+    ) {
+        $this->logOutput = '';
+
+        $return = [];
+
+        $datasets = json_decode(file_get_contents($path), true); //assoc
+
+        if (false === $datasets) {
+            throw new \Exception('No results found');
+        }
+
+        foreach ($datasets as $dataset) {
+            $guid = $this->extra($dataset['extras'], 'guid');
+            $identifier = $this->extra($dataset['extras'], 'identifier');
+            $groups = [];
+            if (isset($dataset['groups'])) {
+                foreach ($dataset['groups'] as $group) {
+                    if (strlen(trim($group['title']))) {
+                        $groups[] = trim($group['title']);
+                    }
+                }
+            }
+            $categories = [];
+            if (isset($dataset['extras'])) {
+                foreach ($dataset['extras'] as $extra) {
+                    if (false !== strpos($extra['key'], '__category_tag_')) {
+                        $tags = trim($extra['value'], '[]');
+                        $tags = explode('","', $tags);
+                        foreach ($tags as &$tag) {
+                            $tag = trim($tag, '" ');
+                        }
+                        $categories = array_merge($categories, $tags);
+                    }
+                }
+            }
+
+            $line = [
+                'title'        => $dataset['title'],
+                'title_simple' => $this->simplifyTitle($dataset['title']),
+                'name'         => $dataset['name'],
+                'url'          => $ckan_url . $dataset['name'],
+                'identifier'   => $identifier,
+                'guid'         => $guid,
+                'topics'       => join(';', $groups),
+                'categories'   => join(';', $categories),
+            ];
+
+            if ($short) {
+                unset($line['title_simple']);
+                unset($line['guid']);
+            }
+            $return[$dataset['name']] = $line;
+        }
+
+        return $return;
     }
 
     /**

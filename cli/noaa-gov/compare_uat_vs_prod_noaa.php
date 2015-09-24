@@ -8,7 +8,6 @@
 namespace CKAN\Manager;
 
 
-use EasyCSV\Reader;
 use EasyCSV\Writer;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
@@ -22,8 +21,8 @@ if (!is_dir($results_dir)) {
     mkdir($results_dir);
 }
 
-echo 'prod.csv' . PHP_EOL;
-if (!is_file($results_dir . '/prod.csv')) {
+echo 'prod.json' . PHP_EOL;
+if (!is_file($results_dir . '/prod.json')) {
     $prod = new Writer($results_dir . '/prod.csv');
 
     $prod->writeRow([
@@ -36,21 +35,20 @@ if (!is_file($results_dir . '/prod.csv')) {
         'topics',
         'categories',
     ]);
-
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
     $prod_noaa = $ProdCkanManager->exportBrief('organization:noaa-gov AND metadata_type:geospatial AND dataset_type:dataset');
+    file_put_contents($results_dir . '/prod.json', json_encode($prod_noaa, JSON_PRETTY_PRINT));
     $prod->writeFromArray($prod_noaa);
     echo PHP_EOL.'datasets from prod: '.sizeof($prod_noaa).PHP_EOL.PHP_EOL;
 } else {
-    $prod = new Reader($results_dir . '/prod.csv');
-    $prod_noaa = $prod->getAll();
+    $prod_noaa = json_decode(file_get_contents($results_dir . '/prod.json'));
     echo PHP_EOL.'datasets from prod: '.sizeof($prod_noaa).PHP_EOL.PHP_EOL;
 }
 
-echo 'uat.csv' . PHP_EOL;
-if (!is_file($results_dir . '/uat.csv')) {
+echo 'uat.json' . PHP_EOL;
+if (!is_file($results_dir . '/uat.json')) {
     $uat = new Writer($results_dir . '/uat.csv');
 
     $uat->writeRow([
@@ -63,17 +61,16 @@ if (!is_file($results_dir . '/uat.csv')) {
         'topics',
         'categories',
     ]);
-
     $uatCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $uatCkanManager->resultsDir = $results_dir;
 
     $uat_noaa = $uatCkanManager->exportBrief('organization:noaa-gov AND extras_harvest_source_title:NOAA New CSW AND dataset_type:dataset',
         '', 'http://uat-catalog-fe-data.reisys.com/dataset/');
+    file_put_contents($results_dir . '/uat.json', json_encode($uat_noaa, JSON_PRETTY_PRINT));
     $uat->writeFromArray($uat_noaa);
     echo PHP_EOL.'datasets from uat: '.sizeof($uat_noaa).PHP_EOL.PHP_EOL;
 } else {
-    $uat = new Reader($results_dir . '/uat.csv');
-    $uat_noaa = $uat->getAll();
+    $uat_noaa = json_decode(file_get_contents($results_dir . '/uat.json'));
     echo PHP_EOL.'datasets from uat: '.sizeof($uat_noaa).PHP_EOL.PHP_EOL;
 }
 

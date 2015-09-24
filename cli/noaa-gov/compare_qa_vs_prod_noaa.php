@@ -22,8 +22,8 @@ if (!is_dir($results_dir)) {
     mkdir($results_dir);
 }
 
-echo 'prod.csv' . PHP_EOL;
-if (!is_file($results_dir . '/prod.csv')) {
+echo 'prod.json' . PHP_EOL;
+if (!is_file($results_dir . '/prod.json')) {
     $prod = new Writer($results_dir . '/prod.csv');
 
     $prod->writeRow([
@@ -36,20 +36,18 @@ if (!is_file($results_dir . '/prod.csv')) {
         'topics',
         'categories',
     ]);
-
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
     $prod_noaa = $ProdCkanManager->exportBrief('organization:noaa-gov AND metadata_type:geospatial AND dataset_type:dataset');
     $prod->writeFromArray($prod_noaa);
+    file_put_contents($results_dir . '/prod.json', json_encode($prod_noaa, JSON_PRETTY_PRINT));
 } else {
-    $prod = new Reader($results_dir . '/prod.csv');
-    $prod->getHeaders();
-    $prod_noaa = $prod->getAll();
+    $prod_noaa = json_decode(file_get_contents($results_dir . '/prod.json'));
 }
 
-echo 'qa.csv' . PHP_EOL;
-if (!is_file($results_dir . '/qa.csv')) {
+echo 'qa.json' . PHP_EOL;
+if (!is_file($results_dir . '/qa.json')) {
     $qa = new Writer($results_dir . '/qa.csv');
 
     $qa->writeRow([
@@ -62,17 +60,15 @@ if (!is_file($results_dir . '/qa.csv')) {
         'topics',
         'categories',
     ]);
-
     $QaCkanManager = new CkanManager(CKAN_QA_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
     $qa_noaa = $QaCkanManager->exportBrief('organization:noaa-gov', '',
         'http://qa-catalog-fe-data.reisys.com/dataset/');
     $qa->writeFromArray($qa_noaa);
-
+    file_put_contents($results_dir . '/qa.json', json_encode($qa_noaa, JSON_PRETTY_PRINT));
 } else {
-    $qa = new Reader($results_dir . '/qa.csv');
-    $qa_noaa = $qa->getAll();
+    $qa_noaa = json_decode(file_get_contents($results_dir . '/qa.json'));
 }
 
 $qa_noaa_by_title = $qa_noaa_by_guid = [];
