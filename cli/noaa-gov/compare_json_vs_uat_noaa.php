@@ -15,7 +15,7 @@ require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_JSON_VS_UAT';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd') . '_CHECK_JSON_VS_UAT';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -66,7 +66,7 @@ if (!is_file($results_dir . '/json_backup.json')) {
     $json_backupCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $json_backupCkanManager->resultsDir = $results_dir;
 
-    $json_backup_noaa = $json_backupCkanManager->exportBriefFromJson(DATA_DIR . '/noaa-gov_geospatial_with_tags.json');
+    $json_backup_noaa = $json_backupCkanManager->exportBriefFromJson(CKANMNGR_DATA_DIR . '/noaa-gov_geospatial_with_tags.json');
     file_put_contents($results_dir . '/json_backup.json', json_encode($json_backup_noaa, JSON_PRETTY_PRINT));
     $json_backup_csv->writeFromArray($json_backup_noaa);
     echo PHP_EOL . 'datasets from json_backup: ' . sizeof($json_backup_noaa) . PHP_EOL . PHP_EOL;
@@ -76,7 +76,7 @@ if (!is_file($results_dir . '/json_backup.json')) {
 }
 
 $json_backup_tags = [];
-$json_datasets = json_decode(file_get_contents(DATA_DIR . '/noaa-gov_geospatial_with_tags.json'), true);  //assoc
+$json_datasets = json_decode(file_get_contents(CKANMNGR_DATA_DIR . '/noaa-gov_geospatial_with_tags.json'), true);  //assoc
 foreach ($json_datasets as $dataset_array) {
     $dataset = new Dataset($dataset_array);
     $groups_tags = $dataset->get_groups_and_tags();

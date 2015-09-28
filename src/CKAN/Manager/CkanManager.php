@@ -74,7 +74,7 @@ class CkanManager
         $this->apiUrl = $apiUrl;
         // skip while unit tests
         if (defined('RESULTS_DIR')) {
-            $this->resultsDir = RESULTS_DIR;
+            $this->resultsDir = CKANMNGR_RESULTS_DIR;
             echo $this->color->magenta("API URL:") . ' ' . $this->color->bold($apiUrl) . PHP_EOL . PHP_EOL;
 //            letting user cancel (Ctrl+C) script if noticed wrong api url
             sleep(3);
@@ -1845,6 +1845,7 @@ class CkanManager
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
         $ckan_url = 'http://catalog.data.gov/';
 //        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
+//        $ckan_url = 'http://uat-catalog-fe-data.reisys.com/dataset/';
 
         $csv_global = new Writer($this->resultsDir . '/_combined.csv', 'w');
         $csv_global->writeRow(['Title', 'Url', 'Organization', 'Topics', 'Topics categories','Metadata Type']);
@@ -2491,7 +2492,7 @@ class CkanManager
         $isInventory = false;
         if (false === strstr($this->apiUrl, 'https')) {
             $ckan_url = 'https://catalog.data.gov/';
-            $orgs = file_get_contents(DATA_DIR . '/organizations.json');
+            $orgs = file_get_contents(CKANMNGR_DATA_DIR . '/organizations.json');
             $filename = '/catalog_orgs_list_' . (START ?: '') . '.csv';
         } else {
             $isInventory = true;
@@ -2501,8 +2502,8 @@ class CkanManager
         }
 
         $filter = false;
-        if (is_file(DATA_DIR . '/organizations_stats_filter.csv')) {
-            $filter = array_filter(explode(PHP_EOL, file_get_contents(DATA_DIR . '/organizations_stats_filter.csv')));
+        if (is_file(CKANMNGR_DATA_DIR . '/organizations_stats_filter.csv')) {
+            $filter = array_filter(explode(PHP_EOL, file_get_contents(CKANMNGR_DATA_DIR . '/organizations_stats_filter.csv')));
             if (!sizeof($filter)) {
                 $filter = false;
             } else {
@@ -2759,7 +2760,7 @@ class CkanManager
          * curl --data '{"all_fields":true}' "https://catalog.data.gov/api/action/organization_list" > organizations.json
          */
         if (false === strstr($this->apiUrl, 'https')) {
-            $orgs = file_get_contents(DATA_DIR . '/organizations.json');
+            $orgs = file_get_contents(CKANMNGR_DATA_DIR . '/organizations.json');
         } else {
             $orgs = $this->Ckan->organization_list();
         }

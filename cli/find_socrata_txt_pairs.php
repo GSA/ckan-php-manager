@@ -15,7 +15,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_PAIRS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_PAIRS';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -35,7 +35,7 @@ define('ERROR_REPORTING', E_ALL & ~E_NOTICE);
  */
 define('SOCRATA_URL', 'https://explore.data.gov/api/views/');
 
-if (!is_readable($socrata_file_path = DATA_DIR . '/socrata.txt')) {
+if (!is_readable($socrata_file_path = CKANMNGR_DATA_DIR . '/socrata.txt')) {
     die($socrata_file_path . ' not readable');
 }
 

@@ -10,7 +10,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_DELETE_DATASETS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_DELETE_DATASETS';
 mkdir($results_dir);
 
 /**
@@ -38,7 +38,7 @@ $CkanManager->resultsDir = $results_dir;
  * datasetName, orgId
  */
 
-foreach (glob(DATA_DIR . '/undelete*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/undelete*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

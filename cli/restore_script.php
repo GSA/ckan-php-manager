@@ -11,7 +11,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_RESTORE_DATASETS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_RESTORE_DATASETS';
 mkdir($results_dir);
 
 $ProductionClient = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -25,7 +25,7 @@ $StagingClient = new CkanManager(CKAN_UAT_API_URL);
  * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
  */
 
-foreach (glob(DATA_DIR . '/*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

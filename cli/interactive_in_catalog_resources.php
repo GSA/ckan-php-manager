@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_INTERACTIVE_RESOURCES';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_SOCRATA_INTERACTIVE_RESOURCES';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);

@@ -10,7 +10,7 @@ define('ORGANIZATION_TO_EXPORT', 'Department of Labor');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
-if (!is_readable($keywords_file_path = DATA_DIR . '/search_topics.csv')) {
+if (!is_readable($keywords_file_path = CKANMNGR_DATA_DIR . '/search_topics.csv')) {
     die($keywords_file_path . ' not readable');
 }
 
@@ -21,7 +21,7 @@ $topics_list = explode("\n", $topics_list);
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_SEARCH_TOPICS_' . sizeof($topics_list);
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_SEARCH_TOPICS_' . sizeof($topics_list);
 mkdir($results_dir);
 
 /**

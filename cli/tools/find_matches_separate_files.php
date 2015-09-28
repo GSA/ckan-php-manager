@@ -4,7 +4,7 @@ namespace CKAN\Manager;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_FIND_MATCHES_SEPARATE_FILES';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_FIND_MATCHES_SEPARATE_FILES';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_QA_API_URL);

@@ -12,7 +12,7 @@ $limit = isset($argv[2]) ? intval($argv[2]) : 10000;
  * Create results dir for logs
  */
 //$resultsDir = RESULTS_DIR . date('/Ymd-His') . '_MISSING_GROUPS_DATASETS';
-$results_dir = RESULTS_DIR . date('/Ymd-1') . '_MISSING_GROUPS_DATASETS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-1') . '_MISSING_GROUPS_DATASETS';
 is_dir($results_dir) || mkdir($results_dir);
 
 /**

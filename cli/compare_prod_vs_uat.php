@@ -16,7 +16,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd') . '_CHECK_PROD_VS_UAT';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);

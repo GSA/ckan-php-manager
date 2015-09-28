@@ -15,7 +15,7 @@ define('STOP', isset($argv[2]) ? trim($argv[2]) : false);
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_ORG_STATS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_ORG_STATS';
 mkdir($results_dir);
 
 /**

@@ -12,7 +12,7 @@ $start = isset($argv[1]) ? trim($argv[1]) : 0;
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -29,7 +29,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
  */
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(DATA_DIR . '/assign*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
     $csv_source = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $CkanManager->color->green($csv_source);
 

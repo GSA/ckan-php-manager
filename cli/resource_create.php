@@ -11,7 +11,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 
 
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_RESOURCE_CREATE';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_RESOURCE_CREATE';
 mkdir($results_dir);
 $CkanManager->resultsDir = $results_dir;
 

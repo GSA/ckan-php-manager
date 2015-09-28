@@ -31,7 +31,7 @@ if (!defined('PARENT_TERM')) {
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_TRACKING_' . PARENT_TERM;
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_TRACKING_' . PARENT_TERM;
 mkdir($results_dir);
 
 /**

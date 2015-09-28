@@ -30,7 +30,7 @@ if (!defined('PARENT_TERM')) {
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_' . PARENT_TERM;
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_NOAA' . PARENT_TERM;
 mkdir($results_dir);
 
 /**
@@ -41,6 +41,7 @@ mkdir($results_dir);
  * Production
  */
 $CkanManager = new CkanManager(CKAN_API_URL);
+//$CkanManager = new CkanManager(CKAN_UAT_API_URL);
 //$CkanManager = new CkanManager(CKAN_QA_API_URL);
 //$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 

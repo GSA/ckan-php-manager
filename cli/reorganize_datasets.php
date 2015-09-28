@@ -32,7 +32,7 @@ if (!defined('PARENT_TERM')) {
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_LEGACY_' . PARENT_TERM;
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_LEGACY_' . PARENT_TERM;
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -40,7 +40,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 $CkanManager->resultsDir = $results_dir;
 
-$CkanManager->reorganizeDatasets(ORGANIZATION_TO_TAG, $termsArray, BACKUP_DIR);
+$CkanManager->reorganizeDatasets(ORGANIZATION_TO_TAG, $termsArray, CKANMNGR_BACKUP_DIR);
 
 // show running time on finish
 timer();

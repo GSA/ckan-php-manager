@@ -6,7 +6,7 @@ use EasyCSV;
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_ORGS_FULL';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_ORGS_FULL';
 mkdir($results_dir);
 
 /**
@@ -17,7 +17,7 @@ $CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_
 $CkanManager->resultsDir = $results_dir;
 
 
-foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/export_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

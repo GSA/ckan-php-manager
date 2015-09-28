@@ -11,7 +11,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT';
 mkdir($results_dir);
 
 $start = isset($argv[1]) ? trim($argv[1]) : 0;
@@ -24,7 +24,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 $tags_csv = new Writer($results_dir . '/assign_tags.csv');
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(DATA_DIR . '/export_*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/export_*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

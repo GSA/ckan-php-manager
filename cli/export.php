@@ -24,7 +24,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_SEARCH_' . $filename_strip_search;
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_SEARCH_' . $filename_strip_search;
 mkdir($results_dir);
 
 /**

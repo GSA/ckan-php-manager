@@ -10,7 +10,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_CHECK_CKAN_REDIRECTS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_CHECK_CKAN_REDIRECTS';
 mkdir($results_dir);
 
 /**
@@ -40,7 +40,7 @@ curl_setopt($curl_ch, CURLOPT_FILETIME, true);
 // Initialize cURL headers
 
 
-foreach (glob(DATA_DIR . '/redirects_ckan.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/redirects_ckan.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

@@ -20,7 +20,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs and json results
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_TOPIC_' . $topic;
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_BY_TOPIC_' . $topic;
 mkdir($results_dir);
 
 /**

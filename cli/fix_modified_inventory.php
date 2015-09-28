@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_FIX_METADATA';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_FIX_METADATA';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
@@ -17,7 +17,7 @@ $CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_
 $CkanManager->resultsDir = $results_dir;
 
 
-foreach (glob(DATA_DIR . '/metadata*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/metadata*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 

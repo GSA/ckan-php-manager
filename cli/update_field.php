@@ -9,7 +9,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = RESULTS_DIR . date('/Ymd-His') . '_UPDATE_EXTRA';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_UPDATE_EXTRA';
 mkdir($results_dir);
 
 //$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -25,7 +25,7 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_PROD_API_KEY);
  */
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(DATA_DIR . '/license_update*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/license_update*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
