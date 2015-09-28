@@ -26,7 +26,11 @@ if (!defined('CKANMNGR_RESULTS_DIR')) {
 define('CKANMNGR_TIMER_START', time());
 
 if (is_dir(CKANMNGR_ROOT_DIR . '/vendor')) {
-    require CKANMNGR_ROOT_DIR . '/vendor/autoload.php';
+    require_once CKANMNGR_ROOT_DIR . '/vendor/autoload.php';
+} else {
+    if (is_file(dirname(CKANMNGR_ROOT_DIR).'/autoload.php')) {
+        require_once dirname(CKANMNGR_ROOT_DIR).'/autoload.php';
+    }
 }
 
 if (!class_exists('\CKAN\CkanClient')) {
