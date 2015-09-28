@@ -28,8 +28,9 @@ define('CKANMNGR_TIMER_START', time());
 if (is_dir(CKANMNGR_ROOT_DIR . '/vendor')) {
     require_once CKANMNGR_ROOT_DIR . '/vendor/autoload.php';
 } else {
-    if (is_file(dirname(CKANMNGR_ROOT_DIR).'/autoload.php')) {
-        require_once dirname(CKANMNGR_ROOT_DIR).'/autoload.php';
+//    if we became a dependency
+    if (is_file(dirname(dirname(CKANMNGR_ROOT_DIR)).'/autoload.php')) {
+        require_once dirname(dirname(CKANMNGR_ROOT_DIR)).'/autoload.php';
     }
 }
 
@@ -37,7 +38,11 @@ if (!class_exists('\CKAN\CkanClient')) {
     throw new Exception('Install dependencies via composer');
 }
 
-require 'config.php';
+if (is_file(__DIR__.'/config.php')) {
+    require 'config.php';
+} else {
+    require 'config.sample.php';
+}
 
 function timer()
 {
