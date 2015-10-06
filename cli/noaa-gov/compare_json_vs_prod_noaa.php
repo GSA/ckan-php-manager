@@ -125,6 +125,7 @@ $csv->writeRow([
     'JSON URL',
     'JSON GUID',
     'URL Match',
+    'Title Match',
     'GUID Match',
 ]);
 
@@ -144,7 +145,8 @@ foreach ($prod_noaa as $name => $prod_dataset) {
                 $json_backup_dataset['title'],
                 $json_backup_dataset['url'],
                 $json_backup_dataset['guid'],
-                (bool)($prod_dataset['name'] == $json_backup_dataset['name']),
+                (bool)($prod_dataset['name'] && $prod_dataset['name'] == $json_backup_dataset['name']),
+                (bool)($prod_dataset['title_simple'] && $prod_dataset['title_simple'] == $json_backup_dataset['title_simple']),
                 true,
             ]);
             if (isset($json_backup_tags[$json_backup_dataset['title_simple']])) {
@@ -176,6 +178,7 @@ foreach ($prod_noaa as $name => $prod_dataset) {
                 $json_backup_dataset['title'],
                 $json_backup_dataset['url'],
                 $json_backup_dataset['guid'],
+                (bool)($prod_dataset['name'] && $prod_dataset['name'] == $json_backup_dataset['name']),
                 true,
                 (bool)($prod_dataset['guid'] == $json_backup_dataset['guid']),
             ]);

@@ -100,6 +100,7 @@ $csv->writeRow([
     'QA URL',
     'QA GUID',
     'URL Match',
+    'Title Match',
     'GUID Match',
 ]);
 
@@ -116,7 +117,8 @@ foreach ($prod_noaa as $name => $prod_dataset) {
                 $qa_dataset['title'],
                 $qa_dataset['url'],
                 $qa_dataset['guid'],
-                (bool)($prod_dataset['name'] == $qa_dataset['name']),
+                (bool)($prod_dataset['name'] && $prod_dataset['name'] == $qa_dataset['name']),
+                (bool)($prod_dataset['title_simple'] && $prod_dataset['title_simple'] == $qa_dataset['title_simple']),
                 true,
             ]);
         }
@@ -135,6 +137,7 @@ foreach ($prod_noaa as $name => $prod_dataset) {
                 $qa_dataset['title'],
                 $qa_dataset['url'],
                 $qa_dataset['guid'],
+                (bool)($prod_dataset['name'] && $prod_dataset['name'] == $qa_dataset['name']),
                 true,
                 (bool)($prod_dataset['guid'] == $qa_dataset['guid']),
             ]);
