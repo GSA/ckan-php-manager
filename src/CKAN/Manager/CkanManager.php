@@ -1768,12 +1768,15 @@ class CkanManager
                     }
 
                     $line = [
+//                        'id'        => $dataset['id'],
                         'title'        => $dataset['title'],
                         'title_simple' => $this->simplifyTitle($dataset['title']),
                         'name'         => $dataset['name'],
                         'url'          => $ckan_url . $dataset['name'],
                         'identifier'   => $identifier,
                         'guid'         => $guid,
+//                        'org title'         => $dataset['organization']['title'],
+//                        'org name'         => $dataset['organization']['name'],
                         'topics'       => join(';', $groups),
                         'categories'   => join(';', $categories),
                     ];
