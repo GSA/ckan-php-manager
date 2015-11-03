@@ -21,17 +21,17 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 
 $csv = new Writer($results_dir . '/export.' . date('Y-m-d') . '.csv');
 
-$csv->writeRow([
-    'ckan id',
-    'title',
-    'name',
-    'url',
-    'identifier',
-    'org title',
-    'org name',
-    'topics',
-    'categories',
-]);
+//$csv->writeRow([
+//    'ckan id',
+//    'title',
+//    'name',
+//    'url',
+//    'identifier',
+//    'org title',
+//    'org name',
+//    'topics',
+//    'categories',
+//]);
 
 $CkanManager->resultsDir = $results_dir;
 
@@ -43,12 +43,14 @@ $CkanManager->resultsDir = $results_dir;
 //$brief = $CkanManager->exportShort('organization:doe-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:dhs-gov AND (harvest_source_title:DHS*) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:noaa-gov AND metadata_type:geospatial AND (dataset_type:dataset) AND groups:*');
-$brief = $CkanManager->exportShort('metadata-source:dms AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('metadata-source:dms AND (dataset_type:dataset)');
+$brief = $CkanManager->exportShort('organization:doj-gov AND (dataset_type:dataset)');
 //    'http://uat-catalog-fe-data.reisys.com/dataset/');
 //$brief = $CkanManager->exportShort('(extra_harvest_source_title:Open+*) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('extras_harvest_source_title:Test ISO WAF AND (dataset_type:dataset)');
-//var_dump($brief);die();
+$headers = array_keys($brief[array_keys($brief)[0]]);
+$csv->writeRow($headers);
 $csv->writeFromArray($brief);
 
 // show running time on finish

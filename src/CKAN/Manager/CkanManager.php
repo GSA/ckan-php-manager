@@ -1775,6 +1775,9 @@ class CkanManager
                         'url'          => $ckan_url . $dataset['name'],
                         'identifier'   => $identifier,
                         'guid'         => $guid,
+                        'metadata_created'   => $dataset['metadata_created'],
+                        'metadata_modified'   => $dataset['metadata_modified'],
+                        'extras_modified'   => $this->extra($dataset['extras'], 'modified'),
 //                        'org title'         => $dataset['organization']['title'],
 //                        'org name'         => $dataset['organization']['name'],
                         'topics'       => join(';', $groups),
@@ -2877,11 +2880,11 @@ class CkanManager
             return;
         }
 
-        if (!isset($dataset['private']) || !$dataset['private']) {
-            $this->say([$datasetName, $organizationName, 'Not private']);
-
-            return;
-        }
+//        if (!isset($dataset['private']) || !$dataset['private']) {
+//            $this->say([$datasetName, $organizationName, 'Not private']);
+//
+//            return;
+//        }
 
         $result = $this->tryPackageDelete($datasetName);
         if ($result) {
