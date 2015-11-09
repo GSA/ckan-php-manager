@@ -5,10 +5,7 @@ ckan-php-manager
 [![Codacy Badge](https://api.codacy.com/project/badge/a07828e07ef9416583a88beedf6ff072)](https://www.codacy.com/app/alexandr-perfilov/ckan-php-manager)
 [![Join the chat at https://gitter.im/GSA/ckan-php-manager](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/GSA/ckan-php-manager?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-## API DOCs
-
-http://docs.ckan.org/en/latest/api/index.html
-
+A bunch of scripts to perform tasks using CKAN API and https://github.com/GSA/ckan-php-client
 
 ## Requirements
 
@@ -110,3 +107,7 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 ```
     $ php cli/tagging/remove_groups_and_tags.php
 ```
+
+## CKAN API DOCs
+
+http://docs.ckan.org/en/latest/api/index.html
