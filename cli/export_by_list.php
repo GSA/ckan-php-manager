@@ -54,6 +54,8 @@ foreach (glob(CKANMNGR_DATA_DIR . '/export_*.csv') as $csv_file) {
 //        no anchors please
         list($dataset,) = explode('#', basename(trim($row['0'])));
 
+//        echo $dataset.PHP_EOL;
+
         if (!$dataset) {
             continue;
         }

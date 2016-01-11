@@ -42,9 +42,13 @@ $CkanManager->resultsDir = $results_dir;
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND harvest_source_title:Open* AND (dataset_type:dataset)',
 //$brief = $CkanManager->exportShort('organization:doe-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:dhs-gov AND (harvest_source_title:DHS*) AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:epa-gov AND (harvest_source_title:*Gateway) AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:epa-gov AND (metadata_type:geospatial) AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:nasa-gov AND (harvest_source_title:NASA*) AND (dataset_type:dataset)');
+$brief = $CkanManager->exportShort('organization:ntsb-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:noaa-gov AND metadata_type:geospatial AND (dataset_type:dataset) AND groups:*');
 //$brief = $CkanManager->exportShort('metadata-source:dms AND (dataset_type:dataset)');
-$brief = $CkanManager->exportShort('organization:doj-gov AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:doj-gov AND (dataset_type:dataset)');
 //    'http://uat-catalog-fe-data.reisys.com/dataset/');
 //$brief = $CkanManager->exportShort('(extra_harvest_source_title:Open+*) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND (dataset_type:dataset)');

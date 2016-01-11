@@ -16,7 +16,7 @@ require_once dirname(dirname(__DIR__)) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd') . '_CHECK_UAT_VS_PROD_EPA';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd') . '_CHECK_UAT_VS_PROD_NTSB';
 
 if (!is_dir($results_dir)) {
     mkdir($results_dir);
@@ -39,11 +39,11 @@ if (!is_file($results_dir . '/prod.csv')) {
     $ProdCkanManager = new CkanManager(CKAN_API_URL);
     $ProdCkanManager->resultsDir = $results_dir;
 
-    $prod_epa = $ProdCkanManager->exportBrief('organization:epa-gov AND metadata_type:geospatial');
-    $prod->writeFromArray($prod_epa);
+    $prod_ntsb = $ProdCkanManager->exportBrief('organization:ntsb-gov AND dataset_type:dataset');
+    $prod->writeFromArray($prod_ntsb);
 } else {
     $prod = new Reader($results_dir . '/prod.csv');
-    $prod_epa = $prod->getAll();
+    $prod_ntsb = $prod->getAll();
 }
 
 echo 'uat.csv' . PHP_EOL;
@@ -63,32 +63,33 @@ if (!is_file($results_dir . '/uat.csv')) {
     $QaCkanManager = new CkanManager(CKAN_UAT_API_URL);
     $QaCkanManager->resultsDir = $results_dir;
 
-    $uat_epa = $QaCkanManager->exportBrief('organization:epa-gov AND metadata_type:geospatial', '', 'http://uat-catalog-fe-data.reisys.com/dataset/');
-    $uat->writeFromArray($uat_epa);
+    $uat_ntsb = $QaCkanManager->exportBrief('organization:ntsb-gov AND (harvest_source_title:NTSB*) AND dataset_type:dataset',
+        '', 'http://uat-catalog-fe-data.reisys.com/dataset/');
+    $uat->writeFromArray($uat_ntsb);
 
 } else {
     $uat = new Reader($results_dir . '/uat.csv');
-    $uat_epa = $uat->getAll();
+    $uat_ntsb = $uat->getAll();
 }
 
-$uat_epa_by_title = $uat_epa_by_guid = [];
+$uat_ntsb_by_title = $uat_ntsb_by_guid = [];
 
-foreach ($uat_epa as $name => $dataset) {
+foreach ($uat_ntsb as $name => $dataset) {
     $title = $dataset['title_simple'];
 
-    $uat_epa_by_title[$title] = isset($uat_epa_by_title[$title]) ? $uat_epa_by_title[$title] : [];
-    $uat_epa_by_title[$title][] = $dataset;
+    $uat_ntsb_by_title[$title] = isset($uat_ntsb_by_title[$title]) ? $uat_ntsb_by_title[$title] : [];
+    $uat_ntsb_by_title[$title][] = $dataset;
 
     $guid = trim($dataset['guid']);
     if ($guid) {
-        $uat_epa_by_guid[$guid] = isset($uat_epa_by_guid[$guid]) ? $uat_epa_by_guid[$guid] : [];
-        $uat_epa_by_guid[$guid][] = $dataset;
+        $uat_ntsb_by_guid[$guid] = isset($uat_ntsb_by_guid[$guid]) ? $uat_ntsb_by_guid[$guid] : [];
+        $uat_ntsb_by_guid[$guid][] = $dataset;
     }
 }
 
 echo 'prod_vs_uat.csv' . PHP_EOL;
-is_file($results_dir . '/prod_vs_uat_epa.csv') && unlink($results_dir . '/prod_vs_uat_epa.csv');
-$csv = new Writer($results_dir . '/prod_vs_uat_epa.csv');
+is_file($results_dir . '/prod_vs_uat_ntsb.csv') && unlink($results_dir . '/prod_vs_uat_ntsb.csv');
+$csv = new Writer($results_dir . '/prod_vs_uat_ntsb.csv');
 $csv->writeRow([
     'Prod Title',
     'Prod URL',
@@ -103,9 +104,11 @@ $csv->writeRow([
     'GUID Match',
 ]);
 
-foreach ($prod_epa as $name => $prod_dataset) {
-    if (isset($uat_epa_by_guid[$prod_dataset['guid']])) {
-        foreach ($uat_epa_by_guid[$prod_dataset['guid']] as $uat_dataset) {
+$matched = [];
+
+foreach ($prod_ntsb as $name => $prod_dataset) {
+    if (isset($uat_ntsb_by_guid[$prod_dataset['guid']])) {
+        foreach ($uat_ntsb_by_guid[$prod_dataset['guid']] as $uat_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
@@ -119,12 +122,13 @@ foreach ($prod_epa as $name => $prod_dataset) {
                 (bool)($prod_dataset['name'] == $uat_dataset['name']),
                 true,
             ]);
+            $matched[] = $uat_dataset['title_simple'];
         }
         continue;
     }
 
-    if (isset($uat_epa_by_title[$prod_dataset['title_simple']])) {
-        foreach ($uat_epa_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
+    if (isset($uat_ntsb_by_title[$prod_dataset['title_simple']])) {
+        foreach ($uat_ntsb_by_title[$prod_dataset['title_simple']] as $uat_dataset) {
             $csv->writeRow([
                 $prod_dataset['title'],
                 $prod_dataset['url'],
@@ -138,6 +142,7 @@ foreach ($prod_epa as $name => $prod_dataset) {
                 true,
                 (bool)($prod_dataset['guid'] == $uat_dataset['guid']),
             ]);
+            $matched[] = $uat_dataset['title_simple'];
         }
         continue;
     }
@@ -155,6 +160,24 @@ foreach ($prod_epa as $name => $prod_dataset) {
         false,
         false,
     ]);
+}
+
+foreach ($uat_ntsb as $name => $uat_dataset) {
+    if (!in_array($uat_dataset['title_simple'], $matched)) {
+        $csv->writeRow([
+            '',
+            '',
+            '',
+            '',
+            '',
+            false,
+            $uat_dataset['title'],
+            $uat_dataset['url'],
+            $uat_dataset['guid'],
+            false,
+            false,
+        ]);
+    }
 }
 
 // show running time on finish

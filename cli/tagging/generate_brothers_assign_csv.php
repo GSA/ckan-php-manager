@@ -12,7 +12,7 @@ $start = isset($argv[1]) ? trim($argv[1]) : 0;
 /**
  * Create results dir for logs
  */
-$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_GROUPS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_ASSIGN_CLONES';
 mkdir($results_dir);
 
 $brothers = [];
@@ -41,10 +41,10 @@ foreach (glob(CKANMNGR_DATA_DIR . '/brothers*.csv') as $brothers_csv) {
 //var_dump($brothers);
 //die();
 
-$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
+//$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
 //$CkanManager = new CkanManager(CKAN_DEV_API_URL, CKAN_DEV_API_KEY);
-//$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
+$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
 //$CkanManager = new CkanManager(CKAN_QA_API_URL, CKAN_QA_API_KEY);
 
 /**
@@ -67,6 +67,7 @@ foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
 //    file_put_contents($resultsDir . '/' . $basename . '_tags.log', $status, FILE_APPEND | LOCK_EX);
 
     $csv = new EasyCSV\Reader($csv_file, 'r+', false);
+    $output = new EasyCSV\Writer($results_dir.'/'.$basename.'_clones.csv');
     while (true) {
         $row = $csv->getRow();
         if (!$row) {
@@ -84,12 +85,11 @@ foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
         }
 
 //        format group tags
-        $categories = [];
-        if (isset($row['2']) && $row['2']) {
-            $categories = explode(';', trim($row['2']));
-            $categories = array_map('trim', $categories);
-
-        }
+        $categories = isset($row['2'])?trim($row['2']):'';
+//        if (isset($row['2']) && $row['2']) {
+//            $categories = explode(';', trim($row['2']));
+//            $categories = array_map('trim', $categories);
+//        }
 
 //        no anchors please
         $dataset = get_dataset_basename($row['0']);
@@ -98,13 +98,17 @@ foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
             continue;
         }
 
-        echo "\tOriginal: ".$dataset . PHP_EOL;
+//        echo "\tOriginal: ".$dataset . PHP_EOL;
 //        $CkanManager->assignGroupsAndCategoriesToDatasets(
 //            [$dataset],
 //            trim($row['1']),
 //            $categories,
 //            $basename
 //        );
+        $output->writeRow([$dataset,trim($row['1']),$categories]);
+        echo join(' , ',[$dataset,trim($row['1']),$categories]).PHP_EOL;
+
+
         if (isset($brothers[$dataset])) {
             foreach ($brothers[$dataset] as $brother) {
                 if (!strlen(trim($brother))) {
@@ -114,13 +118,15 @@ foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
                 if (!$brother) {
                     continue;
                 }
-                echo "\tUat (s):" . PHP_EOL;
-                $CkanManager->assignGroupsAndCategoriesToDatasets(
-                    [$brother],
-                    trim($row['1']),
-                    $categories,
-                    $basename
-                );
+                $output->writeRow([$brother,trim($row['1']),$categories]);
+                echo join(' , ',[$brother,trim($row['1']),$categories]).PHP_EOL;
+//                echo "\tUat (s):" . PHP_EOL;
+//                $CkanManager->assignGroupsAndCategoriesToDatasets(
+//                    [$brother],
+//                    trim($row['1']),
+//                    $categories,
+//                    $basename
+//                );
             }
         }
     }

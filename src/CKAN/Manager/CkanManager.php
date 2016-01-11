@@ -1962,6 +1962,7 @@ class CkanManager
         }
 
         if (sizeof($dataset['groups'])) {
+            echo $dataset['name'].' , '.json_encode($dataset['groups']).PHP_EOL;
             foreach ($dataset['groups'] as $group) {
                 $tags = isset($category_id_tags[$group['id']]) ?
                     join(';', $category_id_tags[$group['id']]) : '';
@@ -3520,7 +3521,8 @@ class CkanManager
         $ckan_query = '(("' . $search . '") AND (dataset_type:dataset))';
 //        $ckan_query = "'data.jsonld'";
 //        $ckan_query = $search;
-//        $ckan_query = '(organization:"epa-gov") AND (dataset_type:dataset)';
+//        $ckan_query = '(organization:"ntsb-gov") AND (dataset_type:dataset)';
+        $ckan_query = '(organization_type:"City Government") AND (dataset_type:dataset)';
 //        $ckan_query = 'metadata-source:dms';
 //        $ckan_query = 'organization_type:"State Government" AND (dataset_type:dataset)';
 

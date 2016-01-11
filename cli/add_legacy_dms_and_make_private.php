@@ -9,7 +9,7 @@ use CKAN\OrganizationList;
 /**
  * http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json
  */
-define('ORGANIZATION_TO_TAG', 'Nuclear Regulatory Commission');
+define('ORGANIZATION_TO_TAG', 'Millenium Challenge Corporation');
 
 /**
  * Just list those datasets, no need to edit anything
