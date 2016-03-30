@@ -65,7 +65,7 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 
 ### Assign groups and category tags to datasets
 
-* Put csv files to /data dir, with `<any-title>.csv`
+* Put csv files to /data dir, with `assign_<any-title>.csv` (must have `assign_` prefix)
     The format of these files must be:
     `dataset, group, categories`
 
@@ -81,7 +81,9 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 
     2. Group
     just one group per line. If you need to add multiple groups, you must create another row in csv with same dataset and another group,
-    because all the categories are tagged by current row group
+    because all the categories are tagged by current row group. Make sure your group exist in your CKAN instance (to list all
+    existing groups, go to http://catalog.data.gov/api/3/action/group_list?all_fields=true , replacing `catalog.data.gov` with your
+     CKAN domain)
 
     3. Categories
     one of multiple categories per current row group, separated by semicolon `;`

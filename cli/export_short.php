@@ -7,10 +7,12 @@ use EasyCSV\Writer;
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
+$prefix = isset($argv[1]) ? trim($argv[1]) : '';
+
 /**
  * Create results dir for logs and json results
  */
-$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_SHORT'.($prefix?'_'.$prefix:'');
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL);
@@ -19,7 +21,7 @@ $CkanManager = new CkanManager(CKAN_API_URL);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 //$CkanManager = new CkanManager(CKAN_UAT_API_URL);
 
-$csv = new Writer($results_dir . '/export.' . date('Y-m-d') . '.csv');
+$csv = new Writer($results_dir . '/export.' . ($prefix?$prefix.'.':"") . date('Y-m-d') . '.csv');
 
 //$csv->writeRow([
 //    'ckan id',
@@ -45,7 +47,7 @@ $CkanManager->resultsDir = $results_dir;
 //$brief = $CkanManager->exportShort('organization:epa-gov AND (harvest_source_title:*Gateway) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:epa-gov AND (metadata_type:geospatial) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:nasa-gov AND (harvest_source_title:NASA*) AND (dataset_type:dataset)');
-$brief = $CkanManager->exportShort('organization:ntsb-gov AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:ntsb-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:noaa-gov AND metadata_type:geospatial AND (dataset_type:dataset) AND groups:*');
 //$brief = $CkanManager->exportShort('metadata-source:dms AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:doj-gov AND (dataset_type:dataset)');
@@ -53,6 +55,11 @@ $brief = $CkanManager->exportShort('organization:ntsb-gov AND (dataset_type:data
 //$brief = $CkanManager->exportShort('(extra_harvest_source_title:Open+*) AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:gsa-gov AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('extras_harvest_source_title:Test ISO WAF AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:doe-gov AND (harvest_source_title:Energy*) AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:state-of-oklahoma AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:state-of-oklahoma AND -metadata_modified:[2016-02-24T23:59:59.999Z TO 2016-02-27T00:00:00Z] AND (dataset_type:dataset)');
+$brief = $CkanManager->exportShort('organization:noaa-gov AND metadata-source:dms AND (dataset_type:dataset)');
+
 $headers = array_keys($brief[array_keys($brief)[0]]);
 $csv->writeRow($headers);
 $csv->writeFromArray($brief);

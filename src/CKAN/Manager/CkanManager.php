@@ -2601,6 +2601,15 @@ class CkanManager
     }
 
     /**
+     * @param bool $all_fields
+     * @return mixed
+     */
+    public function organization_list($all_fields = false)
+    {
+        return $this->Ckan->organization_list($all_fields);
+    }
+
+    /**
      * Exports information about active users
      *
 
@@ -2663,6 +2672,11 @@ class CkanManager
         } else {
             $csv_header[] = 'No modified & Public & Active';
             $csv_header[] = 'No modified & Private & Active';
+            $csv_header[] = 'Redacted';
+
+            $redacted_list_path = $this->resultsDir . '/redacted_list.csv';
+            $redacted_list = fopen($redacted_list_path, 'w');
+            fputcsv($redacted_list, ['Organization', 'Dataset url']);
         }
 
         fputcsv($fp_log, $csv_header);
@@ -2672,6 +2686,9 @@ class CkanManager
         $skip = (bool)START;
         foreach ($orgs as $org) {
             $org_slug = is_object($org) ? $org->name : $org;
+//            if ('gsa-x' !== $org_slug) {
+//                continue;
+//            }
 
             if (defined('LIST_ORGS_ONLY') && LIST_ORGS_ONLY) {
 //                $this->say([++$i, $org_slug]);
@@ -2714,7 +2731,7 @@ class CkanManager
                 $private = $public = $notModifiedPublic = $notModifiedPrivate = 0;
                 $total_count = 'na';
                 $package_states = [];
-                $dms_public = $dms_private = $non_dms_public = 0;
+                $dms_public = $dms_private = $non_dms_public = $redacted = 0;
 
                 if (is_array($member_list)) {
                     $total_count = sizeof($member_list);
@@ -2766,9 +2783,21 @@ class CkanManager
                                 $non_dms_public++;
                             }
                         } else {
+//                            INVENTORY
                             if ('active' == $state) {
+//                                ALIVE
                                 if (isset($package['extras'])) {
                                     $extras = json_encode($package['extras']);
+                                    $jpackage = json_encode($package);
+                                    if (strpos($jpackage, '"redacted_')) {
+                                        $redacted++;
+                                        fputcsv($redacted_list,
+                                            [
+                                                $org_slug,
+                                                'https://inventory.data.gov/dataset/' . $package['name'],
+                                            ]
+                                        );
+                                    }
                                     if (!strpos($extras, '"modified"')) {
                                         if ($package['private']) {
                                             $this->say([
@@ -2787,6 +2816,7 @@ class CkanManager
                                         }
                                     }
                                 } else {
+//                                    DEAD
                                     if ($package['private']) {
                                         $notModifiedPrivate++;
                                         $this->say([
@@ -2830,6 +2860,7 @@ class CkanManager
                 } else {
                     $organization_row[] = $notModifiedPublic;
                     $organization_row[] = $notModifiedPrivate;
+                    $organization_row[] = $redacted;
                 }
 
                 fputcsv($fp_log, $organization_row);
@@ -2865,6 +2896,10 @@ class CkanManager
 //                    }
 //                }
             }
+        }
+
+        if (isset($redacted_list)) {
+            fclose($redacted_list);
         }
 
         // close log file
@@ -3522,9 +3557,11 @@ class CkanManager
 //        $ckan_query = "'data.jsonld'";
 //        $ckan_query = $search;
 //        $ckan_query = '(organization:"ntsb-gov") AND (dataset_type:dataset)';
-        $ckan_query = '(organization_type:"City Government") AND (dataset_type:dataset)';
+//        $ckan_query = '(organization_type:"City Government") AND (dataset_type:dataset)';
+//        $ckan_query = '(groups:agriculture8571)';
 //        $ckan_query = 'metadata-source:dms';
 //        $ckan_query = 'organization_type:"State Government" AND (dataset_type:dataset)';
+	$ckan_query = 'organization:nist-gov';
 
         echo $ckan_query . PHP_EOL;
 
