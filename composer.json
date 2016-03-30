@@ -28,6 +28,7 @@
     "kevinlebrun/colors.php": "0.*",
     "gsa/ckan-php-client": "0.*",
     "jwage/easy-csv": "0.*",
+    "symfony/yaml": "~2.1",
     "phpunit/phpunit": "~4.0"
   }
 }
