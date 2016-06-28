@@ -14,7 +14,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
 /**
  * Create results dir for logs
  */
-$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_RENAME_DATASETS';
+$results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_RENAME_AND_DELETE_DATASETS';
 mkdir($results_dir);
 
 $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
@@ -47,13 +47,12 @@ foreach (glob(CKANMNGR_DATA_DIR . '/rdelete*.csv') as $csv_file) {
             break;
         }
 //        skip headers
-        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'old dataset url', 'from'])) {
+        if (in_array(trim(strtolower($row['0'])), ['dataset', 'url', 'old dataset url', 'from', 'name'])) {
             continue;
         }
 
         $datasetName = trim(basename($row['0']));
-        $newDatasetName = substr($datasetName, 0, 70) . $i . '_clone_process';
-//        $newDatasetName = basename($row['1']);
+        $newDatasetName = substr($datasetName, 0, 70) . $i . '_delete';
 
         printf('[%04d] ', $i++);
         $CkanManager->renameDataset($datasetName, $newDatasetName, $basename);
