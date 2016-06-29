@@ -9,7 +9,7 @@ A bunch of scripts to perform tasks using CKAN API and https://github.com/GSA/ck
 
 ## Requirements
 
-* PHP 5.4+ : <http://php.net>
+* PHP 5.6+ : <http://php.net>
 
 ## Installation
 

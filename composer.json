@@ -23,12 +23,15 @@
   ],
   "prefer-stable": true,
   "require": {
-    "php": ">=5.4.17",
+    "php": ">=5.6",
     "ext-json": "*",
-    "kevinlebrun/colors.php": "0.*",
-    "gsa/ckan-php-client": "0.*",
-    "jwage/easy-csv": "0.*",
-    "symfony/yaml": "~2.1",
-    "phpunit/phpunit": "~4.0"
+    "kevinlebrun/colors.php": "~1",
+    "gsa/ckan-php-client": "*",
+    "jwage/easy-csv": "~0"
+  },
+  "require-dev": {
+    "phpunit/php-invoker": "~1.1",
+    "phpdocumentor/reflection-docblock": "~2",
+    "phpunit/phpunit": "*"
   }
 }
