@@ -2945,11 +2945,10 @@ class CkanManager
 //        } else {
 //            $orgs = $this->Ckan->organization_list();
 //        }
-        $orgs = file_get_contents(CKANMNGR_DATA_DIR . '/organizations.json');
+        $orgs = $this->Ckan->organization_list();
 
         $orgs = json_decode($orgs);
         $orgs = $orgs->result;
-
 
         // initialize log file
         $log_file = $this->resultsDir . '/user_list.csv';
@@ -2960,18 +2959,18 @@ class CkanManager
             'Organization ID',
             'User Name',
             'User ID',
-            'User Email',
             'User Dataset Count',
             'User Dataset Edits',
             'User Role',
             'User Sysadmin',
             'User Last Activity',
+            'User Created',
         ];
 
         fputcsv($fp_log, $csv_header);
 
         foreach ($orgs as $org) {
-            $org_slug = $org->name;
+            $org_slug = $org;
 
             try {
                 echo $org_slug . PHP_EOL;
@@ -3001,23 +3000,19 @@ class CkanManager
 
                             if ($user = $user_results->result) {
 
-                                $last_activity = (!empty($user->activity[0]->timestamp)) ? $user->activity[0]->timestamp : '';
-
-                                if (!$last_activity) {
-                                    $last_activity = $this->tryGetLastActivityTimestamp($user_id);
-                                }
+                                $last_activity = $this->tryGetLastActivityTimestamp($user_id);
 
                                 $user_row = [
                                     $org_results->result->title,
                                     $org_results->result->name,
-                                    $user->fullname,
+                                    $user->display_name,
                                     $user->name,
-                                    $user->email,
                                     isset($user->number_administered_packages) ? $user->number_administered_packages : '',
                                     $user->number_of_edits,
                                     $org_user->capacity,
                                     $user->sysadmin,
-                                    $last_activity
+                                    $last_activity,
+                                    $user->created
                                 ];
 
                                 $this->say("Exporting Organization: {$org_results->result->title}, User: {$user->fullname} ({$user->name})");
