@@ -15,7 +15,7 @@ use Prophecy\Argument;
  * Class CkanManagerTest
  * @package CKAN\Manager
  */
-class CkanManagerTest extends \BaseTestCase
+class CkanManagerTest extends \PHPUnit\Framework\TestCase
 {
 
 
