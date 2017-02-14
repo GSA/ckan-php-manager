@@ -30,7 +30,7 @@ If you don't have Composer [install](https://getcomposer.org/download/) it:
 
 #### Refresh your dependencies:
 
-    $ php composer.phar update
+    $ composer update
 
 ### Configuration
 Copy config.sample.php to config.php. Update it with your custom values, if needed.
