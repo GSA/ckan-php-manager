@@ -24,13 +24,9 @@ If you don't have Composer [install](https://getcomposer.org/download/) it:
     $ curl -sS https://getcomposer.org/installer | php
     $ mv composer.phar /usr/local/bin/composer
 
-#### Run composer self-udpate
+#### Install dependencies:
 
-    $ composer self-update
-
-#### Refresh your dependencies:
-
-    $ composer update
+    $ composer install
 
 ### Configuration
 Copy config.sample.php to config.php. Update it with your custom values, if needed.
