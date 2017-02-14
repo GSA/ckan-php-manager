@@ -19,7 +19,7 @@ A bunch of scripts to perform tasks using CKAN API and https://github.com/GSA/ck
 ### Composer
 Use [composer](#composer) to install/update dependencies
 
-If you don't have Composer [install](https://getcomposer.org/download/) it:
+If you don't have Composer, [install](https://getcomposer.org/download/) it:
 
     $ curl -sS https://getcomposer.org/installer | php
     $ mv composer.phar /usr/local/bin/composer
