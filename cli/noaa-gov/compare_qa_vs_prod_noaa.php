@@ -8,7 +8,6 @@
 namespace CKAN\Manager;
 
 
-use EasyCSV\Reader;
 use EasyCSV\Writer;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';

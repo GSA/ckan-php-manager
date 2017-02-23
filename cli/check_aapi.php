@@ -126,8 +126,7 @@ function url_compare($url1, $url2)
 /**
  * @param $curl_ch
  * @param $url
- *
- * @return bool
+ * @return array
  */
 function try_get_dataset($curl_ch, $url)
 {

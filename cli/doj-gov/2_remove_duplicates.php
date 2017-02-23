@@ -117,7 +117,9 @@ if (!is_file($results_dir . '/delete_'.$organization.'.csv')) {
                 continue;
             }
         }
-        array_push($survivors, $survivor);
+        if (isset($survivor)) {
+            array_push($survivors, $survivor);
+        }
         foreach ($brothers as $dataset) {
             $d = $dataset;
             $d['status'] = 'active';

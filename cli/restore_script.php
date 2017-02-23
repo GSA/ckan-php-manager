@@ -56,7 +56,7 @@ foreach (glob(CKANMNGR_DATA_DIR . '/*.csv') as $csv_file) {
 
             $ProductionClient->diffUpdate($datasetName, $DatasetArray);
 //            var_dump($DatasetArray);die();
-        } catch (Exceptions\NotFoundHttpException $ex) {
+        } catch (CKAN\NotFoundHttpException $ex) {
             $StagingClient->say(str_pad('Staging 404', 15, ' . '));
         } catch (\Exception $ex) {
             $StagingClient->say(str_pad('Staging Error: ' . $ex->getMessage(), 15, ' . '));

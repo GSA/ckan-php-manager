@@ -14,7 +14,7 @@ mkdir($results_dir);
 
 //$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL, CKAN_STAGING_API_KEY);
-$CkanManager = new CkanManager(CKAN_API_URL, CKAN_PROD_API_KEY);
+$CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 //$CkanManager = new CkanManager(CKAN_UAT_API_URL, CKAN_UAT_API_KEY);
 
 /**

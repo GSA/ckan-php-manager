@@ -64,6 +64,10 @@ class CkanManager
      */
     private $apiUrl = '';
     /**
+     * @var string
+     */
+    private $ckanUrl = '';
+    /**
      * @var int
      */
     private $resultCount = 0;
@@ -76,9 +80,13 @@ class CkanManager
     {
         $this->color = new Color();
         $this->apiUrl = $apiUrl;
+        $this->ckanUrl = str_replace(parse_url($apiUrl, PHP_URL_PATH), '/', $apiUrl);
+        // replace to read-only ckan
+        $this->ckanUrl = str_replace('admin-catalog.data.gov', 'catalog.data.gov', $this->ckanUrl);
         // skip while unit tests
         if (defined('RESULTS_DIR')) {
             $this->resultsDir = CKANMNGR_RESULTS_DIR;
+            /** @noinspection PhpUndefinedMethodInspection */
             echo $this->color->magenta("API URL:") . ' ' . $this->color->bold($apiUrl) . PHP_EOL . PHP_EOL;
 //            letting user cancel (Ctrl+C) script if noticed wrong api url
             sleep(3);
@@ -425,12 +433,16 @@ class CkanManager
 
         switch ($output) {
             case 'SUCCESS':
+                /** @noinspection PhpUndefinedMethodInspection */
                 $output = $this->color->green($output);
+                /** @noinspection PhpUndefinedMethodInspection */
                 $output = $this->color->bold($output);
                 break;
             case 'NOT FOUND':
             case 'INVALID URL':
+                /** @noinspection PhpUndefinedMethodInspection */
                 $output = $this->color->red($output);
+                /** @noinspection PhpUndefinedMethodInspection */
                 $output = $this->color->bold($output);
                 break;
             default:
@@ -997,7 +1009,7 @@ class CkanManager
                 continue;
             }
 
-            echo "http://catalog.data.gov/dataset/" . $dataset['name'] . PHP_EOL . $dataset['title'] . PHP_EOL . PHP_EOL;
+            echo $this->ckanUrl . "dataset/" . $dataset['name'] . PHP_EOL . $dataset['title'] . PHP_EOL . PHP_EOL;
         }
 
     }
@@ -1072,7 +1084,7 @@ class CkanManager
             echo PHP_EOL . $title . PHP_EOL . $solr_title . PHP_EOL . ($exact ? 'EXACT MATCH' : 'NOT EXACT MATCH') . PHP_EOL . $datasets[0]['title'] . PHP_EOL . $datasets[0]['name'] . PHP_EOL;
             $csv_writer->writeRow(
                 [
-                    'https://catalog.data.gov/dataset/' . $datasets[0]['name'],
+                    $this->ckanUrl . 'dataset/' . $datasets[0]['name'],
                     ($exact ? 'true' : 'false'),
                     $datasets[0]['title'],
                     $title
@@ -1122,7 +1134,6 @@ class CkanManager
         fputcsv($fp_popularity, $csv_header);
         fputcsv($fp_relevance, $csv_header);
 
-        $ckan_url = 'https://catalog.data.gov/dataset/';
         $counter = 1;
 
 //        most relevant:
@@ -1165,7 +1176,7 @@ class CkanManager
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---',
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                                 $term
                             ]
                         );
@@ -1211,7 +1222,7 @@ class CkanManager
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---',
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                                 $term
                             ]
                         );
@@ -1261,7 +1272,6 @@ class CkanManager
         fputcsv($fp_popularity, $csv_header);
         fputcsv($fp_relevance, $csv_header);
 
-        $ckan_url = 'https://catalog.data.gov/dataset/';
         $counter = 1;
 
 //        most relevant:
@@ -1344,7 +1354,7 @@ class CkanManager
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---',
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                                 $topic
                             ]
                         );
@@ -1390,7 +1400,7 @@ class CkanManager
                                 isset($dataset['organization']) && isset($dataset['organization']['title']) ?
                                     $dataset['organization']['title'] : '---',
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---',
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                                 $topic
                             ]
                         );
@@ -1479,8 +1489,6 @@ class CkanManager
         fputcsv($fp_popularity, $csv_header);
         fputcsv($fp_relevance, $csv_header);
 
-        $ckan_url = 'http://catalog.data.gov/dataset/';
-
         $counter = 1;
 
 //        most relevant:
@@ -1540,7 +1548,7 @@ class CkanManager
                                 isset($dataset['title']) ? $dataset['title'] : '---',
                                 $organization,
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---'
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---'
                             ]
                         );
                     }
@@ -1584,7 +1592,7 @@ class CkanManager
                                 isset($dataset['title']) ? $dataset['title'] : '---',
                                 $organization,
                                 isset($dataset['name']) ?
-                                    $ckan_url . $dataset['name'] : '---',
+                                    $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                             ]
                         );
                     }
@@ -1633,123 +1641,21 @@ class CkanManager
     /**
      * @param $search_q
      * @param $search_fq
-     * @param string $ckan_url
      * @param bool $short
      * @return array
      */
     public function exportShort(
         $search_q,
         $search_fq = '',
-        $ckan_url = 'https://catalog.data.gov/dataset/',
         $short = true
     )
     {
-        return $this->exportBrief($search_q, $search_fq, $ckan_url, $short);
+        return $this->exportBrief($search_q, $search_fq, $short);
     }
 
     /**
      * @param string $search_q
      * @param string $search_fq
-     * @param string $ckan_url
-     * @return array
-     * @throws \Exception
-     */
-    public function harvestStats(
-        $search_q='type:harvest',
-        $search_fq='metadata_created:[2016-01-01T00:00:00.000Z TO 2016-12-31T23:59:59.000Z]',
-        $ckan_url = 'https://catalog.data.gov/dataset/'
-    )
-    {
-
-        $this->logOutput = '';
-
-        $return = [];
-
-        $done = false;
-        $start = 0;
-        $per_page = 250;
-        echo $search_q . PHP_EOL;
-
-        $i = 0;
-
-        while (!$done) {
-            $datasets = $this->tryPackageSearch($search_q, $search_fq, $per_page, $start);
-            if (false === $datasets) {
-                throw new \Exception('No results found');
-            }
-
-            $totalCount = $this->resultCount;
-            $count = sizeof($datasets);
-
-            if (!$start) {
-                echo "Found $totalCount results" . PHP_EOL;
-            }
-
-            $start += $per_page;
-            echo $start . '/' . $totalCount . PHP_EOL;
-            if (!$totalCount) {
-                $done = true;
-                continue;
-            }
-
-            if ($count) {
-                foreach ($datasets as $harvest) {
-
-                    $this->say(++$i.' '.$harvest['name']);
-
-                    $harvest_full = $this->tryPackageShow($harvest['name']);
-
-                    if (!$harvest_full) {
-                        $harvest_full = array(
-                            'status' => array(
-                                'last_job' => array(
-                                    'created' => 'unavailable',
-                                    'finished' => 'unavailable'
-                                ),
-                                'total_datasets' => 'unavailable'
-                            )
-                        );
-                    }
-
-                    $line = [
-                        'title' => $harvest['title'],
-                        'name' => $harvest['name'],
-                        'url' => $ckan_url . $harvest['name'],
-                        'created' => $harvest['metadata_created'],
-                        'source_type' => $harvest['source_type'],
-                        'org title'         => $harvest['organization']['title'],
-                        'org name'         => $harvest['organization']['name'],
-                        'last_job_started' => $harvest_full['status']['last_job']['created'],
-                        'last_job_finished' => $harvest_full['status']['last_job']['finished'],
-                        'total_datasets' => $harvest_full['status']['total_datasets']
-                    ];
-
-                    $return[$harvest['name']] = $line;
-                }
-            } else {
-                echo 'no results: ' . $search_q . PHP_EOL;
-                continue;
-            }
-            if ($start > $totalCount) {
-                $done = true;
-            }
-        }
-
-        if ($return) {
-            $csv_global = new Writer($this->resultsDir . '/harvest_stats.csv', 'w');
-            $csv_global->writeRow(array_keys($return[array_keys($return)[0]]));
-            foreach($return as $line) {
-                $csv_global->writeRow(array_values($line));
-            }
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param string $search_q
-     * @param string $search_fq
-     * @param string $ckan_url
      * @param bool|false $short
      * @return array
      * @throws \Exception
@@ -1757,7 +1663,6 @@ class CkanManager
     public function exportBrief(
         $search_q = '',
         $search_fq = '',
-        $ckan_url = 'https://catalog.data.gov/dataset/',
         $short = false
     )
     {
@@ -1821,7 +1726,7 @@ class CkanManager
                         'title' => $dataset['title'],
                         'title_simple' => $this->simplifyTitle($dataset['title']),
                         'name' => $dataset['name'],
-                        'url' => $ckan_url . $dataset['name'],
+                        'url' => $this->ckanUrl . 'dataset/' . $dataset['name'],
                         'identifier' => $identifier,
                         'guid' => $guid,
                         'metadata_created' => $dataset['metadata_created'],
@@ -1852,15 +1757,110 @@ class CkanManager
     }
 
     /**
+     * @param string $search_q
+     * @param string $search_fq
+     * @return array
+     * @throws \Exception
+     */
+    public function harvestStats(
+        $search_q = 'type:harvest',
+        $search_fq = 'metadata_created:[2016-01-01T00:00:00.000Z TO 2016-12-31T23:59:59.000Z]'
+    )
+    {
+
+        $this->logOutput = '';
+
+        $return = [];
+
+        $done = false;
+        $start = 0;
+        $per_page = 250;
+        echo $search_q . PHP_EOL;
+
+        $i = 0;
+
+        while (!$done) {
+            $datasets = $this->tryPackageSearch($search_q, $search_fq, $per_page, $start);
+            if (false === $datasets) {
+                throw new \Exception('No results found');
+            }
+
+            $totalCount = $this->resultCount;
+            $count = sizeof($datasets);
+
+            if (!$start) {
+                echo "Found $totalCount results" . PHP_EOL;
+            }
+
+            $start += $per_page;
+            echo $start . '/' . $totalCount . PHP_EOL;
+            if (!$totalCount) {
+                $done = true;
+                continue;
+            }
+
+            if ($count) {
+                foreach ($datasets as $harvest) {
+
+                    $this->say(++$i . ' ' . $harvest['name']);
+
+                    $harvest_full = $this->tryPackageShow($harvest['name']);
+
+                    if (!$harvest_full) {
+                        $harvest_full = array(
+                            'status' => array(
+                                'last_job' => array(
+                                    'created' => 'unavailable',
+                                    'finished' => 'unavailable'
+                                ),
+                                'total_datasets' => 'unavailable'
+                            )
+                        );
+                    }
+
+                    $line = [
+                        'title' => $harvest['title'],
+                        'name' => $harvest['name'],
+                        'url' => $this->ckanUrl . 'dataset/' . $harvest['name'],
+                        'created' => $harvest['metadata_created'],
+                        'source_type' => $harvest['source_type'],
+                        'org title' => $harvest['organization']['title'],
+                        'org name' => $harvest['organization']['name'],
+                        'last_job_started' => $harvest_full['status']['last_job']['created'],
+                        'last_job_finished' => $harvest_full['status']['last_job']['finished'],
+                        'total_datasets' => $harvest_full['status']['total_datasets']
+                    ];
+
+                    $return[$harvest['name']] = $line;
+                }
+            } else {
+                echo 'no results: ' . $search_q . PHP_EOL;
+                continue;
+            }
+            if ($start > $totalCount) {
+                $done = true;
+            }
+        }
+
+        if ($return) {
+            $csv_global = new Writer($this->resultsDir . '/harvest_stats.csv', 'w');
+            $csv_global->writeRow(array_keys($return[array_keys($return)[0]]));
+            foreach ($return as $line) {
+                $csv_global->writeRow(array_values($line));
+            }
+        }
+
+        return $return;
+    }
+
+    /**
      * @param string $path
-     * @param string $ckan_url
      * @param bool|false $short
      * @return array
      * @throws \Exception
      */
     public function exportBriefFromJson(
         $path = '',
-        $ckan_url = 'https://catalog.data.gov/dataset/',
         $short = false
     )
     {
@@ -1903,7 +1903,7 @@ class CkanManager
                 'title' => $dataset['title'],
                 'title_simple' => $this->simplifyTitle($dataset['title']),
                 'name' => $dataset['name'],
-                'url' => $ckan_url . $dataset['name'],
+                'url' => $this->ckanUrl . 'dataset/' . $dataset['name'],
                 'identifier' => $identifier,
                 'guid' => $guid,
                 'topics' => join(';', $groups),
@@ -1924,15 +1924,13 @@ class CkanManager
      * @param string $search_q
      * @param string $search_fq
      * @param array $fields
-     * @param string $ckan_url
      * @return array
      * @throws \Exception
      */
     public function exportFiltered(
         $search_q = '',
         $search_fq = '',
-        $fields = ['title', 'title_simple', 'name', 'url', 'identifier', 'topics', 'categories'],
-        $ckan_url = 'https://catalog.data.gov/dataset/'
+        $fields = ['title', 'title_simple', 'name', 'url', 'identifier', 'topics', 'categories']
     )
     {
         $this->logOutput = '';
@@ -1973,7 +1971,7 @@ class CkanManager
                                 $line[$field] = $this->simplifyTitle($dataset['title']);
                                 break;
                             case 'url':
-                                $line[$field] = $ckan_url . $dataset['name'];
+                                $line[$field] = $this->ckanUrl . 'dataset/' . $dataset['name'];
                                 break;
                             case 'extras_modified':
                                 $line[$field] = $this->extra($dataset['extras'], 'modified');
@@ -2098,9 +2096,6 @@ class CkanManager
     )
     {
         $this->say(ORGANIZATION_TO_EXPORT . PHP_EOL);
-        $ckan_url = 'http://catalog.data.gov/';
-//        $ckan_url = 'http://qa-catalog-fe-data.reisys.com/dataset/';
-//        $ckan_url = 'http://uat-catalog-fe-data.reisys.com/dataset/';
 
         $csv_global = new Writer($this->resultsDir . '/_combined.csv', 'w');
         $csv_global->writeRow(['Title', 'Url', 'Organization', 'Topics', 'Topics categories', 'Metadata Type']);
@@ -2182,7 +2177,7 @@ class CkanManager
                     $csv->writeRow(
                         [
                             isset($dataset['title']) ? $dataset['title'] : '',
-                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
+                            isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '',
                             $categories ? $categories : '',
                             $categories_tags ? $categories_tags : '',
                             $metadata_type,
@@ -2192,7 +2187,7 @@ class CkanManager
                     $csv_global->writeRow(
                         [
                             isset($dataset['title']) ? $dataset['title'] : '',
-                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '',
+                            isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '',
                             isset($dataset['organization']) ? $dataset['organization']['title'] : '',
                             $categories ? $categories : '',
                             $categories_tags ? $categories_tags : '',
@@ -2463,7 +2458,7 @@ class CkanManager
                 [$dataset['name'], $newDatasetName = $dataset['name'] . '_legacy',]);
 
             if (LIST_ONLY) {
-                $this->say('http://catalog.data.gov/dataset/' . $dataset['name']);
+                $this->say($this->ckanUrl . 'dataset/' . $dataset['name']);
             } else {
                 $this->say(str_pad($dataset['name'], 100, ' . '), '');
 
@@ -2742,17 +2737,14 @@ class CkanManager
         /**
          * curl --data '{"all_fields":true}' "https://catalog.data.gov/api/action/organization_list" > organizations.json
          */
-        $isInventory = false;
-        if (false === strstr($this->apiUrl, 'https')) {
-            $ckan_url = 'https://catalog.data.gov/';
-            $orgs = file_get_contents(CKANMNGR_DATA_DIR . '/organizations.json');
-            $filename = '/catalog_orgs_list_' . (START ?: '') . '.csv';
-        } else {
-            $isInventory = true;
-            $ckan_url = 'https://inventory.data.gov/';
+        $isInventory = (bool)strpos('inventory', $this->ckanUrl);
+
+        if ($isInventory) {
             $orgs = $this->Ckan->organization_list();
-            $filename = '/inventory_orgs_list_' . (START ?: '') . '.csv';
+        } else {
+            $orgs = file_get_contents(CKANMNGR_DATA_DIR . '/organizations.json');
         }
+        $filename = '/' . parse_url($this->ckanUrl, PHP_URL_HOST) . '_org_list' . (START ?: '') . '.csv';
 
         $filter = false;
         if (is_file(CKANMNGR_DATA_DIR . '/organizations_stats_filter.csv')) {
@@ -2965,7 +2957,7 @@ class CkanManager
                 $organization_row = [
                     $org_results->name,
                     $org_results->title,
-                    $ckan_url . 'organization/' . $org_results->name,
+                    $this->ckanUrl . 'organization/' . $org_results->name,
                     $org_results->package_count,
                     $public,
                     $private,
@@ -3134,6 +3126,51 @@ class CkanManager
         // close log file
         fclose($fp_log);
 
+    }
+
+    /**
+     * @param $user_id
+     * @param int $try
+     * @return bool|string
+     */
+    private function tryGetLastActivityTimestamp($user_id, $try = 3)
+    {
+        $result = "";
+        while ($try) {
+            try {
+                $activity_list = $this->Ckan->user_activity_list($user_id);
+                $activity_list = json_decode($activity_list, true); /* as array */
+
+                if (!$activity_list['success']) {
+                    echo 'No success: ' . $user_id . PHP_EOL;
+                    echo ' :( ';
+
+                    return false;
+                }
+                if (!isset($activity_list['result']) || !sizeof($activity_list['result'])) {
+                    echo 'No result: ' . $user_id . PHP_EOL;
+                    echo ' :( ';
+
+                    return false;
+                }
+                $activity_list = $activity_list['result'];
+                $result = isset($activity_list[0]) && isset($activity_list[0]['timestamp']) ? $activity_list[0]['timestamp'] : '';
+                $try = 0;
+            } catch (NotFoundHttpException $ex) {
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                sleep(3);
+                echo '      zzz   ' . $user_id . PHP_EOL;
+                if (!$try) {
+                    echo 'Too many attempts: ' . $user_id . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -3607,8 +3644,6 @@ class CkanManager
 
         fputcsv($csv_log_file, $csv_header);
 
-        $ckan_url = 'https://catalog.data.gov/dataset/';
-
         $ckan_query = $this->escapeSolrValue($group['name']) . ' AND dataset_type:dataset';
 
         $category_key = ('__category_tag_' . $group['id']);
@@ -3646,7 +3681,7 @@ class CkanManager
                 fputcsv(
                     $csv_log_file, [
                         isset($dataset['title']) ? $dataset['title'] : '---',
-                        isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
+                        isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
                         $group['title'],
                         $tags ? $tags : '---'
                     ]
@@ -3681,8 +3716,6 @@ class CkanManager
         echo $search;
 
         fputcsv($csv_log_file, $csv_header);
-
-        $ckan_url = 'https://catalog.data.gov/dataset/';
 
         $ckan_query = '(' . $search . ' AND (dataset_type:dataset))';
 //        $ckan_query = "'data.jsonld'";
@@ -3727,7 +3760,7 @@ class CkanManager
                 foreach ($datasets as $dataset) {
                     fputcsv(
                         $csv_log_file, [
-                            isset($dataset['name']) ? $ckan_url . $dataset['name'] : '---',
+                            isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
 //                            'Local'
 //                            $dataset['title'],
                         ]
@@ -4218,7 +4251,7 @@ class CkanManager
                     $return[] = [
                         $package[0],
                         '',
-                        'http://catalog.data.gov/dataset/' . $dataset['name'],
+                        $this->ckanUrl . 'dataset/' . $dataset['name'],
                         '',
                         ''
                     ];
@@ -4242,9 +4275,9 @@ class CkanManager
 
             $return[] = [
                 $package[0],
-                'http://catalog.data.gov/dataset/' . $package[0],
-                'http://catalog.data.gov/dataset/' . $newDataset['name'],
-                'http://catalog.data.gov/dataset/' . $dataset['name'],
+                $this->ckanUrl . 'dataset/' . $package[0],
+                $this->ckanUrl . 'dataset/' . $newDataset['name'],
+                $this->ckanUrl . 'dataset/' . $dataset['name'],
                 $legacy_url
             ];
         }
@@ -4484,8 +4517,6 @@ class CkanManager
 
         $notFound = $publicFound = $privateOnly = $alreadyLegacy = $mustRename = $socrataNotFound = 0;
 
-        $ckan_url = 'https://catalog.data.gov/dataset/';
-
         $SocrataApi = new ExploreApi('http://explore.data.gov/api/');
 
         $size = sizeof($socrata_list);
@@ -4530,10 +4561,9 @@ class CkanManager
                         $ckan_id,
                         'ckan public found by socrata title',
                         '-',
-                        $ckan_url . $public_dataset['name']
+                        $this->ckanUrl . 'dataset/' . $public_dataset['name']
                     ]);
-                    $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $public_dataset['name']]);
-//                    $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $public_dataset['name']]);
+                    $socrata_redirects [] = join(',', [$socrata_id, $this->ckanUrl . 'dataset/' . $public_dataset['name']]);
                     continue;
                 }
 
@@ -4552,9 +4582,8 @@ class CkanManager
                 $publicFound++;
                 echo 'ckan public found by id' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                    ',', [$socrata_id, $ckan_id, 'ckan public found by id', '-', $ckan_url . $dataset['name']]);
-                $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
-//                $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
+                    ',', [$socrata_id, $ckan_id, 'ckan public found by id', '-', $this->ckanUrl . 'dataset/' . $dataset['name']]);
+                $socrata_redirects [] = join(',', [$socrata_id, $this->ckanUrl . 'dataset/' . $dataset['name']]);
                 continue;
             }
 
@@ -4581,10 +4610,9 @@ class CkanManager
                         $ckan_id,
                         'ckan public found by socrata title',
                         '-',
-                        $ckan_url . $public_dataset['name']
+                        $this->ckanUrl . 'dataset/' . $public_dataset['name']
                     ]);
-                    $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $public_dataset['name']]);
-//                    $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $public_dataset['name']]);
+                    $socrata_redirects [] = join(',', [$socrata_id, $this->ckanUrl . 'dataset/' . $public_dataset['name']]);
                     continue;
                 }
 
@@ -4592,7 +4620,7 @@ class CkanManager
                 $privateOnly++;
                 echo 'ckan private only' . PHP_EOL;
                 $socrata_txt_log [] = join(
-                    ',', [$socrata_id, $ckan_id, 'ckan private only', $ckan_url . $dataset['name'], '-']);
+                    ',', [$socrata_id, $ckan_id, 'ckan private only', $this->ckanUrl . 'dataset/' . $dataset['name'], '-']);
                 continue;
             }
 
@@ -4607,11 +4635,10 @@ class CkanManager
                     $socrata_id,
                     $ckan_id,
                     'ckan private already _legacy; public brother ok; no renaming',
-                    $ckan_url . $dataset['name'],
-                    $ckan_url . $publicDataset['name']
+                    $this->ckanUrl . 'dataset/' . $dataset['name'],
+                    $this->ckanUrl . 'dataset/' . $publicDataset['name']
                 ]);
-                $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $publicDataset['name']]);
-//                $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $publicDataset['name']]);
+                $socrata_redirects [] = join(',', [$socrata_id, $this->ckanUrl . 'dataset/' . $publicDataset['name']]);
                 continue;
             }
 
@@ -4625,17 +4652,16 @@ class CkanManager
                 $socrata_id,
                 $ckan_id,
                 'ckan private and public found; need to rename',
-                $ckan_url . $dataset['name'],
-                $ckan_url . $publicDataset['name']
+                $this->ckanUrl . 'dataset/' . $dataset['name'],
+                $this->ckanUrl . 'dataset/' . $publicDataset['name']
             ]);
-            $socrata_redirects [] = join(',', [$socrata_id, $ckan_url . $dataset['name']]);
-//            $ckan_redirects []    = join(',', [$ckan_url . $ckan_id, $ckan_url . $dataset['name']]);
+            $socrata_redirects [] = join(',', [$socrata_id, $this->ckanUrl . 'dataset/' . $dataset['name']]);
             $ckan_redirects [] = join(
-                ',', [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]);
+                ',', [$this->ckanUrl . 'dataset/' . $publicDataset['name'], $this->ckanUrl . 'dataset/' . $dataset['name']]);
             $ckan_rename_legacy[] = join(
-                ',', [$ckan_url . $dataset['name'], $ckan_url . $dataset['name'] . '_legacy']);
+                ',', [$this->ckanUrl . 'dataset/' . $dataset['name'], $this->ckanUrl . 'dataset/' . $dataset['name'] . '_legacy']);
             $ckan_rename_public[] = join(
-                ',', [$ckan_url . $publicDataset['name'], $ckan_url . $dataset['name']]);
+                ',', [$this->ckanUrl . 'dataset/' . $publicDataset['name'], $this->ckanUrl . 'dataset/' . $dataset['name']]);
             continue;
         }
 
@@ -4665,51 +4691,6 @@ Private already _legacy:              $alreadyLegacy
 Renaming needed for datasets:         $mustRename
 EOR;
 
-    }
-
-    /**
-     * @param $user_id
-     * @param int $try
-     * @return bool|string
-     */
-    private function tryGetLastActivityTimestamp($user_id, $try = 3)
-    {
-        $result = "";
-        while ($try) {
-            try {
-                $activity_list = $this->Ckan->user_activity_list($user_id);
-                $activity_list = json_decode($activity_list, true); /* as array */
-
-                if (!$activity_list['success']) {
-                    echo 'No success: ' . $user_id . PHP_EOL;
-                    echo ' :( ';
-
-                    return false;
-                }
-                if (!isset($activity_list['result']) || !sizeof($activity_list['result'])) {
-                    echo 'No result: ' . $user_id . PHP_EOL;
-                    echo ' :( ';
-
-                    return false;
-                }
-                $activity_list = $activity_list['result'];
-                $result = isset($activity_list[0]) && isset($activity_list[0]['timestamp']) ? $activity_list[0]['timestamp'] : '';
-                $try = 0;
-            } catch (NotFoundHttpException $ex) {
-                return false;
-            } catch (\Exception $ex) {
-                $try--;
-                sleep(3);
-                echo '      zzz   ' . $user_id . PHP_EOL;
-                if (!$try) {
-                    echo 'Too many attempts: ' . $user_id . PHP_EOL;
-
-                    return false;
-                }
-            }
-        }
-
-        return $result;
     }
 
     /**

@@ -2,7 +2,6 @@
 
 namespace CKAN\Manager;
 
-use CKAN\OrganizationList;
 use EasyCSV;
 
 require_once dirname(dirname(__DIR__)) . '/inc/common.php';
