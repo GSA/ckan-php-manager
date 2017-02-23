@@ -53,9 +53,15 @@ foreach (glob(CKANMNGR_DATA_DIR . '/prename*.csv') as $csv_file) {
 
         $datasetName = trim(basename($row['0']));
         $newDatasetName = substr($datasetName, 0, 70) . $i . '_legacy';
+//        $newDatasetName = str_replace('_legacy_legacy','_legacy',$newDatasetName);
+//        $newDatasetName = str_replace('_legacy_legacy','_legacy',$newDatasetName);
 //        $newDatasetName = basename($row['1']);
 
         printf('[%04d] ', $i++);
+
+//        echo $newDatasetName.PHP_EOL;
+//        continue;
+
         $CkanManager->renameDataset($datasetName, $newDatasetName, $basename);
         $CkanManager->makeDatasetPrivate($newDatasetName, $basename);
     }

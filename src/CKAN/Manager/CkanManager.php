@@ -249,7 +249,7 @@ class CkanManager
 
             return true;
         } catch (\Exception $ex) {
-//            echo $ex->getMessage() . PHP_EOL;
+            echo $ex->getMessage() . PHP_EOL;
             return false;
         }
     }
@@ -1651,6 +1651,105 @@ class CkanManager
      * @param string $search_q
      * @param string $search_fq
      * @param string $ckan_url
+     * @return array
+     * @throws \Exception
+     */
+    public function harvestStats(
+        $search_q='type:harvest',
+        $search_fq='metadata_created:[2016-01-01T00:00:00.000Z TO 2016-12-31T23:59:59.000Z]',
+        $ckan_url = 'https://catalog.data.gov/dataset/'
+    )
+    {
+
+        $this->logOutput = '';
+
+        $return = [];
+
+        $done = false;
+        $start = 0;
+        $per_page = 250;
+        echo $search_q . PHP_EOL;
+
+        $i = 0;
+
+        while (!$done) {
+            $datasets = $this->tryPackageSearch($search_q, $search_fq, $per_page, $start);
+            if (false === $datasets) {
+                throw new \Exception('No results found');
+            }
+
+            $totalCount = $this->resultCount;
+            $count = sizeof($datasets);
+
+            if (!$start) {
+                echo "Found $totalCount results" . PHP_EOL;
+            }
+
+            $start += $per_page;
+            echo $start . '/' . $totalCount . PHP_EOL;
+            if (!$totalCount) {
+                $done = true;
+                continue;
+            }
+
+            if ($count) {
+                foreach ($datasets as $harvest) {
+
+                    $this->say(++$i.' '.$harvest['name']);
+
+                    $harvest_full = $this->tryPackageShow($harvest['name']);
+
+                    if (!$harvest_full) {
+                        $harvest_full = array(
+                            'status' => array(
+                                'last_job' => array(
+                                    'created' => 'unavailable',
+                                    'finished' => 'unavailable'
+                                ),
+                                'total_datasets' => 'unavailable'
+                            )
+                        );
+                    }
+
+                    $line = [
+                        'title' => $harvest['title'],
+                        'name' => $harvest['name'],
+                        'url' => $ckan_url . $harvest['name'],
+                        'created' => $harvest['metadata_created'],
+                        'source_type' => $harvest['source_type'],
+                        'org title'         => $harvest['organization']['title'],
+                        'org name'         => $harvest['organization']['name'],
+                        'last_job_started' => $harvest_full['status']['last_job']['created'],
+                        'last_job_finished' => $harvest_full['status']['last_job']['finished'],
+                        'total_datasets' => $harvest_full['status']['total_datasets']
+                    ];
+
+                    $return[$harvest['name']] = $line;
+                }
+            } else {
+                echo 'no results: ' . $search_q . PHP_EOL;
+                continue;
+            }
+            if ($start > $totalCount) {
+                $done = true;
+            }
+        }
+
+        if ($return) {
+            $csv_global = new Writer($this->resultsDir . '/harvest_stats.csv', 'w');
+            $csv_global->writeRow(array_keys($return[array_keys($return)[0]]));
+            foreach($return as $line) {
+                $csv_global->writeRow(array_values($line));
+            }
+        }
+
+        return $return;
+    }
+
+    /**
+     * @param string $search_q
+     * @param string $search_fq
+     * @param string $ckan_url
      * @param bool|false $short
      * @return array
      * @throws \Exception
@@ -2310,10 +2409,10 @@ class CkanManager
         } else {
 
             $dataset['private'] = true;
-            $dataset['name'] .= '_legacy';
-            $dataset['tags'][] = [
-                'name' => 'metadata_from_legacy_dms',
-            ];
+//            $dataset['name'] .= '_legacy';
+//            $dataset['tags'][] = [
+//                'name' => 'metadata_from_legacy_dms',
+//            ];
 
             try {
                 $this->tryPackageUpdate($dataset);
@@ -2693,6 +2792,7 @@ class CkanManager
             $csv_header[] = 'DMS Private';
             $csv_header[] = 'DMS Public';
             $csv_header[] = 'Non-DMS Public';
+            $redacted_list = false;
         } else {
             $csv_header[] = 'No modified & Public & Active';
             $csv_header[] = 'No modified & Private & Active';
@@ -4093,7 +4193,7 @@ class CkanManager
         $list = $this->tryMemberList($organization['id']);
 
         if (!$list) {
-            return;
+            return false;
         }
 
         $counter = 0;
@@ -4165,6 +4265,7 @@ class CkanManager
 
             fclose($fp_csv);
         }
+        return false;
     }
 
     /**
@@ -4339,7 +4440,7 @@ class CkanManager
         $list = $this->tryMemberList($organization['id']);
 
         if (!$list) {
-            return;
+            return false;
         }
 
         foreach ($list as $package) {
@@ -4365,6 +4466,7 @@ class CkanManager
             $json = (json_encode($this->return, JSON_PRETTY_PRINT));
             file_put_contents($this->resultsDir . '/' . $organization['id'] . '_PRIVATE_ONLY.json', $json);
         }
+        return false;
     }
 
     /**
