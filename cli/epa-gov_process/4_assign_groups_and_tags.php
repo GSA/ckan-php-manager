@@ -86,8 +86,8 @@ foreach (glob(CKANMNGR_DATA_DIR . '/assign*.csv') as $csv_file) {
         $CkanManager->assignGroupsAndCategoriesToDatasets(
             [$dataset],
             trim($row['1']),
-            $categories,
-            $basename
+            $basename,
+            $categories
         );
     }
 }

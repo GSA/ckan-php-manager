@@ -4050,16 +4050,16 @@ class CkanManager
     /**
      * @param      $datasetNames
      * @param      $group
-     * @param null $categories
      * @param      $basename
+     * @param null $categories
      *
      * @throws \Exception
      */
     public function assignGroupsAndCategoriesToDatasets(
         $datasetNames,
         $group,
-        $categories = null,
-        $basename
+        $basename,
+        $categories = null
     )
     {
         static $counter = 0;
