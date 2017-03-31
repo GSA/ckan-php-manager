@@ -1732,6 +1732,8 @@ class CkanManager
                         'metadata_created' => $dataset['metadata_created'],
                         'metadata_modified' => $dataset['metadata_modified'],
                         'extras_modified' => $this->extra($dataset['extras'], 'modified'),
+//                        'identifier' => $this->extra($dataset['extras'], 'unique_id'),
+//                        'email' => $this->extra($dataset['extras'], 'contact_email'),
 //                        'org title'         => $dataset['organization']['title'],
 //                        'org name'         => $dataset['organization']['name'],
                         'topics' => join(';', $groups),

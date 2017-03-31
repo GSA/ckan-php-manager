@@ -60,7 +60,9 @@ $CkanManager->resultsDir = $results_dir;
 //$brief = $CkanManager->exportShort('organization:state-of-oklahoma AND -metadata_modified:[2016-02-24T23:59:59.999Z TO 2016-02-27T00:00:00Z] AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:noaa-gov AND metadata-source:dms AND (dataset_type:dataset)');
 //$brief = $CkanManager->exportShort('organization:dot-gov AND (dataset_type:dataset) AND publisher:"Federal Aviation Administration"');
-$brief = $CkanManager->exportShort('organization:nd-gov AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:nd-gov AND (dataset_type:dataset)');
+//$brief = $CkanManager->exportShort('organization:opm-gov AND (dataset_type:dataset)');
+$brief = $CkanManager->exportShort('organization:fs-fed-us AND (dataset_type:dataset)');
 
 $headers = array_keys($brief[array_keys($brief)[0]]);
 $csv->writeRow($headers);
