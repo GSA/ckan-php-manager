@@ -583,7 +583,6 @@ class CkanManager
         return false;
     }
 
-
     /**
      * @throws \Exception
      */
@@ -3245,6 +3244,93 @@ class CkanManager
         }
 
         return false;
+    }
+
+    /**
+     * @param $organization_id
+     */
+    public function purgeOrganization($organization_id)
+    {
+
+        $result = $this->tryOrganizationPurge($organization_id);
+        if ($result) {
+            echo "Success";
+
+            return;
+        }
+
+        echo "FAIL";
+    }
+
+    /**
+     * @param $organizationId
+     * @param int $try
+     *
+     * @return bool
+     */
+    private function tryOrganizationPurge($organizationId, $try = 3)
+    {
+        while ($try) {
+            try {
+                $result = $this->Ckan->organization_purge($organizationId);
+                $result = json_decode($result, true); // as array
+
+                if (!isset($result['success']) || !$result['success']) {
+                    throw new \Exception('Could not purge organization');
+                }
+
+                return true;
+            } catch (NotFoundHttpException $ex) {
+                echo "Organization not found " . PHP_EOL;
+
+                return false;
+            } catch (\Exception $ex) {
+                $try--;
+                sleep(3);
+                echo '      zzz   ' . PHP_EOL;
+                if (!$try) {
+                    echo 'Too many attempts ' . PHP_EOL;
+
+                    return false;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param $organization_id
+     * @param array $fields
+     */
+    public function patchOrganization($organization_id, array $fields)
+    {
+
+        $result = $this->tryOrganizationPatch($organization_id, $fields);
+        if ($result) {
+            echo "Success";
+
+            return;
+        }
+
+        echo "FAIL";
+    }
+
+    /**
+     * @param $organization_id
+     * @param array $fields
+     * @return bool
+     */
+    public function tryOrganizationPatch($organization_id, array $fields)
+    {
+        try {
+            $this->Ckan->organization_patch(array_merge(array('id' => $organization_id), $fields));
+
+            return true;
+        } catch (\Exception $ex) {
+            echo $ex->getMessage() . PHP_EOL;
+            return false;
+        }
     }
 
     /**
