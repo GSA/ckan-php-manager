@@ -681,8 +681,13 @@ class CkanManager
      * @param int $limit
      * @throws \Exception
      */
-    public function exportResourceList($limit = 500)
+    public function exportResourceList($limit = 0)
     {
+
+//        Provide the name of the dataset, url, agency name, dataset created date/time, dataset last updated date/time,
+//        resource URL, resource URL created date, resource URL last modified date (if more than one resource,
+//        show them in two separate rows with same dataset info)
+
         $page = 0;
         $list = [];
         while (true) {
@@ -692,7 +697,7 @@ class CkanManager
                 'dataset_type:dataset', '', $this->packageSearchPerPage, $start);
 
             if (!is_array($ckanResults)) {
-                throw new \Exception('No results from CKAN. Exiting...');
+                break;
             }
 
             foreach ($ckanResults as $dataset) {
@@ -703,17 +708,36 @@ class CkanManager
                     if (!isset($resource['url'])) {
                         continue;
                     }
-                    $list[] = trim($resource['url']);
+
+                    if (false !== strpos($resource['url'], $this->ckanUrl)) {
+                        $headers = get_headers($resource['url']);
+                        $line = [
+                            'dataset name' => $dataset['title'],
+                            'dataset URL' => $this->ckanUrl . 'dataset/' . $dataset['name'],
+                            'organization' => $dataset['organization']['title'],
+                            'dataset created' => $dataset['metadata_created'],
+                            'dataset modified' => $dataset['metadata_modified'],
+                            'resource URL' => trim($resource['url']),
+                            'resource response' => $headers[0],
+                            'resource created' => $resource['created'],
+                            'resource modified' => $resource['last_modified'],
+                        ];
+
+                        $list[] = $line;
+                    }
                 }
             }
-            if ($start > $limit) {
+            if ($limit && $start > $limit) {
                 break;
             }
         }
-        $list = array_unique($list);
+//        $list = array_unique($list);
         $list_csv = new Writer($this->resultsDir . '/resources.csv');
-        foreach ($list as $url) {
-            $list_csv->writeRow([$url]);
+        if (sizeof($list)) {
+            $list_csv->writeRow(array_keys($list[0]));
+        }
+        foreach ($list as $line) {
+            $list_csv->writeRow($line);
         }
 
         return;
@@ -2382,6 +2406,45 @@ class CkanManager
             }
         }
         file_put_contents($this->resultsDir . '/_' . $tag_name . '.log', $this->logOutput);
+    }
+
+    /**
+     * @param $dataset_id
+     * @param $basename
+     */
+    public function makeDatasetPublic(
+        $dataset_id,
+        $basename
+    )
+    {
+        $this->logOutput = '';
+        $log_file = $basename . '_public.log';
+
+        $this->say(str_pad($dataset_id, 105, ' . '), '');
+
+        $dataset = $this->tryPackageShow($dataset_id);
+
+        if (!$dataset) {
+            $this->say(str_pad('NOT_FOUND', 10, ' '));
+        } else {
+
+            $dataset['private'] = false;
+//            $dataset['name'] .= '_legacy';
+//            $dataset['tags'][] = [
+//                'name' => 'metadata_from_legacy_dms',
+//            ];
+
+            try {
+                $this->tryPackageUpdate($dataset);
+                $this->say(str_pad('OK', 10, ' '));
+            } catch (\Exception $ex) {
+                $this->say(str_pad('ERROR', 10, ' '));
+//                die(json_encode($dataset, JSON_PRETTY_PRINT) . PHP_EOL . $ex->getMessage() . PHP_EOL . PHP_EOL);
+                file_put_contents($this->resultsDir . '/err.log', $ex->getMessage() . PHP_EOL, FILE_APPEND);
+            }
+        }
+        file_put_contents($this->resultsDir . '/' . $log_file, $this->logOutput, FILE_APPEND);
+        $this->logOutput = '';
     }
 
     /**

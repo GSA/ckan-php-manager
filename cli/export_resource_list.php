@@ -27,12 +27,12 @@ require_once dirname(__DIR__) . '/inc/common.php';
 $results_dir = CKANMNGR_RESULTS_DIR . date('/Ymd-His') . '_EXPORT_RESOURCE_LIST';
 mkdir($results_dir);
 
-$CkanManager = new CkanManager(CKAN_API_URL);
-//$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
+//$CkanManager = new CkanManager(CKAN_API_URL);
+$CkanManager = new CkanManager(INVENTORY_CKAN_PROD_API_URL, INVENTORY_CKAN_PROD_API_KEY);
 //$CkanManager = new CkanManager(CKAN_STAGING_API_URL);
 
 $CkanManager->resultsDir = $results_dir;
-$CkanManager->exportResourceList(500);
+$CkanManager->exportResourceList();
 
 // show running time on finish
 timer();
