@@ -53,6 +53,7 @@ foreach (glob(CKANMNGR_DATA_DIR . '/rdelete*.csv') as $csv_file) {
 
         $datasetName = trim(basename($row['0']));
         $newDatasetName = substr($datasetName, 0, 70) . $i . '_delete';
+//        $newDatasetName = $datasetName.'_del_legacy';
 
         printf('[%04d] ', $i++);
         $CkanManager->renameDataset($datasetName, $newDatasetName, $basename);
