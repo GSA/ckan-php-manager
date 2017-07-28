@@ -30,6 +30,7 @@
     "jwage/easy-csv": "~0"
   },
   "require-dev": {
+    "doctrine/instantiator": "1.0.5",
     "phpunit/phpunit": "~6"
   }
 }
