@@ -66,7 +66,7 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:gsa/ckan-php-client.git",
-                "reference": "e63184589173c1c733f61376c155f9c6f75333d1"
+                "reference": "3bcc404a539e3504bfc63d6f71a8674262caefe7"
             },
             "require": {
                 "ext-curl": "*",
@@ -91,7 +91,7 @@
                 }
             ],
             "description": "CKAN php client by GSA",
-            "time": "2017-07-28T19:44:19+00:00"
+            "time": "2017-11-30T20:33:03+00:00"
         },
         {
             "name": "jwage/easy-csv",

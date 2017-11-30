@@ -8,7 +8,7 @@ use CKAN\OrganizationList;
 /**
  * http://www.data.gov/app/themes/roots-nextdatagov/assets/Json/fed_agency.json
  */
-define('ORGANIZATION_TO_EXPORT', 'Department of the Interior');
+define('ORGANIZATION_TO_EXPORT', 'Arctic Landscape Conservation Cooperative');
 
 require_once dirname(__DIR__) . '/inc/common.php';
 
@@ -17,6 +17,7 @@ require_once dirname(__DIR__) . '/inc/common.php';
  */
 $OrgList = new OrganizationList(AGENCIES_LIST_URL);
 $termsArray = $OrgList->getTreeArrayFor(ORGANIZATION_TO_EXPORT);
+
 
 /**
  * sometimes there is no parent term (ex. Department of Labor)
