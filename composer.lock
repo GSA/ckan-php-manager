@@ -66,13 +66,17 @@
             "source": {
                 "type": "git",
                 "url": "git@github.com:gsa/ckan-php-client.git",
-                "reference": "3bcc404a539e3504bfc63d6f71a8674262caefe7"
+                "reference": "7602dec864c25cfe5f3f96910cdaa8620ea6d57d"
             },
             "require": {
                 "ext-curl": "*",
                 "ext-json": "*",
                 "php": ">=5.6",
                 "phpunit/phpunit": "*"
+            },
+            "require-dev": {
+                "doctrine/instantiator": "1.0.5",
+                "phpunit/phpunit": "~4.8|~5.7"
             },
             "type": "library",
             "autoload": {
@@ -91,7 +95,7 @@
                 }
             ],
             "description": "CKAN php client by GSA",
-            "time": "2017-11-30T20:33:03+00:00"
+            "time": "2017-11-30T20:45:59+00:00"
         },
         {
             "name": "jwage/easy-csv",
