@@ -3860,8 +3860,9 @@ class CkanManager
         $csv_log_file = fopen($log_file, 'w');
 
         $csv_header = [
-            'data.gov url',
-//            'topic name'
+            'title',
+            'id',
+            'data.gov_url'
         ];
 
         echo $search;
@@ -3911,9 +3912,9 @@ class CkanManager
                 foreach ($datasets as $dataset) {
                     fputcsv(
                         $csv_log_file, [
-                            isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '---',
-//                            'Local'
-//                            $dataset['title'],
+                            $dataset['title'],
+                            $dataset['id'],
+                            isset($dataset['name']) ? $this->ckanUrl . 'dataset/' . $dataset['name'] : '---'
                         ]
                     );
                 }
