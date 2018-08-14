@@ -243,6 +243,31 @@ class CkanManager
      * @return bool
      * @throws \Exception
      */
+    public function tryHarvestUpdate($dataset)
+    {
+        if ('harvest' !== $dataset['type']) {
+            return false;
+        }
+
+        try {
+            $this->Ckan->package_update($dataset);
+            if (!$this->checkDatasetConsistency($dataset)) {
+                throw new \Exception('dataset consistency check failed');
+            }
+
+            return true;
+        } catch (\Exception $ex) {
+            echo $ex->getMessage() . PHP_EOL;
+            return false;
+        }
+    }
+
+    /**
+     * @param $dataset
+     *
+     * @return bool
+     * @throws \Exception
+     */
     public function tryPackageUpdate($dataset)
     {
         if ('dataset' !== $dataset['type']) {
@@ -449,6 +474,42 @@ class CkanManager
                 break;
         }
         echo $output . $eol;
+    }
+
+    /**
+     * @param $datasetName
+     * @param $fieldName
+     * @param $fieldValue
+     */
+    public function updateHarvest($datasetName, $fieldName, $fieldValue)
+    {
+
+        $result = false;
+        $dataset = $this->tryPackageShow($datasetName);
+        if (!$dataset) {
+            $this->say([$datasetName, '404 Not Found']);
+
+            return;
+        }
+
+        $dataset[$fieldName] = $fieldValue;
+
+        if($dataset['source_type'] == 'waf-collection' && !array_key_exists('collection_metadata_url',$dataset)){
+            $dataset['collection_metadata_url'] = 'http://localhost';
+        }
+
+        try {
+            $result = $this->tryHarvestUpdate($dataset);
+        } catch (\Exception $ex) {
+            $this->say([$datasetName, $ex->getMessage()]);
+        }
+        if ($result) {
+            //$this->say($result);
+            $this->say([$datasetName, 'UPDATED']);
+
+            return;
+        }
+        $this->say([$datasetName, 'ERROR']);
     }
 
     /**
