@@ -102,7 +102,7 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 
 ### Remove groups and category tags from datasets (revert previous script changes)
 
-* Prepare same csv file as for previous script, and put them to /data dir, with `<any-title>.csv`
+* Prepare same csv file as for previous script, and put them to /data dir, with `remove_<any-title>.csv`
 
 ```
     $ php cli/tagging/remove_groups_and_tags.php
