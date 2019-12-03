@@ -107,7 +107,7 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 ```
     $ php cli/tagging/remove_groups_and_tags.php
 ```
-* This command will remove listed categories from the dataset of the row. If an empty list of categories is provided, this command will remove the group from the dataset.
+* This command will remove listed categories from the dataset of the row. If an empty list of categories is provided, this command will remove the group and all categories from the dataset.
 
 ## CKAN API DOCs
 
