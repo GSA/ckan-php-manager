@@ -41,6 +41,7 @@ class CkanManagerTest extends \PHPUnit\Framework\TestCase
             'type'      => 'dataset',
             'title'     => 'Some Interesting Mock Dataset 2015',
             'resources' => [1, 2, 3, 5, 4],
+            'state'     => 'active',
         ];
     }
 
@@ -157,6 +158,120 @@ class CkanManagerTest extends \PHPUnit\Framework\TestCase
 
         $check = $this->CkanManager->checkDatasetConsistency($this->mockDataset);
         $this->assertTrue($check);
+    }
+
+    /**
+     *  add tag to dataset
+     */
+    public function testAssignGroupsAndCategoriesToDatasets()
+    {
+        $groups = [
+            ['name'=>'group1', 'id'=>'gid1'],
+            ['name'=>'group2', 'id'=>'gid2'],
+        ];
+        $tag1 = [
+            'key' => '__category_tag_gid1',
+            'value' => '["tag1"]',
+        ];
+        $tag2 = [
+            'key' => '__category_tag_gid2',
+            'value' => '["tag2"]',
+        ];
+        $extras = [$tag1, $tag2];
+        $dataset_with_tags_groups = $this->mockDataset;
+        $dataset_with_tags_groups['groups'] = $groups;
+        $dataset_with_tags_groups['extras'] = $extras;
+
+        $tag1_after_update = [
+            'key' => '__category_tag_gid1',
+            'value' => '["new tag","tag1"]',
+        ];
+        $extras_after_update = [$tag2, $tag1_after_update];
+        $dataset_after_update = $dataset_with_tags_groups;
+        $dataset_after_update['extras'] = $extras_after_update;
+
+        $CkanClient = $this->prophesize('CKAN\CkanClient');
+        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+            json_encode([
+                'help'    => 'some text',
+                'success' => true,
+                'result'  => $dataset_with_tags_groups
+            ])
+        );
+        $CkanClient->group_list(true)->willReturn(
+            json_encode([
+                'help'    => 'some text',
+                'success' => true,
+                'result'  => $groups,
+            ])
+        );
+
+        $filePutContentsWrapper = $this->prophesize('CKAN\Manager\Adapters\FilePutContentsWrapper');
+        $filePutContentsWrapper->filePutContents(Argument::any(),Argument::any(),Argument::any())->willReturn(true);
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+        $this->CkanManager->setFilePutContentsWrapper($filePutContentsWrapper->reveal());
+
+        $package = $this->CkanManager->assignGroupsAndCategoriesToDatasets(['dataset-mock-name'], 'group1', 'some filename', ['new tag']);
+
+        $CkanClient->package_update($dataset_after_update)->shouldBeCalled();
+    }
+
+    /**
+     *  remove certain tag from dataset
+     */
+    public function testRemoveTagsAndGroupsFromDatasets()
+    {
+        $groups = [
+            ['name'=>'group1', 'id'=>'gid1'],
+            ['name'=>'group2', 'id'=>'gid2'],
+        ];
+        $tag1 = [
+            'key' => '__category_tag_gid1',
+            'value' => '["tag1"]',
+        ];
+        $tag2 = [
+            'key' => '__category_tag_gid2',
+            'value' => '["tag2"]',
+        ];
+        $extras = [$tag1, $tag2];
+        $dataset_with_tags_groups = $this->mockDataset;
+        $dataset_with_tags_groups['groups'] = $groups;
+        $dataset_with_tags_groups['extras'] = $extras;
+
+        $tag1_after_update = [
+            'key' => '__category_tag_gid1',
+            'value' => null,
+        ];
+        $extras_after_update = [$tag2, $tag1_after_update];
+        $dataset_after_update = $dataset_with_tags_groups;
+        $dataset_after_update['extras'] = $extras_after_update;
+
+        $CkanClient = $this->prophesize('CKAN\CkanClient');
+        $CkanClient->package_show($this->mockDataset['name'])->willReturn(
+            json_encode([
+                'help'    => 'some text',
+                'success' => true,
+                'result'  => $dataset_with_tags_groups
+            ])
+        );
+        $CkanClient->group_list(true)->willReturn(
+            json_encode([
+                'help'    => 'some text',
+                'success' => true,
+                'result'  => $groups,
+            ])
+        );
+
+        $filePutContentsWrapper = $this->prophesize('CKAN\Manager\Adapters\FilePutContentsWrapper');
+        $filePutContentsWrapper->filePutContents(Argument::any(),Argument::any(),Argument::any())->willReturn(true);
+
+        $this->CkanManager->setCkan($CkanClient->reveal());
+        $this->CkanManager->setFilePutContentsWrapper($filePutContentsWrapper->reveal());
+
+        $package = $this->CkanManager->removeTagsAndGroupsFromDatasets(['dataset-mock-name'], 'group1', 'tag1', 'some filename');
+
+        $CkanClient->package_update($dataset_after_update)->shouldBeCalled();
     }
 
     /**

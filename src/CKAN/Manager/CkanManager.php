@@ -3,6 +3,7 @@
 namespace CKAN\Manager;
 
 use CKAN\CkanClient;
+use CKAN\Manager\Adapters\FilePutContentsWrapper;
 use CKAN\NotFoundHttpException;
 use CKAN\OrganizationList;
 use Colors\Color;
@@ -71,6 +72,10 @@ class CkanManager
      * @var int
      */
     private $resultCount = 0;
+    /**
+     * @var \CKAN\Manager\Adapters\FilePutContentsWrapper
+     */
+    private $filePutContentsWrapper;
 
     /**
      * @param string $apiUrl
@@ -92,6 +97,7 @@ class CkanManager
             sleep(3);
         }
         $this->setCkan(new CkanClient($apiUrl, $apiKey));
+        $this->setFilePutContentsWrapper(new FilePutContentsWrapper);
     }
 
     /**
@@ -100,6 +106,14 @@ class CkanManager
     public function setCkan($Ckan)
     {
         $this->Ckan = $Ckan;
+    }
+
+    /**
+     * @param FilePutContentsWrapper $filePutContentsWrapper
+     */
+    public function setFilePutContentsWrapper($filePutContentsWrapper)
+    {
+        $this->filePutContentsWrapper = $filePutContentsWrapper;
     }
 
     /**
@@ -312,17 +326,17 @@ class CkanManager
             $diff = $this->arrayDiffAssocRecursive($dataset, $updated_dataset);
 
             if (sizeof($diff)) {
-                file_put_contents(
+                $this->filePutContentsWrapper->filePutContents(
                     $this->resultsDir . '/dump-diff__' . $package_id . '.json', json_encode($diff, JSON_PRETTY_PRINT)
                 );
                 throw new \Exception('Consistency check failed (check diff): ' . $package_id);
             }
 
         } catch (\Exception $ex) {
-            file_put_contents(
+            $this->filePutContentsWrapper->filePutContents(
                 $this->resultsDir . '/dump-before__' . $package_id . '.json', json_encode($dataset, JSON_PRETTY_PRINT)
             );
-            file_put_contents(
+            $this->filePutContentsWrapper->filePutContents(
                 $this->resultsDir . '/dump-after__' . $package_id . '.json',
                 json_encode($updated_dataset, JSON_PRETTY_PRINT)
             );
@@ -4159,8 +4173,7 @@ class CkanManager
             $this->tryPackageUpdate($dataset);
             $this->say(str_pad('SUCCESS', 10, ' . ', STR_PAD_LEFT));
         }
-
-        file_put_contents($this->resultsDir . '/' . $basename . '_remove.log', $this->logOutput, FILE_APPEND | LOCK_EX);
+        $this->filePutContentsWrapper->filePutContents($this->resultsDir . '/' . $basename . '_remove.log', $this->logOutput, FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -4330,9 +4343,16 @@ class CkanManager
                 continue;
             }
 
-            $dataset['groups'][] = [
-                'name' => $group_obj['name'],
-            ];
+            // add group only if the dataset not alreay in the group
+            $existing_group_names = [];
+            foreach($dataset['groups'] as $existing_group) {
+                $existing_group_names[] = $existing_group['name'];
+            }
+            if (!in_array($group_obj['name'], $existing_group_names)) {
+                $dataset['groups'][] = [
+                    'name' => $group_obj['name'],
+                ];    
+            }
 
             if (is_array($categories) || strlen($categories)) {
                 $extras = $dataset['extras'];
@@ -4365,11 +4385,11 @@ class CkanManager
             } catch (\Exception $ex) {
 //                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
                 $this->say('ERROR: CHECK LOG');
-                file_put_contents($this->resultsDir . '/error.log', $ex->getMessage() . PHP_EOL,
+                $this->filePutContentsWrapper->filePutContents($this->resultsDir . '/error.log', $ex->getMessage() . PHP_EOL,
                     FILE_APPEND | LOCK_EX);
             }
         }
-        file_put_contents(
+        $this->filePutContentsWrapper->filePutContents(
             $this->resultsDir . '/' . $basename . '_tags.log.csv', $this->logOutput, FILE_APPEND | LOCK_EX);
         $this->logOutput = '';
     }
