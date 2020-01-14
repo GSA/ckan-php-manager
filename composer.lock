@@ -65,7 +65,7 @@
             "version": "dev-master",
             "source": {
                 "type": "git",
-                "url": "git@github.com:gsa/ckan-php-client.git",
+                "url": "https://github.com/GSA/ckan-php-client.git",
                 "reference": "7602dec864c25cfe5f3f96910cdaa8620ea6d57d"
             },
             "require": {
