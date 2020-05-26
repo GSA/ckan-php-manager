@@ -1611,11 +1611,15 @@ class CkanManager
 
                     if (!$organization_term) {
                         $this->say('Could not find organization: ' . $organization);
-                        continue;
+                        break;
                     }
 
                     $ckan_query = 'organization:(' . $organization_term . ')' . ' AND dataset_type:dataset';
                     break;
+            }
+
+            if (!$ckan_query) {
+              continue;
             }
 
             $only_first_page = true;
