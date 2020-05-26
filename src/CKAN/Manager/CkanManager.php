@@ -1864,7 +1864,7 @@ class CkanManager
      */
     public function harvestStats(
         $search_q = 'type:harvest',
-        $search_fq = 'metadata_created:[2016-01-01T00:00:00.000Z TO 2016-12-31T23:59:59.000Z]'
+        $search_fq = ''
     )
     {
 
