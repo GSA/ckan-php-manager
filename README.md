@@ -112,3 +112,17 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
 ## CKAN API DOCs
 
 http://docs.ckan.org/en/latest/api/index.html
+
+
+## Docker setup
+
+To minimize requirements on a system, we've added a minimal setup with
+docker-compose. This should replace the above usage instructions as the default
+workflow.
+
+    $ docker-compose build
+    $ docker-compose run --rm app php cli/harvest_stats_csv.php
+
+Run the tests.
+
+    $ docker-compose run --rm app phpunit
