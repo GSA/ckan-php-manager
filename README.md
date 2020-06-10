@@ -91,14 +91,16 @@ To add tag `add_legacy_dms_and_make_private` to all datasets of some group:
     ```
     dataset, group, categories
     https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
-    download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
+    aerial-image-of-alaskas-arctic-coastal-plain-1955,Climate,"Arctic; Arctic Ocean, Sea Ice and Coasts; Permafrost and Arctic Landscapes"
+    28d30c1f-75a5-4042-b0fc-de26cc7d70f2,Climate,Arctic; Arctic Development and Transport
     ```
-* Double check CKAN_URL and CKAN_API_KEY for editing datasets
+* Double check CKAN_URL and CKAN_API_KEY for editing datasets, defined in `inc/config.php`
 * Run script
 
 ```
     $ php cli/tagging/assign_groups_and_tags.php
 ```
+* Detailed logs and results are stored in folder `results/[time-stamp]_ASSIGN_GROUPS`
 
 ### Remove groups and category tags from datasets (revert previous script changes)
 
