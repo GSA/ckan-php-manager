@@ -28,6 +28,8 @@ If you don't have Composer, [install](https://getcomposer.org/download/) it:
 
     $ composer install
 
+*Note: if you have missing dependencies, you might need to install some dependencies manually. Some items that had to be recently added was `apt install php-curl php-xml`.*
+
 ### Configuration
 Copy config.sample.php to config.php. Update it with your custom values, if needed.
 
