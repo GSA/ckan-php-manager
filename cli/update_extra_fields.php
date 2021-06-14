@@ -19,13 +19,13 @@ $CkanManager = new CkanManager(CKAN_API_URL, CKAN_API_KEY);
 
 /**
  * Sample csv
- * dataset,group,categories
- * https://catalog.data.gov/dataset/food-access-research-atlas,Agriculture,"Natural Resources and Environment"
- * download-crossing-inventory-data-highway-rail-crossing,Agriculture, "Natural Resources and Environment;Plants and Plant Systems Agriculture"
+ * dataset,extra_field,old_value,new_value
+ * fy2017-qtr-1-hospital-performance,contact_email,someone@va.gov,someone.new@va.gov
+ * fy2017-qtr-1-hospital-performance,contact_name,"VHA Open Data","VHA Open Data New"
  */
 
 $CkanManager->resultsDir = $results_dir;
-foreach (glob(CKANMNGR_DATA_DIR . '/extra*.csv') as $csv_file) {
+foreach (glob(CKANMNGR_DATA_DIR . '/extra-*.csv') as $csv_file) {
     $status = PHP_EOL . PHP_EOL . basename($csv_file) . PHP_EOL . PHP_EOL;
     echo $status;
 
@@ -68,9 +68,9 @@ foreach (glob(CKANMNGR_DATA_DIR . '/extra*.csv') as $csv_file) {
 
         $CkanManager->updateExtraFields(
             [$dataset],
-            'catalog_@context',
-            'https://project-open-data.cio.gov/v1.1/schema/data.jsonld',
-            'https://project-open-data.cio.gov/v1.1/schema/catalog.jsonld',
+            $row['1'],
+            $row['2'],
+            $row['3'],
             $basename
         );
     }
