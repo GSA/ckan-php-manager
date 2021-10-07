@@ -4383,9 +4383,12 @@ class CkanManager
             }
 
             try {
-                $this->tryPackageUpdate($dataset);
+                if($this->tryPackageUpdate($dataset)) {
+                    $this->say('SUCCESS');
+                } else {
+                    $this->say('FAILURE');
+                }
 //                $this->say(str_pad('SUCCESS', 15, ' . ', STR_PAD_LEFT));
-                $this->say('SUCCESS');
             } catch (\Exception $ex) {
 //                $this->say(str_pad('ERROR: CHECK LOG', 15, ' . ', STR_PAD_LEFT));
                 $this->say('ERROR: CHECK LOG');
