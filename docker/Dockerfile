@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3
 
 RUN apk --no-cache upgrade
 RUN apk add --no-cache apache2 \
